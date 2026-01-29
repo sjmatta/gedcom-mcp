@@ -1,0 +1,50 @@
+[project]
+name = "gedcom-server"
+version = "0.1.0"
+description = "FastMCP3 GEDCOM Genealogy Server"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=2.0.0",
+    "ged4py>=0.4.0",
+]
+
+[tool.poe.tasks]
+serve = "python gedcom_server.py"
+test = "pytest tests/ -v"
+lint = "ruff check ."
+format = "ruff format ."
+typecheck = "mypy gedcom_server.py"
+deps = "deptry ."
+check = ["lint", "typecheck", "test"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]  # Line length handled separately
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false  # Many functions return parsed data
+warn_unused_ignores = true
+disallow_untyped_defs = false  # Start lenient, tighten later
+check_untyped_defs = true
+
+[tool.deptry]
+ignore = ["DEP002"]  # Ignore missing dev dependencies in main code
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "deptry>=0.24.0",
+    "mypy>=1.19.1",
+    "poethepoet>=0.40.0",
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "ruff>=0.14.14",
+]
