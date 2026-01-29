@@ -1,6 +1,8 @@
 """Tests for source-related functionality."""
 
-import gedcom_server as gs
+from gedcom_server.models import Source
+from gedcom_server.sources import _get_source, _get_sources, _search_sources
+from gedcom_server.state import sources
 
 
 class TestSourceDataclass:
@@ -8,7 +10,7 @@ class TestSourceDataclass:
 
     def test_source_to_dict(self):
         """Should include all fields in dict output."""
-        source = gs.Source(
+        source = Source(
             id="@S1@",
             title="Birth Certificate",
             author="State of New York",
@@ -26,7 +28,7 @@ class TestSourceDataclass:
 
     def test_source_to_summary(self):
         """Should include summary fields."""
-        source = gs.Source(
+        source = Source(
             id="@S1@",
             title="Birth Certificate",
             author="State of New York",
@@ -38,7 +40,7 @@ class TestSourceDataclass:
 
     def test_source_defaults(self):
         """Should have sensible defaults."""
-        source = gs.Source(id="@S1@")
+        source = Source(id="@S1@")
         assert source.title is None
         assert source.author is None
         assert source.publication is None
@@ -51,11 +53,11 @@ class TestSourcesLoaded:
 
     def test_sources_loaded(self):
         """Should load sources from GEDCOM file."""
-        assert len(gs.sources) > 0
+        assert len(sources) > 0
 
     def test_sources_have_ids(self):
         """All sources should have IDs."""
-        for source in gs.sources.values():
+        for source in sources.values():
             assert source.id is not None
             assert source.id.startswith("@")
 
@@ -65,17 +67,17 @@ class TestGetSources:
 
     def test_get_sources_returns_list(self):
         """Should return a list."""
-        result = gs._get_sources()
+        result = _get_sources()
         assert isinstance(result, list)
 
     def test_get_sources_respects_max_results(self):
         """Should respect max_results parameter."""
-        result = gs._get_sources(max_results=5)
+        result = _get_sources(max_results=5)
         assert len(result) <= 5
 
     def test_get_sources_result_has_fields(self):
         """Results should have summary fields."""
-        result = gs._get_sources(max_results=1)
+        result = _get_sources(max_results=1)
         if result:
             assert "id" in result[0]
             assert "title" in result[0]
@@ -87,20 +89,20 @@ class TestGetSource:
 
     def test_get_existing_source(self):
         """Should get an existing source."""
-        source_id = next(iter(gs.sources.keys()))
-        result = gs._get_source(source_id)
+        source_id = next(iter(sources.keys()))
+        result = _get_source(source_id)
         assert result is not None
         assert result["id"] == source_id
 
     def test_get_nonexistent_source(self):
         """Should return None for nonexistent source."""
-        result = gs._get_source("NONEXISTENT999")
+        result = _get_source("NONEXISTENT999")
         assert result is None
 
     def test_handles_at_symbols(self):
         """Should handle IDs with @ symbols."""
-        source_id = next(iter(gs.sources.keys()))
-        result = gs._get_source(f"@{source_id}@")
+        source_id = next(iter(sources.keys()))
+        result = _get_source(f"@{source_id}@")
         assert result is not None
 
 
@@ -109,22 +111,22 @@ class TestSearchSources:
 
     def test_search_returns_list(self):
         """Should return a list."""
-        result = gs._search_sources("a")
+        result = _search_sources("a")
         assert isinstance(result, list)
 
     def test_search_respects_max_results(self):
         """Should respect max_results parameter."""
-        result = gs._search_sources("a", max_results=3)
+        result = _search_sources("a", max_results=3)
         assert len(result) <= 3
 
     def test_search_is_case_insensitive(self):
         """Search should be case-insensitive."""
         # Get a source with a title
-        for source in gs.sources.values():
+        for source in sources.values():
             if source.title:
                 word = source.title.split()[0]
-                upper_results = gs._search_sources(word.upper())
-                lower_results = gs._search_sources(word.lower())
+                upper_results = _search_sources(word.upper())
+                lower_results = _search_sources(word.lower())
                 assert len(upper_results) == len(lower_results)
                 break
 
@@ -138,20 +140,20 @@ class TestSourceResource:
 
     def test_get_source_for_existing(self):
         """Should return source dict for existing source."""
-        source_id = next(iter(gs.sources.keys()))
-        result = gs._get_source(source_id)
+        source_id = next(iter(sources.keys()))
+        result = _get_source(source_id)
         assert result is not None
         assert "id" in result
 
     def test_get_source_for_nonexistent(self):
         """Should return None for missing source."""
-        result = gs._get_source("NONEXISTENT999")
+        result = _get_source("NONEXISTENT999")
         assert result is None
 
     def test_get_sources_list(self):
         """Should return list of sources."""
-        result = gs._get_sources(max_results=1000)
+        result = _get_sources(max_results=1000)
         assert isinstance(result, list)
         # Should have sources if there are any
-        if gs.sources:
+        if sources:
             assert len(result) > 0
