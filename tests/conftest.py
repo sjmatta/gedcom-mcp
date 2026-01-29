@@ -71,3 +71,40 @@ def family_with_multiple_children():
         if len(fam.children_ids) > 1:
             return fam
     pytest.skip("No family with multiple children found")
+
+
+@pytest.fixture
+def sample_source_id():
+    """Any valid source ID from the loaded data."""
+    if gs.sources:
+        return next(iter(gs.sources.keys()))
+    pytest.skip("No sources found")
+
+
+@pytest.fixture
+def individual_with_events():
+    """An individual who has events in the tree."""
+    for indi in gs.individuals.values():
+        if indi.events:
+            return indi
+    pytest.skip("No individual with events found")
+
+
+@pytest.fixture
+def individual_with_citations():
+    """An individual who has citations on their events."""
+    for indi in gs.individuals.values():
+        for event in indi.events:
+            if event.citations:
+                return indi
+    pytest.skip("No individual with citations found")
+
+
+@pytest.fixture
+def individual_with_notes():
+    """An individual who has notes on their events."""
+    for indi in gs.individuals.values():
+        for event in indi.events:
+            if event.notes:
+                return indi
+    pytest.skip("No individual with notes found")
