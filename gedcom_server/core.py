@@ -243,6 +243,87 @@ def _search_by_place(place: str, max_results: int = 50) -> list[dict]:
     return results
 
 
+def _get_surname_group(surname: str, include_spouses: bool = False) -> dict:
+    """Get all individuals with a surname plus summary statistics.
+
+    Args:
+        surname: Surname to look up (case-insensitive)
+        include_spouses: If True, also include spouses of surname group members
+
+    Returns:
+        Dict with surname, count, individuals list, and statistics
+    """
+    from .helpers import extract_year
+
+    surname_lower = surname.lower()
+    indi_ids = state.surname_index.get(surname_lower, [])
+
+    # Collect individuals
+    individuals_data: list[dict] = []
+    spouse_ids: set[str] = set()
+
+    for indi_id in indi_ids:
+        indi = state.individuals.get(indi_id)
+        if indi:
+            individuals_data.append(indi.to_summary())
+            # Collect spouse IDs if requested
+            if include_spouses:
+                for fam_id in indi.families_as_spouse:
+                    fam = state.families.get(fam_id)
+                    if fam:
+                        spouse_id = fam.wife_id if fam.husband_id == indi_id else fam.husband_id
+                        if spouse_id and spouse_id not in indi_ids:
+                            spouse_ids.add(spouse_id)
+
+    # Add spouses if requested
+    if include_spouses:
+        for spouse_id in spouse_ids:
+            spouse = state.individuals.get(spouse_id)
+            if spouse:
+                spouse_data = spouse.to_summary()
+                spouse_data["is_spouse"] = True
+                individuals_data.append(spouse_data)
+
+    # Compute statistics
+    birth_years: list[int] = []
+    places: list[str] = []
+
+    for indi_id in indi_ids:
+        indi = state.individuals.get(indi_id)
+        if indi:
+            if indi.birth_date:
+                year = extract_year(indi.birth_date)
+                if year:
+                    birth_years.append(year)
+            if indi.birth_place:
+                places.append(indi.birth_place)
+
+    # Count common places
+    place_counts: dict[str, int] = {}
+    for place in places:
+        place_counts[place] = place_counts.get(place, 0) + 1
+    common_places = sorted(place_counts.items(), key=lambda x: -x[1])[:5]
+
+    # Estimate generation count from birth year spread
+    if birth_years:
+        year_span = max(birth_years) - min(birth_years)
+        generation_count = max(1, year_span // 25 + 1)
+    else:
+        generation_count = 0
+
+    return {
+        "surname": surname,
+        "count": len(indi_ids),
+        "individuals": individuals_data,
+        "statistics": {
+            "earliest_birth": min(birth_years) if birth_years else None,
+            "latest_birth": max(birth_years) if birth_years else None,
+            "common_places": [{"place": p, "count": c} for p, c in common_places],
+            "generation_count": generation_count,
+        },
+    }
+
+
 def _get_statistics() -> dict:
     # Calculate date ranges
     birth_years = list(state.birth_year_index.keys())
@@ -539,6 +620,188 @@ def _ordinal(n: int) -> str:
         10: "tenth",
     }
     return ordinals.get(n, f"{n}th")
+
+
+def _get_relationship_matrix(individual_ids: list[str]) -> dict:
+    """Calculate all pairwise relationships for a group of individuals.
+
+    Efficiently computes N×(N-1)/2 relationships by building ancestor sets once
+    and reusing them for all comparisons.
+
+    Args:
+        individual_ids: List of GEDCOM IDs to calculate relationships between
+
+    Returns:
+        Dict with individuals list and relationships matrix
+    """
+    # Normalize IDs and validate
+    normalized_ids: list[str] = []
+    individuals_info: list[dict] = []
+
+    for id_str in individual_ids:
+        lookup_id = _normalize_lookup_id(id_str)
+        indi = state.individuals.get(lookup_id)
+        if indi:
+            normalized_ids.append(lookup_id)
+            individuals_info.append({"id": lookup_id, "name": indi.full_name()})
+
+    # Build ancestor sets for all individuals once
+    ancestor_cache: dict[str, dict[str, list[int]]] = {}
+    for indi_id in normalized_ids:
+        ancestor_cache[indi_id] = _build_ancestor_set(indi_id, max_generations=10)
+
+    # Calculate pairwise relationships
+    relationships: list[dict] = []
+    for i, id1 in enumerate(normalized_ids):
+        for id2 in normalized_ids[i + 1 :]:
+            rel_info = _get_relationship_with_cache(id1, id2, ancestor_cache)
+            relationships.append(
+                {
+                    "id1": id1,
+                    "id2": id2,
+                    "relationship": rel_info.get("relationship"),
+                }
+            )
+
+    return {
+        "individuals": individuals_info,
+        "relationships": relationships,
+        "pair_count": len(relationships),
+    }
+
+
+def _get_relationship_with_cache(
+    id1: str, id2: str, ancestor_cache: dict[str, dict[str, list[int]]]
+) -> dict:
+    """Calculate relationship using pre-computed ancestor cache.
+
+    This is an optimized version of _get_relationship that uses cached ancestor sets.
+    """
+    indi1 = state.individuals.get(id1)
+    indi2 = state.individuals.get(id2)
+
+    base_result = {
+        "individual_1": {"id": id1, "name": indi1.full_name() if indi1 else None},
+        "individual_2": {"id": id2, "name": indi2.full_name() if indi2 else None},
+    }
+
+    if not indi1 or not indi2:
+        return {**base_result, "relationship": None}
+
+    # Check identity
+    if id1 == id2:
+        return {**base_result, "relationship": "same person"}
+
+    # Check direct parent/child
+    if indi1.family_as_child:
+        fam = state.families.get(indi1.family_as_child)
+        if fam and id2 in (fam.husband_id, fam.wife_id):
+            return {**base_result, "relationship": "child"}
+
+    if indi2.family_as_child:
+        fam = state.families.get(indi2.family_as_child)
+        if fam and id1 in (fam.husband_id, fam.wife_id):
+            return {**base_result, "relationship": "parent"}
+
+    # Check spouse
+    for fam_id in indi1.families_as_spouse:
+        fam = state.families.get(fam_id)
+        if fam and id2 in (fam.husband_id, fam.wife_id):
+            return {**base_result, "relationship": "spouse"}
+
+    # Check sibling (full or half)
+    if indi1.family_as_child and indi2.family_as_child:
+        fam1 = state.families.get(indi1.family_as_child)
+        fam2 = state.families.get(indi2.family_as_child)
+        if fam1 and fam2:
+            if fam1.id == fam2.id:
+                return {**base_result, "relationship": "sibling"}
+            parents1 = {fam1.husband_id, fam1.wife_id} - {None}
+            parents2 = {fam2.husband_id, fam2.wife_id} - {None}
+            if parents1 & parents2:
+                return {**base_result, "relationship": "half-sibling"}
+
+    # Check grandparent/grandchild
+    if indi1.family_as_child:
+        fam = state.families.get(indi1.family_as_child)
+        if fam:
+            for parent_id in [fam.husband_id, fam.wife_id]:
+                if parent_id:
+                    parent = state.individuals.get(parent_id)
+                    if parent and parent.family_as_child:
+                        gp_fam = state.families.get(parent.family_as_child)
+                        if gp_fam and id2 in (gp_fam.husband_id, gp_fam.wife_id):
+                            return {**base_result, "relationship": "grandchild"}
+
+    if indi2.family_as_child:
+        fam = state.families.get(indi2.family_as_child)
+        if fam:
+            for parent_id in [fam.husband_id, fam.wife_id]:
+                if parent_id:
+                    parent = state.individuals.get(parent_id)
+                    if parent and parent.family_as_child:
+                        gp_fam = state.families.get(parent.family_as_child)
+                        if gp_fam and id1 in (gp_fam.husband_id, gp_fam.wife_id):
+                            return {**base_result, "relationship": "grandparent"}
+
+    # Check aunt/uncle and niece/nephew
+    if indi1.family_as_child:
+        fam = state.families.get(indi1.family_as_child)
+        if fam:
+            for parent_id in [fam.husband_id, fam.wife_id]:
+                if parent_id:
+                    parent = state.individuals.get(parent_id)
+                    if parent and parent.family_as_child:
+                        gp_fam = state.families.get(parent.family_as_child)
+                        if gp_fam and id2 in gp_fam.children_ids:
+                            return {**base_result, "relationship": "niece/nephew"}
+
+    if indi2.family_as_child:
+        fam = state.families.get(indi2.family_as_child)
+        if fam:
+            for parent_id in [fam.husband_id, fam.wife_id]:
+                if parent_id:
+                    parent = state.individuals.get(parent_id)
+                    if parent and parent.family_as_child:
+                        gp_fam = state.families.get(parent.family_as_child)
+                        if gp_fam and id1 in gp_fam.children_ids:
+                            return {**base_result, "relationship": "aunt/uncle"}
+
+    # Check cousins via cached ancestor data
+    ancestors1 = ancestor_cache.get(id1, {})
+    ancestors2 = ancestor_cache.get(id2, {})
+    common_ids = set(ancestors1.keys()) & set(ancestors2.keys())
+
+    if common_ids:
+        # Find closest common ancestor
+        closest = None
+        min_total_gen = float("inf")
+        for ancestor_id in common_ids:
+            gen1 = min(ancestors1[ancestor_id])
+            gen2 = min(ancestors2[ancestor_id])
+            total = gen1 + gen2
+            if total < min_total_gen:
+                min_total_gen = total
+                closest = (ancestor_id, gen1, gen2)
+
+        if closest:
+            _, gen1, gen2 = closest
+            cousin_degree = min(gen1, gen2) - 1
+            removal = abs(gen1 - gen2)
+
+            if cousin_degree >= 1:
+                ordinal = _ordinal(cousin_degree)
+                if removal == 0:
+                    rel = f"{ordinal} cousin"
+                elif removal == 1:
+                    rel = f"{ordinal} cousin once removed"
+                elif removal == 2:
+                    rel = f"{ordinal} cousin twice removed"
+                else:
+                    rel = f"{ordinal} cousin {removal}x removed"
+                return {**base_result, "relationship": rel}
+
+    return {**base_result, "relationship": "not related (within 10 generations)"}
 
 
 def _detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> dict:

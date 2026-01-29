@@ -153,6 +153,26 @@ def _get_family_events(family_id: str) -> list[dict]:
     return events
 
 
+def _get_events_batch(individual_ids: list[str]) -> dict[str, list[dict]]:
+    """Get events for multiple individuals in one call.
+
+    Args:
+        individual_ids: List of GEDCOM IDs to retrieve events for
+
+    Returns:
+        Dict mapping each ID → list of events (empty list if not found)
+    """
+    results: dict[str, list[dict]] = {}
+    for id_str in individual_ids:
+        lookup_id = _normalize_lookup_id(id_str)
+        indi = state.individuals.get(lookup_id)
+        if indi:
+            results[lookup_id] = [event.to_dict() for event in indi.events]
+        else:
+            results[lookup_id] = []
+    return results
+
+
 def _get_family_timeline(
     individual_ids: list[str],
     start_year: int | None = None,

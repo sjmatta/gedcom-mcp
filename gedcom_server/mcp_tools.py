@@ -12,9 +12,11 @@ from .core import (
     _get_individuals_batch,
     _get_parents,
     _get_relationship,
+    _get_relationship_matrix,
     _get_siblings,
     _get_spouses,
     _get_statistics,
+    _get_surname_group,
     _search_by_birth,
     _search_by_place,
     _search_individuals,
@@ -22,13 +24,19 @@ from .core import (
 from .events import (
     _get_citations,
     _get_events,
+    _get_events_batch,
     _get_family_events,
     _get_family_timeline,
     _get_notes,
     _get_timeline,
     _search_events,
 )
-from .narrative import _get_biography, _get_repositories, _search_narrative
+from .narrative import (
+    _get_biographies_batch,
+    _get_biography,
+    _get_repositories,
+    _search_narrative,
+)
 from .places import (
     _fuzzy_search_place,
     _geocode_place,
@@ -632,3 +640,83 @@ def register_tools(mcp):
             List of repository records with id, name, address, and url
         """
         return _get_repositories()
+
+    # ============== BULK OPERATION TOOLS ==============
+
+    @mcp.tool()
+    def get_events_batch(individual_ids: list[str]) -> dict[str, list[dict]]:
+        """
+        Get events for multiple individuals in one call.
+
+        Reduces API round-trips when you need events for a group of people
+        (e.g., all siblings, a family reunion group, DNA matches).
+
+        Args:
+            individual_ids: List of GEDCOM IDs (e.g., ["I123", "I456", "I789"])
+
+        Returns:
+            Dict mapping each ID → list of events (empty list if not found)
+        """
+        return _get_events_batch(individual_ids)
+
+    @mcp.tool()
+    def get_biographies_batch(individual_ids: list[str]) -> dict[str, dict | None]:
+        """
+        Get full biographies for multiple individuals in one call.
+
+        Each biography includes vital summary, family context with names,
+        all events with citations, and notes. This is the most comprehensive
+        bulk data retrieval tool.
+
+        Args:
+            individual_ids: List of GEDCOM IDs (e.g., ["I123", "I456", "I789"])
+
+        Returns:
+            Dict mapping each ID → full biography dict (or None if not found)
+        """
+        return _get_biographies_batch(individual_ids)
+
+    @mcp.tool()
+    def get_surname_group(surname: str, include_spouses: bool = False) -> dict:
+        """
+        Get all individuals with a surname plus summary statistics.
+
+        Returns everyone with the surname in ONE call, avoiding the need
+        to search then individually fetch each person. Also computes
+        statistics about the surname group.
+
+        Args:
+            surname: Surname to look up (case-insensitive)
+            include_spouses: If True, also include spouses who married into the surname
+
+        Returns:
+            Dict with:
+            - surname: The searched surname
+            - count: Number of individuals with this surname
+            - individuals: List of individual summaries
+            - statistics: Earliest/latest birth years, common places, generation estimate
+        """
+        return _get_surname_group(surname, include_spouses)
+
+    @mcp.tool()
+    def get_relationship_matrix(individual_ids: list[str]) -> dict:
+        """
+        Calculate all pairwise relationships for a group of individuals.
+
+        Given N people, efficiently computes all N×(N-1)/2 relationships.
+        Useful for family reunion planning, DNA match analysis, or understanding
+        how a group of people relate to each other.
+
+        Example: For 5 people, calculates 10 relationship pairs in one call
+        instead of requiring 10 separate get_relationship calls.
+
+        Args:
+            individual_ids: List of GEDCOM IDs to analyze
+
+        Returns:
+            Dict with:
+            - individuals: List of {id, name} for valid IDs
+            - relationships: List of {id1, id2, relationship} pairs
+            - pair_count: Total number of pairs calculated
+        """
+        return _get_relationship_matrix(individual_ids)

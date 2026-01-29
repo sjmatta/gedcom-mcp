@@ -118,6 +118,22 @@ def _get_biography(individual_id: str) -> dict | None:
     }
 
 
+def _get_biographies_batch(individual_ids: list[str]) -> dict[str, dict | None]:
+    """Get full biographies for multiple individuals in one call.
+
+    Args:
+        individual_ids: List of GEDCOM IDs to retrieve biographies for
+
+    Returns:
+        Dict mapping each ID → biography dict (or None if not found)
+    """
+    results: dict[str, dict | None] = {}
+    for id_str in individual_ids:
+        lookup_id = _normalize_lookup_id(id_str)
+        results[lookup_id] = _get_biography(lookup_id)
+    return results
+
+
 def _search_narrative(query: str, max_results: int = 50) -> dict:
     """Full-text search across all narrative content.
 
