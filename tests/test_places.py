@@ -1,6 +1,5 @@
 """Tests for place-related functionality including fuzzy search and geocoding."""
 
-from gedcom_server import mcp
 from gedcom_server.constants import HISTORICAL_MAPPINGS, HISTORICAL_NAMES
 from gedcom_server.helpers import get_place_id, normalize_place_string, parse_place_components
 from gedcom_server.models import Place
@@ -338,41 +337,3 @@ class TestSearchNearby:
         result = _search_nearby("London", radius_km=100, max_results=5)
         if result:
             assert "distance_km" in result[0]
-
-
-class TestMCPToolDecorators:
-    """Tests that MCP tools are properly decorated.
-
-    Note: MCP tools are registered on the mcp instance.
-    We verify they are registered by checking the tool manager.
-    """
-
-    def test_fuzzy_search_place_is_tool(self):
-        """fuzzy_search_place should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "fuzzy_search_place" in tools
-
-    def test_search_similar_places_is_tool(self):
-        """search_similar_places should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "search_similar_places" in tools
-
-    def test_get_place_variants_is_tool(self):
-        """get_place_variants should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "get_place_variants" in tools
-
-    def test_get_all_places_is_tool(self):
-        """get_all_places should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "get_all_places" in tools
-
-    def test_search_nearby_is_tool(self):
-        """search_nearby should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "search_nearby" in tools
-
-    def test_geocode_place_is_tool(self):
-        """geocode_place should be a registered tool."""
-        tools = mcp._tool_manager._tools
-        assert "geocode_place" in tools

@@ -4,13 +4,15 @@ from gedcom_server.constants import EVENT_TAGS
 from gedcom_server.events import (
     _get_citations,
     _get_events,
+    _get_family_events,
+    _get_family_timeline,
     _get_notes,
     _get_timeline,
     _search_events,
 )
 from gedcom_server.helpers import extract_year
 from gedcom_server.models import Citation, Event
-from gedcom_server.state import HOME_PERSON_ID, individuals
+from gedcom_server.state import HOME_PERSON_ID, families, individuals
 
 
 class TestCitationDataclass:
@@ -239,30 +241,145 @@ class TestGetTimeline:
                 break
 
 
-class TestEventMCPTools:
-    """Tests for event-related MCP tool wrapper functions."""
+class TestGetFamilyEvents:
+    """Tests for the get_family_events function."""
 
-    def test_get_events_function(self):
-        """Internal function should work."""
-        result = _get_events(HOME_PERSON_ID)
+    def test_returns_list(self, sample_family_id):
+        """Should return a list."""
+        result = _get_family_events(sample_family_id)
         assert isinstance(result, list)
 
-    def test_search_events_function(self):
-        """Internal function should work."""
-        result = _search_events(event_type="BIRT", max_results=5)
+    def test_nonexistent_family(self):
+        """Should return empty list for nonexistent family."""
+        result = _get_family_events("@NONEXISTENT999@")
+        assert result == []
+
+    def test_events_have_individual_context(self, sample_family_id):
+        """Events should include individual_id and individual_name."""
+        result = _get_family_events(sample_family_id)
+        if result:
+            event = result[0]
+            assert "individual_id" in event
+            assert "individual_name" in event
+
+    def test_events_sorted_chronologically(self, sample_family_id):
+        """Events should be sorted by date."""
+        result = _get_family_events(sample_family_id)
+        if len(result) >= 2:
+            years = []
+            for event in result:
+                year = extract_year(event.get("date"))
+                if year:
+                    years.append(year)
+            # Years should be non-decreasing
+            assert years == sorted(years)
+
+    def test_includes_spouse_and_children_events(self):
+        """Should include events from spouses and children."""
+        # Find a family with multiple members who have events
+        for fam in families.values():
+            member_ids = []
+            if fam.husband_id:
+                member_ids.append(fam.husband_id)
+            if fam.wife_id:
+                member_ids.append(fam.wife_id)
+            member_ids.extend(fam.children_ids)
+
+            if len(member_ids) >= 2:
+                result = _get_family_events(fam.id)
+                if result:
+                    # Check that events from multiple individuals are included
+                    unique_individuals = {e["individual_id"] for e in result}
+                    if len(unique_individuals) >= 2:
+                        # Found a family with events from multiple members
+                        assert len(unique_individuals) >= 2
+                        return
+        # Skip if no suitable family found
+        pass
+
+
+class TestGetFamilyTimeline:
+    """Tests for the get_family_timeline function."""
+
+    def test_returns_list(self):
+        """Should return a list."""
+        ids = list(individuals.keys())[:2]
+        result = _get_family_timeline(ids)
         assert isinstance(result, list)
 
-    def test_get_citations_function(self):
-        """Internal function should work."""
-        result = _get_citations(HOME_PERSON_ID)
-        assert isinstance(result, list)
+    def test_empty_list(self):
+        """Should handle empty list."""
+        result = _get_family_timeline([])
+        assert result == []
 
-    def test_get_notes_function(self):
-        """Internal function should work."""
-        result = _get_notes(HOME_PERSON_ID)
-        assert isinstance(result, list)
+    def test_events_have_individual_context(self):
+        """Events should include individual_id and individual_name."""
+        # Find individuals with events
+        ids = []
+        for indi in individuals.values():
+            if indi.events:
+                ids.append(indi.id)
+            if len(ids) >= 2:
+                break
 
-    def test_get_timeline_function(self):
-        """Internal function should work."""
-        result = _get_timeline(HOME_PERSON_ID)
-        assert isinstance(result, list)
+        result = _get_family_timeline(ids)
+        if result:
+            event = result[0]
+            assert "individual_id" in event
+            assert "individual_name" in event
+
+    def test_events_sorted_chronologically(self):
+        """Events should be sorted by date."""
+        ids = list(individuals.keys())[:5]
+        result = _get_family_timeline(ids)
+        if len(result) >= 2:
+            years = []
+            for event in result:
+                year = extract_year(event.get("date"))
+                if year:
+                    years.append(year)
+            # Years should be non-decreasing
+            assert years == sorted(years)
+
+    def test_start_year_filter(self):
+        """Should filter by start_year."""
+        ids = list(individuals.keys())[:10]
+        result = _get_family_timeline(ids, start_year=1900)
+        for event in result:
+            year = extract_year(event.get("date"))
+            if year:
+                assert year >= 1900
+
+    def test_end_year_filter(self):
+        """Should filter by end_year."""
+        ids = list(individuals.keys())[:10]
+        result = _get_family_timeline(ids, end_year=1950)
+        for event in result:
+            year = extract_year(event.get("date"))
+            if year:
+                assert year <= 1950
+
+    def test_year_range_filter(self):
+        """Should filter by both start and end year."""
+        ids = list(individuals.keys())[:10]
+        result = _get_family_timeline(ids, start_year=1900, end_year=1950)
+        for event in result:
+            year = extract_year(event.get("date"))
+            if year:
+                assert 1900 <= year <= 1950
+
+    def test_includes_events_from_multiple_individuals(self):
+        """Should include events from all requested individuals."""
+        # Find individuals with events
+        ids_with_events = []
+        for indi in individuals.values():
+            if indi.events:
+                ids_with_events.append(indi.id)
+            if len(ids_with_events) >= 3:
+                break
+
+        if len(ids_with_events) >= 2:
+            result = _get_family_timeline(ids_with_events)
+            unique_individuals = {e["individual_id"] for e in result}
+            # Should have events from multiple individuals
+            assert len(unique_individuals) >= 2

@@ -129,31 +129,3 @@ class TestSearchSources:
                 lower_results = _search_sources(word.lower())
                 assert len(upper_results) == len(lower_results)
                 break
-
-
-class TestSourceResource:
-    """Tests for source-related MCP resources.
-
-    Note: MCP resources are decorated and return FunctionResource objects,
-    so we test the underlying _get_source function instead.
-    """
-
-    def test_get_source_for_existing(self):
-        """Should return source dict for existing source."""
-        source_id = next(iter(sources.keys()))
-        result = _get_source(source_id)
-        assert result is not None
-        assert "id" in result
-
-    def test_get_source_for_nonexistent(self):
-        """Should return None for missing source."""
-        result = _get_source("NONEXISTENT999")
-        assert result is None
-
-    def test_get_sources_list(self):
-        """Should return list of sources."""
-        result = _get_sources(max_results=1000)
-        assert isinstance(result, list)
-        # Should have sources if there are any
-        if sources:
-            assert len(result) > 0

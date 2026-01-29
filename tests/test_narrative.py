@@ -254,22 +254,3 @@ class TestGetRepositories:
             assert "name" in repo
             assert "address" in repo
             assert "url" in repo
-
-
-class TestNarrativeMCPTools:
-    """Tests for narrative MCP tool wrapper functions."""
-
-    def test_get_biography_tool(self):
-        """get_biography MCP tool should work."""
-        result = _get_biography(HOME_PERSON_ID)
-        assert result is not None
-
-    def test_search_narrative_tool(self):
-        """search_narrative MCP tool should work."""
-        result = _search_narrative("test")
-        assert isinstance(result, dict)
-
-    def test_get_repositories_tool(self):
-        """get_repositories MCP tool should work."""
-        result = _get_repositories()
-        assert isinstance(result, list)

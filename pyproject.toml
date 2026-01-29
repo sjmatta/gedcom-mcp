@@ -17,7 +17,7 @@ serve = "python gedcom_server.py"
 test = "pytest tests/ -v"
 lint = "ruff check ."
 format = "ruff format ."
-typecheck = "mypy gedcom_server.py"
+typecheck = "mypy gedcom_server"
 deps = "deptry ."
 check = ["lint", "typecheck", "test"]
 

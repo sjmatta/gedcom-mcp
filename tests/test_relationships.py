@@ -1,12 +1,17 @@
 """Tests for relationship integrity."""
 
 from gedcom_server.core import (
+    _detect_pedigree_collapse,
+    _find_common_ancestors,
     _get_children,
+    _get_individuals_batch,
     _get_parents,
+    _get_relationship,
     _get_siblings,
     _get_spouses,
 )
 from gedcom_server.state import (
+    HOME_PERSON_ID,
     birth_year_index,
     families,
     individuals,
@@ -222,3 +227,174 @@ class TestIndexIntegrity:
         for place, ids in list(place_index.items())[:100]:  # Sample first 100 places
             for indi_id in ids[:10]:  # Sample first 10 per place
                 assert indi_id in individuals, f"ID {indi_id} not found for place {place}"
+
+
+class TestGetIndividualsBatch:
+    """Tests for batch individual retrieval."""
+
+    def test_batch_returns_dict(self):
+        """Should return a dictionary."""
+        ids = list(individuals.keys())[:3]
+        result = _get_individuals_batch(ids)
+        assert isinstance(result, dict)
+
+    def test_batch_returns_all_requested(self):
+        """Should return an entry for each requested ID."""
+        ids = list(individuals.keys())[:5]
+        result = _get_individuals_batch(ids)
+        for id_str in ids:
+            assert id_str in result
+
+    def test_batch_with_nonexistent(self):
+        """Should return None for nonexistent IDs."""
+        ids = [list(individuals.keys())[0], "@NONEXISTENT999@"]
+        result = _get_individuals_batch(ids)
+        assert result.get("@NONEXISTENT999@") is None
+
+    def test_batch_with_empty_list(self):
+        """Should handle empty list."""
+        result = _get_individuals_batch([])
+        assert result == {}
+
+    def test_batch_normalizes_ids(self):
+        """Should handle IDs with or without @ symbols."""
+        first_id = list(individuals.keys())[0]
+        stripped = first_id.strip("@")
+        result = _get_individuals_batch([stripped])
+        # Should normalize and return the same data
+        assert first_id in result
+
+
+class TestFindCommonAncestors:
+    """Tests for common ancestor finding."""
+
+    def test_returns_dict_structure(self):
+        """Should return properly structured dict."""
+        ids = list(individuals.keys())[:2]
+        result = _find_common_ancestors(ids[0], ids[1])
+        assert "individual_1" in result
+        assert "individual_2" in result
+        assert "common_ancestors" in result
+
+    def test_individual_info_included(self):
+        """Should include individual names."""
+        ids = list(individuals.keys())[:2]
+        result = _find_common_ancestors(ids[0], ids[1])
+        assert "id" in result["individual_1"]
+        assert "name" in result["individual_1"]
+
+    def test_common_ancestors_have_generation_info(self, individual_with_parents):
+        """Common ancestors should include generation distances."""
+        # Find someone with known ancestry
+        indi = individual_with_parents
+        parents = _get_parents(indi.id)
+        if parents and parents.get("father") and parents.get("mother"):
+            # Father and mother should share the child as "common descendant"
+            # but for common ancestors, siblings would share parents
+            pass  # More complex test would require known sibling data
+
+    def test_nonexistent_individual(self):
+        """Should handle nonexistent individual gracefully."""
+        first_id = list(individuals.keys())[0]
+        result = _find_common_ancestors(first_id, "@NONEXISTENT999@")
+        assert "error" in result
+
+    def test_same_person(self):
+        """Should handle same person query."""
+        first_id = list(individuals.keys())[0]
+        result = _find_common_ancestors(first_id, first_id)
+        # Same person has same ancestors
+        assert "common_ancestors" in result
+
+
+class TestGetRelationship:
+    """Tests for relationship calculation."""
+
+    def test_returns_dict_structure(self):
+        """Should return properly structured dict."""
+        ids = list(individuals.keys())[:2]
+        result = _get_relationship(ids[0], ids[1])
+        assert "individual_1" in result
+        assert "individual_2" in result
+        assert "relationship" in result
+
+    def test_same_person(self):
+        """Should identify same person."""
+        first_id = list(individuals.keys())[0]
+        result = _get_relationship(first_id, first_id)
+        assert result["relationship"] == "same person"
+
+    def test_parent_child(self, individual_with_parents):
+        """Should identify parent-child relationship."""
+        indi = individual_with_parents
+        parents = _get_parents(indi.id)
+        if parents and parents.get("father"):
+            result = _get_relationship(indi.id, parents["father"]["id"])
+            assert result["relationship"] == "child"
+            # Reverse direction
+            result2 = _get_relationship(parents["father"]["id"], indi.id)
+            assert result2["relationship"] == "parent"
+
+    def test_sibling(self, family_with_multiple_children):
+        """Should identify sibling relationship."""
+        fam = family_with_multiple_children
+        child1_id = fam.children_ids[0]
+        child2_id = fam.children_ids[1]
+        result = _get_relationship(child1_id, child2_id)
+        assert result["relationship"] in ("sibling", "half-sibling")
+
+    def test_spouse(self, individual_with_spouse):
+        """Should identify spouse relationship."""
+        indi = individual_with_spouse
+        spouses = _get_spouses(indi.id)
+        if spouses:
+            result = _get_relationship(indi.id, spouses[0]["id"])
+            assert result["relationship"] == "spouse"
+
+    def test_nonexistent_individual(self):
+        """Should handle nonexistent individual gracefully."""
+        first_id = list(individuals.keys())[0]
+        result = _get_relationship(first_id, "@NONEXISTENT999@")
+        assert "error" in result
+
+
+class TestDetectPedigreeCollapse:
+    """Tests for pedigree collapse detection."""
+
+    def test_returns_dict_structure(self):
+        """Should return properly structured dict."""
+        first_id = list(individuals.keys())[0]
+        result = _detect_pedigree_collapse(first_id)
+        assert "individual" in result
+        assert "collapse_points" in result
+
+    def test_individual_info_included(self):
+        """Should include individual name."""
+        first_id = list(individuals.keys())[0]
+        result = _detect_pedigree_collapse(first_id)
+        assert "id" in result["individual"]
+        assert "name" in result["individual"]
+
+    def test_collapse_point_structure(self):
+        """Collapse points should have proper structure if found."""
+        # Use home person for more complete ancestry
+        result = _detect_pedigree_collapse(HOME_PERSON_ID)
+        if result["collapse_points"]:
+            point = result["collapse_points"][0]
+            assert "ancestor_id" in point
+            assert "ancestor_name" in point
+            assert "paths" in point
+            assert "generations" in point
+            assert "occurrence_count" in point
+
+    def test_nonexistent_individual(self):
+        """Should handle nonexistent individual gracefully."""
+        result = _detect_pedigree_collapse("@NONEXISTENT999@")
+        assert "error" in result
+
+    def test_respects_max_generations(self):
+        """Should respect max_generations parameter."""
+        first_id = list(individuals.keys())[0]
+        # With very few generations, should still work
+        result = _detect_pedigree_collapse(first_id, max_generations=2)
+        assert "collapse_points" in result

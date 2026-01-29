@@ -108,3 +108,90 @@ def _get_timeline(individual_id: str) -> list[dict]:
 
     sorted_events = sorted(indi.events, key=sort_key)
     return [event.to_dict() for event in sorted_events]
+
+
+def _get_family_events(family_id: str) -> list[dict]:
+    """Get all events for an entire family unit (spouses + children).
+
+    Args:
+        family_id: GEDCOM family ID (e.g., "F123" or "@F123@")
+
+    Returns:
+        List of events with individual context, sorted chronologically
+    """
+    lookup_id = _normalize_lookup_id(family_id)
+    fam = state.families.get(lookup_id)
+    if not fam:
+        return []
+
+    events = []
+
+    # Collect all family member IDs
+    member_ids = []
+    if fam.husband_id:
+        member_ids.append(fam.husband_id)
+    if fam.wife_id:
+        member_ids.append(fam.wife_id)
+    member_ids.extend(fam.children_ids)
+
+    # Collect events from all members
+    for member_id in member_ids:
+        indi = state.individuals.get(member_id)
+        if indi:
+            for event in indi.events:
+                event_dict = event.to_dict()
+                event_dict["individual_id"] = indi.id
+                event_dict["individual_name"] = indi.full_name()
+                events.append(event_dict)
+
+    # Sort by date
+    def sort_key(e: dict) -> tuple[int, str]:
+        year = extract_year(e.get("date"))
+        return (year if year else 9999, e.get("date") or "")
+
+    events.sort(key=sort_key)
+    return events
+
+
+def _get_family_timeline(
+    individual_ids: list[str],
+    start_year: int | None = None,
+    end_year: int | None = None,
+) -> list[dict]:
+    """Create merged timeline across multiple individuals.
+
+    Args:
+        individual_ids: List of GEDCOM IDs to include
+        start_year: Optional filter for earliest year
+        end_year: Optional filter for latest year
+
+    Returns:
+        List of events with individual context, sorted chronologically
+    """
+    events = []
+
+    for id_str in individual_ids:
+        lookup_id = _normalize_lookup_id(id_str)
+        indi = state.individuals.get(lookup_id)
+        if indi:
+            for event in indi.events:
+                event_year = extract_year(event.date)
+
+                # Apply year filters
+                if start_year and event_year and event_year < start_year:
+                    continue
+                if end_year and event_year and event_year > end_year:
+                    continue
+
+                event_dict = event.to_dict()
+                event_dict["individual_id"] = indi.id
+                event_dict["individual_name"] = indi.full_name()
+                events.append(event_dict)
+
+    # Sort by date
+    def sort_key(e: dict) -> tuple[int, str]:
+        year = extract_year(e.get("date"))
+        return (year if year else 9999, e.get("date") or "")
+
+    events.sort(key=sort_key)
+    return events

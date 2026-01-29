@@ -1,13 +1,17 @@
 """MCP tool definitions for the GEDCOM genealogy server."""
 
 from .core import (
+    _detect_pedigree_collapse,
+    _find_common_ancestors,
     _get_ancestors,
     _get_children,
     _get_descendants,
     _get_family,
     _get_home_person,
     _get_individual,
+    _get_individuals_batch,
     _get_parents,
+    _get_relationship,
     _get_siblings,
     _get_spouses,
     _get_statistics,
@@ -15,7 +19,15 @@ from .core import (
     _search_by_place,
     _search_individuals,
 )
-from .events import _get_citations, _get_events, _get_notes, _get_timeline, _search_events
+from .events import (
+    _get_citations,
+    _get_events,
+    _get_family_events,
+    _get_family_timeline,
+    _get_notes,
+    _get_timeline,
+    _search_events,
+)
 from .narrative import _get_biography, _get_repositories, _search_narrative
 from .places import (
     _fuzzy_search_place,
@@ -163,6 +175,80 @@ def register_tools(mcp):
             Nested dictionary representing the descendant tree
         """
         return _get_descendants(individual_id, generations)
+
+    # ============== RELATIONSHIP ANALYSIS TOOLS ==============
+
+    @mcp.tool()
+    def get_individuals_batch(individual_ids: list[str]) -> dict[str, dict | None]:
+        """
+        Get multiple individuals efficiently in one call.
+
+        Useful for batch operations when you need data for many individuals at once.
+
+        Args:
+            individual_ids: List of GEDCOM IDs to retrieve (e.g., ["I123", "I456"])
+
+        Returns:
+            Dict mapping each ID to its individual data (or None if not found)
+        """
+        return _get_individuals_batch(individual_ids)
+
+    @mcp.tool()
+    def find_common_ancestors(id1: str, id2: str, max_generations: int = 10) -> dict:
+        """
+        Find common ancestors between two individuals.
+
+        Useful for determining "how are these two people related?" by finding
+        shared ancestry points.
+
+        Args:
+            id1: GEDCOM ID of first individual
+            id2: GEDCOM ID of second individual
+            max_generations: Max generations to search (default 10)
+
+        Returns:
+            Dict with both individuals' info and list of common ancestors,
+            each showing generation distance from both sides
+        """
+        return _find_common_ancestors(id1, id2, max_generations)
+
+    @mcp.tool()
+    def get_relationship(id1: str, id2: str) -> dict:
+        """
+        Calculate and name the relationship between two individuals.
+
+        Returns relationships like: parent, child, sibling, half-sibling, spouse,
+        grandparent, grandchild, aunt/uncle, niece/nephew, first cousin,
+        second cousin once removed, etc.
+
+        Args:
+            id1: GEDCOM ID of first individual
+            id2: GEDCOM ID of second individual
+
+        Returns:
+            Dict with both individuals' info, relationship name, and
+            common ancestor info for cousin relationships
+        """
+        return _get_relationship(id1, id2)
+
+    @mcp.tool()
+    def detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> dict:
+        """
+        Detect pedigree collapse (ancestors appearing multiple times).
+
+        Pedigree collapse occurs when ancestors appear multiple times in a family
+        tree, typically due to cousin marriages or other intermarriage within
+        a community.
+
+        Args:
+            individual_id: GEDCOM ID of the individual
+            max_generations: Max generations to search (default 10)
+
+        Returns:
+            Dict with individual info and list of collapse points showing
+            which ancestors appear multiple times and through which paths
+        """
+        return _detect_pedigree_collapse(individual_id, max_generations)
 
     @mcp.tool()
     def search_by_birth(
@@ -447,6 +533,45 @@ def register_tools(mcp):
             List of events sorted by date (earliest first)
         """
         return _get_timeline(individual_id)
+
+    @mcp.tool()
+    def get_family_events(family_id: str) -> list[dict]:
+        """
+        Get all events for an entire family unit (spouses + children).
+
+        Returns a chronological timeline of all events for the husband, wife,
+        and all children in the family. Useful for seeing how a family's
+        lives unfolded together.
+
+        Args:
+            family_id: GEDCOM family ID (e.g., "F123" or "@F123@")
+
+        Returns:
+            List of events with individual context, sorted chronologically
+        """
+        return _get_family_events(family_id)
+
+    @mcp.tool()
+    def get_family_timeline(
+        individual_ids: list[str],
+        start_year: int | None = None,
+        end_year: int | None = None,
+    ) -> list[dict]:
+        """
+        Create merged timeline across multiple individuals.
+
+        Useful for seeing how multiple people's lives overlapped and intersected.
+        For example, see events for all siblings, or grandparents and grandchildren.
+
+        Args:
+            individual_ids: List of GEDCOM IDs to include
+            start_year: Optional filter for earliest year
+            end_year: Optional filter for latest year
+
+        Returns:
+            List of events with individual context, sorted chronologically
+        """
+        return _get_family_timeline(individual_ids, start_year, end_year)
 
     # ============== NARRATIVE TOOLS ==============
 

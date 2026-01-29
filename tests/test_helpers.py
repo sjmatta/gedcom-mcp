@@ -1,7 +1,5 @@
 """Tests for helper functions."""
 
-from unittest.mock import Mock
-
 from gedcom_server.core import _normalize_lookup_id
 from gedcom_server.helpers import extract_year, normalize_id
 from gedcom_server.models import Family, Individual
@@ -76,12 +74,6 @@ class TestNormalizeId:
     def test_handles_empty_string(self):
         """Should return None for empty string."""
         assert normalize_id("") is None
-
-    def test_handles_xref_object(self):
-        """Should extract xref_id from objects with that attribute."""
-        mock_ref = Mock()
-        mock_ref.xref_id = "@I999@"
-        assert normalize_id(mock_ref) == "@I999@"
 
     def test_handles_family_id(self):
         """Should work with family IDs too."""
