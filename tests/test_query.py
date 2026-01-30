@@ -1,245 +1,244 @@
-"""Tests for the natural language query tool."""
+"""Tests for the natural language query tool using Strands Agents SDK."""
 
 from unittest.mock import MagicMock, patch
 
 from gedcom_server.query import (
-    TOOL_DEFINITIONS,
-    TOOL_FUNCTIONS,
-    _execute_tool,
-    _extract_text_response,
+    SYSTEM_PROMPT,
+    TOOLS,
+    _create_agent,
     _query,
+    _query_sync,
+    _query_with_callback,
 )
 
 
 class TestToolDefinitions:
-    """Test that tool definitions are properly configured."""
+    """Test that tools are properly configured."""
 
-    def test_all_tools_have_definitions(self):
-        """Every tool function should have a corresponding definition."""
-        defined_tools = {t["function"]["name"] for t in TOOL_DEFINITIONS}
-        function_tools = set(TOOL_FUNCTIONS.keys())
-        assert defined_tools == function_tools
+    def test_all_required_tools_present(self):
+        """All required genealogy tools should be available."""
+        tool_names = {t.tool_name for t in TOOLS}
+        expected_tools = {
+            "get_home_person",
+            "get_biography",
+            "get_ancestors",
+            "get_descendants",
+            "get_relationship",
+            "get_surname_group",
+            "search_individuals",
+            "get_statistics",
+        }
+        assert tool_names == expected_tools
 
-    def test_tool_definitions_have_required_fields(self):
-        """Each tool definition should have the required OpenAI format fields."""
-        for tool_def in TOOL_DEFINITIONS:
-            assert tool_def["type"] == "function"
-            assert "function" in tool_def
-            func = tool_def["function"]
-            assert "name" in func
-            assert "description" in func
-            assert "parameters" in func
+    def test_tools_are_callable(self):
+        """Each tool should be callable."""
+        for tool in TOOLS:
+            assert callable(tool)
 
 
-class TestExecuteTool:
-    """Test the tool execution wrapper."""
+class TestSystemPrompt:
+    """Test system prompt configuration."""
 
-    def test_execute_known_tool(self):
-        """Known tools should execute successfully."""
-        result = _execute_tool("get_statistics", {})
+    def test_system_prompt_mentions_home_person(self):
+        """System prompt should instruct to call get_home_person first."""
+        assert "get_home_person" in SYSTEM_PROMPT
+        assert "ALWAYS" in SYSTEM_PROMPT
+
+    def test_system_prompt_has_tool_guidance(self):
+        """System prompt should provide guidance for each tool."""
+        for tool_name in ["get_biography", "get_ancestors", "get_descendants", "get_relationship"]:
+            assert tool_name in SYSTEM_PROMPT
+
+
+class TestCreateAgent:
+    """Test agent creation."""
+
+    @patch("gedcom_server.query.AnthropicModel")
+    @patch("gedcom_server.query.Agent")
+    def test_creates_agent_with_correct_config(self, mock_agent_class, mock_model_class):
+        """Agent should be created with correct model and tools."""
+        mock_model = MagicMock()
+        mock_model_class.return_value = mock_model
+
+        _create_agent()
+
+        mock_model_class.assert_called_once()
+        mock_agent_class.assert_called_once()
+        call_kwargs = mock_agent_class.call_args[1]
+        assert call_kwargs["model"] == mock_model
+        assert call_kwargs["tools"] == TOOLS
+        assert call_kwargs["system_prompt"] == SYSTEM_PROMPT
+
+    @patch("gedcom_server.query.AnthropicModel")
+    @patch("gedcom_server.query.Agent")
+    def test_creates_agent_with_custom_callback(self, mock_agent_class, mock_model_class):
+        """Agent should accept custom callback handler."""
+        mock_callback = MagicMock()
+
+        _create_agent(callback_handler=mock_callback)
+
+        call_kwargs = mock_agent_class.call_args[1]
+        assert call_kwargs["callback_handler"] == mock_callback
+
+    @patch.dict("os.environ", {"GEDCOM_QUERY_MODEL": "claude-opus-4-20250514"})
+    @patch("gedcom_server.query.AnthropicModel")
+    @patch("gedcom_server.query.Agent")
+    def test_uses_env_model(self, mock_agent_class, mock_model_class):
+        """GEDCOM_QUERY_MODEL env var should be respected."""
+        _create_agent()
+
+        call_kwargs = mock_model_class.call_args[1]
+        assert call_kwargs["model_id"] == "claude-opus-4-20250514"
+
+
+class TestQuerySync:
+    """Test the synchronous query function."""
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_sync_returns_string(self, mock_create_agent):
+        """Sync query should return text from agent result."""
+        # Message is a TypedDict with content as a list of ContentBlock dicts
+        mock_result = MagicMock()
+        mock_result.message = {
+            "role": "assistant",
+            "content": [{"text": "The answer is 42."}],
+        }
+
+        mock_agent = MagicMock()
+        mock_agent.return_value = mock_result
+        mock_create_agent.return_value = mock_agent
+
+        result = _query_sync("What is the meaning of life?")
+
+        assert result == "The answer is 42."
+        mock_agent.assert_called_once_with("What is the meaning of life?")
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_sync_concatenates_multiple_blocks(self, mock_create_agent):
+        """Sync query should concatenate multiple text blocks."""
+        mock_result = MagicMock()
+        mock_result.message = {
+            "role": "assistant",
+            "content": [{"text": "Hello "}, {"text": "world!"}],
+        }
+
+        mock_agent = MagicMock()
+        mock_agent.return_value = mock_result
+        mock_create_agent.return_value = mock_agent
+
+        result = _query_sync("Test question")
+
+        assert result == "Hello world!"
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_sync_handles_empty_message(self, mock_create_agent):
+        """Sync query should handle empty message gracefully."""
+        mock_result = MagicMock()
+        mock_result.message = None
+
+        mock_agent = MagicMock()
+        mock_agent.return_value = mock_result
+        mock_create_agent.return_value = mock_agent
+
+        result = _query_sync("Test question")
+
+        assert result == "Unable to generate a response."
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_sync_handles_empty_content(self, mock_create_agent):
+        """Sync query should handle empty content gracefully."""
+        mock_result = MagicMock()
+        mock_result.message = {"role": "assistant", "content": []}
+
+        mock_agent = MagicMock()
+        mock_agent.return_value = mock_result
+        mock_create_agent.return_value = mock_agent
+
+        result = _query_sync("Test question")
+
+        # Empty content list is treated as no response
+        assert result == "Unable to generate a response."
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_sync_skips_non_text_blocks(self, mock_create_agent):
+        """Sync query should skip blocks without text key."""
+        # ContentBlocks can be tool_use blocks without text
+        mock_result = MagicMock()
+        mock_result.message = {
+            "role": "assistant",
+            "content": [
+                {"toolUse": {"toolUseId": "123", "name": "test"}},  # No text
+                {"text": "Text content"},
+            ],
+        }
+
+        mock_agent = MagicMock()
+        mock_agent.return_value = mock_result
+        mock_create_agent.return_value = mock_agent
+
+        result = _query_sync("Test question")
+
+        assert result == "Text content"
+
+
+class TestQueryWithCallback:
+    """Test the callback-based streaming query function."""
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_with_callback_yields_chunks(self, mock_create_agent):
+        """Callback query should yield chunks from callback."""
+
+        def capture_callback_handler(callback_handler):
+            # Simulate the agent calling the callback
+            callback_handler(data="Hello ")
+            callback_handler(data="world!")
+            return MagicMock()
+
+        mock_create_agent.side_effect = capture_callback_handler
+
+        chunks = list(_query_with_callback("Test question"))
+
+        assert chunks == ["Hello ", "world!"]
+
+    @patch("gedcom_server.query._create_agent")
+    def test_query_with_callback_ignores_non_data_events(self, mock_create_agent):
+        """Callback query should ignore events without data."""
+
+        def capture_callback_handler(callback_handler):
+            callback_handler(complete=True)  # No 'data' key
+            callback_handler(data="Content")
+            callback_handler(tool_use={"name": "test"})  # No 'data' key
+            return MagicMock()
+
+        mock_create_agent.side_effect = capture_callback_handler
+
+        chunks = list(_query_with_callback("Test question"))
+
+        assert chunks == ["Content"]
+
+
+class TestQueryAlias:
+    """Test that _query is an alias for _query_sync."""
+
+    def test_query_is_sync_alias(self):
+        """_query should be the same function as _query_sync."""
+        assert _query is _query_sync
+
+
+class TestToolExecution:
+    """Test that wrapped tools can be executed."""
+
+    def test_get_statistics_tool_executes(self):
+        """get_statistics tool should execute and return data."""
+        from gedcom_server.query import get_statistics
+
+        result = get_statistics()
         assert isinstance(result, dict)
         assert "total_individuals" in result
 
-    def test_execute_unknown_tool(self):
-        """Unknown tools should return an error."""
-        result = _execute_tool("nonexistent_tool", {})
-        assert "error" in result
-        assert "Unknown tool" in result["error"]
+    def test_search_individuals_tool_executes(self):
+        """search_individuals tool should execute and return list."""
+        from gedcom_server.query import search_individuals
 
-    def test_execute_tool_with_bad_args(self):
-        """Tools with invalid arguments should return an error."""
-        result = _execute_tool("get_biography", {"individual_id": None})
-        # Should either work (returning None) or return an error dict
-        assert result is None or isinstance(result, dict)
-
-    def test_execute_search_individuals(self):
-        """Test executing search_individuals tool."""
-        result = _execute_tool("search_individuals", {"name": "Smith", "max_results": 5})
+        result = search_individuals("Smith", 5)
         assert isinstance(result, list)
-
-
-class TestExtractTextResponse:
-    """Test extracting text from LLM responses."""
-
-    def test_extract_from_valid_response(self):
-        """Should extract text from a valid response object."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = "Test response"
-
-        result = _extract_text_response(mock_response)
-        assert result == "Test response"
-
-    def test_extract_from_empty_response(self):
-        """Should return empty string for empty response."""
-        mock_response = MagicMock()
-        mock_response.choices = []
-
-        result = _extract_text_response(mock_response)
-        assert result == ""
-
-    def test_extract_from_none_content(self):
-        """Should return empty string when content is None."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = None
-
-        result = _extract_text_response(mock_response)
-        assert result == ""
-
-
-class TestQuery:
-    """Test the main query function with mocked LLM."""
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_query_simple_response(self, mock_completion):
-        """Test a simple query that doesn't need tool calls."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.choices[0].message.content = "The family tree has 100 individuals."
-        mock_response.choices[0].message.tool_calls = None
-        mock_completion.return_value = mock_response
-
-        result = _query("How many people are in the tree?")
-
-        assert result == "The family tree has 100 individuals."
-        mock_completion.assert_called_once()
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_query_with_tool_call(self, mock_completion):
-        """Test a query that requires a tool call."""
-        # First response: tool call
-        tool_call_response = MagicMock()
-        tool_call_response.choices = [MagicMock()]
-        tool_call_response.choices[0].finish_reason = "tool_calls"
-        tool_call_response.choices[0].message.content = ""
-
-        tool_call = MagicMock()
-        tool_call.id = "call_123"
-        tool_call.function.name = "get_statistics"
-        tool_call.function.arguments = "{}"
-        tool_call_response.choices[0].message.tool_calls = [tool_call]
-
-        # Second response: final answer
-        final_response = MagicMock()
-        final_response.choices = [MagicMock()]
-        final_response.choices[0].finish_reason = "stop"
-        final_response.choices[0].message.content = "There are many people in the tree."
-        final_response.choices[0].message.tool_calls = None
-
-        mock_completion.side_effect = [tool_call_response, final_response]
-
-        result = _query("Tell me about the tree")
-
-        assert result == "There are many people in the tree."
-        assert mock_completion.call_count == 2
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_query_handles_llm_error(self, mock_completion):
-        """Test that LLM errors are handled gracefully."""
-        mock_completion.side_effect = Exception("API error")
-
-        result = _query("Test question")
-
-        assert "Error communicating with LLM" in result
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_query_handles_empty_choices(self, mock_completion):
-        """Test handling of response with no choices."""
-        mock_response = MagicMock()
-        mock_response.choices = []
-        mock_completion.return_value = mock_response
-
-        result = _query("Test question")
-
-        assert result == "No response from LLM"
-
-    @patch("gedcom_server.query.litellm.completion")
-    @patch.dict("os.environ", {"GEDCOM_QUERY_MAX_ITERATIONS": "2"})
-    def test_query_respects_max_iterations(self, mock_completion):
-        """Test that query respects max iterations limit."""
-        # Always return tool calls to force iteration limit
-        tool_call_response = MagicMock()
-        tool_call_response.choices = [MagicMock()]
-        tool_call_response.choices[0].finish_reason = "tool_calls"
-        tool_call_response.choices[0].message.content = ""
-
-        tool_call = MagicMock()
-        tool_call.id = "call_123"
-        tool_call.function.name = "get_statistics"
-        tool_call.function.arguments = "{}"
-        tool_call_response.choices[0].message.tool_calls = [tool_call]
-
-        mock_completion.return_value = tool_call_response
-
-        result = _query("Test question")
-
-        assert "maximum iterations" in result.lower()
-        # Should have been called exactly max_iterations times
-        assert mock_completion.call_count == 2
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_query_passes_correct_model(self, mock_completion):
-        """Test that the correct model is passed to litellm."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.choices[0].message.content = "Response"
-        mock_response.choices[0].message.tool_calls = None
-        mock_completion.return_value = mock_response
-
-        _query("Test")
-
-        call_kwargs = mock_completion.call_args[1]
-        assert call_kwargs["model"] == "claude-sonnet-4-20250514"
-        assert "tools" in call_kwargs
-        assert "system" in call_kwargs
-
-    @patch("gedcom_server.query.litellm.completion")
-    @patch.dict("os.environ", {"GEDCOM_QUERY_MODEL": "gpt-4"})
-    def test_query_uses_env_model(self, mock_completion):
-        """Test that GEDCOM_QUERY_MODEL env var is respected."""
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].finish_reason = "stop"
-        mock_response.choices[0].message.content = "Response"
-        mock_response.choices[0].message.tool_calls = None
-        mock_completion.return_value = mock_response
-
-        _query("Test")
-
-        call_kwargs = mock_completion.call_args[1]
-        assert call_kwargs["model"] == "gpt-4"
-
-
-class TestToolCallParsing:
-    """Test parsing of tool call arguments."""
-
-    @patch("gedcom_server.query.litellm.completion")
-    def test_handles_malformed_json_arguments(self, mock_completion):
-        """Test that malformed JSON in tool arguments is handled."""
-        # First response: tool call with bad JSON
-        tool_call_response = MagicMock()
-        tool_call_response.choices = [MagicMock()]
-        tool_call_response.choices[0].finish_reason = "tool_calls"
-        tool_call_response.choices[0].message.content = ""
-
-        tool_call = MagicMock()
-        tool_call.id = "call_123"
-        tool_call.function.name = "get_statistics"
-        tool_call.function.arguments = "not valid json"
-        tool_call_response.choices[0].message.tool_calls = [tool_call]
-
-        # Second response: final answer
-        final_response = MagicMock()
-        final_response.choices = [MagicMock()]
-        final_response.choices[0].finish_reason = "stop"
-        final_response.choices[0].message.content = "Done"
-        final_response.choices[0].message.tool_calls = None
-
-        mock_completion.side_effect = [tool_call_response, final_response]
-
-        # Should not raise, should handle gracefully
-        result = _query("Test")
-        assert result == "Done"
