@@ -10,6 +10,8 @@ dependencies = [
     "jellyfish>=1.0.0",
     "geonamescache>=2.0.0",
     "haversine>=2.8.0",
+    "litellm>=1.0.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.poe.tasks]

@@ -46,6 +46,7 @@ from .places import (
     _search_nearby,
     _search_similar_places,
 )
+from .query import _query
 from .sources import _get_source, _get_sources, _search_sources
 
 
@@ -720,3 +721,33 @@ def register_tools(mcp):
             - pair_count: Total number of pairs calculated
         """
         return _get_relationship_matrix(individual_ids)
+
+    # ============== NATURAL LANGUAGE QUERY TOOL ==============
+
+    @mcp.tool()
+    def query(question: str) -> str:
+        """
+        Answer a natural language question about the family tree.
+
+        USE THIS TOOL when subagents are not available and you need to
+        investigate genealogy data without filling context with intermediate
+        tool calls. This tool runs its own reasoning loop internally and
+        returns a synthesized answer.
+
+        For simple lookups or when you need structured data, use the
+        individual tools (get_biography, get_ancestors, etc.) instead.
+
+        Examples:
+            "Who are Stephen's maternal grandparents?"
+            "Trace my ancestry back 4 generations and summarize"
+            "How are @I123@ and @I456@ related?"
+            "What do we know about everyone named Smith?"
+            "Create a narrative of my family history"
+
+        Args:
+            question: Natural language question about the genealogy data
+
+        Returns:
+            Prose answer to the question
+        """
+        return _query(question)
