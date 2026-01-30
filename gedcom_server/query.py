@@ -24,6 +24,7 @@ load_dotenv()
 
 # Configuration
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MAX_TOKENS = 4096
 
 
 # Wrap existing functions as Strands tools
@@ -167,6 +168,7 @@ def _create_agent(callback_handler: Any = None) -> Agent:
     """
     model = AnthropicModel(
         model_id=os.getenv("GEDCOM_QUERY_MODEL", DEFAULT_MODEL),
+        max_tokens=int(os.getenv("GEDCOM_QUERY_MAX_TOKENS", DEFAULT_MAX_TOKENS)),
     )
     return Agent(
         model=model,
