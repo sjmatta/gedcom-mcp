@@ -326,6 +326,11 @@ def load_gedcom():
 
     build_embeddings()
 
+    # Start background geocoding for GIS search (if enabled)
+    from .spatial import start_geocoding_thread
+
+    start_geocoding_thread()
+
 
 def geocode_all_places():
     """Geocode all places that don't have coordinates yet.

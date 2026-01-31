@@ -19,6 +19,7 @@ from .core import (
 from .narrative import _get_biography
 from .query import _query
 from .semantic import _semantic_search
+from .spatial import _search_nearby
 
 
 def register_tools(mcp):
@@ -366,3 +367,60 @@ def register_tools(mcp):
             individual_id, name, birth_date, death_date, relevance_score, and snippet
         """
         return _semantic_search(query, max_results)
+
+    # ============== GIS SEARCH (1) ==============
+
+    @mcp.tool()
+    def search_nearby(
+        location: str,
+        radius_miles: float = 50,
+        event_types: list[str] | None = None,
+        unit: str = "miles",
+        max_results: int = 100,
+        mode: str = "proximity",
+    ) -> dict:
+        """
+        Find individuals with events near or within a location.
+
+        Supports two search modes:
+        - "proximity" (default): Find people within X miles of a point
+        - "within": Find people with events inside a region's bounding box
+
+        Examples:
+            search_nearby("Pittsburgh", 50)  # Within 50 miles of Pittsburgh
+            search_nearby("Benkovce", 25, ["BIRT"])  # Births within 25 miles
+            search_nearby("New York", mode="within")  # Everyone inside NY State
+            search_nearby("California", mode="within", event_types=["BIRT"])  # Births in CA
+
+        GIS search is enabled by default. Background geocoding runs at startup
+        to populate coordinates for all places in the tree.
+
+        Args:
+            location: Place name to search around (fuzzy matched)
+            radius_miles: Search radius (default 50, max 500) - ignored when mode="within"
+            event_types: Optional filter - list of event types like ["BIRT", "DEAT", "MARR"]
+            unit: Distance unit - "miles" (default) or "km"
+            max_results: Maximum results to return (default 100)
+            mode: Search mode - "proximity" (default) or "within"
+                - proximity: Find people within X miles of the location's center point
+                - within: Find people with events inside the location's bounding box
+
+        Returns:
+            Dictionary with:
+            - reference_location: matched place with coordinates/bbox and confidence
+            - mode: the search mode used ("proximity" or "within")
+            - search_radius_miles: the search radius (proximity mode only)
+            - geocoding_status: "running", "complete", or "disabled"
+            - coverage: how many places were successfully geocoded
+            - coverage_note: explanation that results may be incomplete
+            - result_count: number of matches found
+            - results: list of individuals with distance (proximity) or matching events
+        """
+        return _search_nearby(
+            location=location,
+            radius_miles=radius_miles,
+            event_types=event_types,
+            unit=unit,  # type: ignore[arg-type]
+            max_results=max_results,
+            mode=mode,  # type: ignore[arg-type]
+        )
