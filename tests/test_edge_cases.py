@@ -22,16 +22,15 @@ from gedcom_server.state import (
 class TestHomePerson:
     """Tests for the get_home_person function."""
 
-    def test_returns_stephen_john_matta(self, home_person):
-        """Should return Stephen John Matta."""
+    def test_returns_valid_individual(self, home_person):
+        """Should return a valid individual."""
         assert home_person is not None
-        assert "Stephen" in home_person["given_name"]
-        assert "MATTA" in home_person["surname"] or "Matta" in home_person["surname"]
+        assert home_person["given_name"] is not None
+        assert home_person["surname"] is not None
 
-    def test_has_correct_birth_date(self, home_person):
-        """Should have birth date in 1984."""
+    def test_has_birth_date(self, home_person):
+        """Should have a birth date."""
         assert home_person["birth_date"] is not None
-        assert "1984" in home_person["birth_date"]
 
     def test_has_required_fields(self, home_person):
         """Should have all required dict fields."""
@@ -170,8 +169,8 @@ class TestAncestorTreeEdgeCases:
             # Father should not have his own parents at gen=1
             assert "father" not in result["father"] or result["father"].get("father") is None
 
-    def test_generation_cap_at_10(self, sample_individual_id):
-        """Generations should be capped at 10."""
+    def test_generation_cap_at_20(self, sample_individual_id):
+        """Generations should be capped at 20."""
         result = _get_ancestors(sample_individual_id, generations=100)
         # Should not crash, result should be valid
         assert isinstance(result, dict)

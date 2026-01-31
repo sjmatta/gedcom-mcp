@@ -55,3 +55,10 @@ Thumbs.db
 
 # Data files (too large for git)
 tree.ged
+
+# Cache files from user's tree
+*.embeddings.npz
+tree.geocache.json
+
+# Local MCP config
+.mcp.json

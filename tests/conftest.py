@@ -1,9 +1,24 @@
 """Shared fixtures for GEDCOM server tests."""
 
+import os
+from pathlib import Path
+
 import pytest
 
-from gedcom_server.core import _get_home_person
-from gedcom_server.state import HOME_PERSON_ID, families, individuals
+# Set GEDCOM env vars BEFORE importing any gedcom_server modules
+# This is critical because modules are imported at collection time
+# Set explicit test values so .env doesn't override them (load_dotenv won't override existing)
+_TEST_GEDCOM = Path(__file__).parent / "fixtures" / "sample.ged"
+os.environ["GEDCOM_FILE"] = str(_TEST_GEDCOM)
+os.environ["GEDCOM_HOME_PERSON_ID"] = ""  # Empty string = auto-detect in sample.ged
+
+# Now import and initialize gedcom_server (safe because env var is set)
+from gedcom_server import initialize  # noqa: E402
+
+initialize()
+
+from gedcom_server.core import _get_home_person  # noqa: E402
+from gedcom_server.state import HOME_PERSON_ID, families, individuals  # noqa: E402
 
 
 @pytest.fixture

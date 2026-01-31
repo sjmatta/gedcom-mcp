@@ -1,6 +1,7 @@
 """Natural language query tool using Strands Agents SDK."""
 
 import os
+import uuid
 from collections.abc import Generator
 from typing import Any
 
@@ -18,6 +19,7 @@ from .core import (
     _search_individuals,
 )
 from .narrative import _get_biography
+from .telemetry import is_tracing_enabled
 
 # Load .env file if present
 load_dotenv()
@@ -159,23 +161,35 @@ When answering:
 If you cannot find the requested information, say so clearly."""
 
 
-def _create_agent(callback_handler: Any = None) -> Agent:
+def _create_agent(callback_handler: Any = None, session_id: str | None = None) -> Agent:
     """Create a Strands agent with genealogy tools.
 
     Args:
         callback_handler: Optional callback for streaming events.
             If None, uses the default PrintingCallbackHandler.
+        session_id: Optional session ID for tracing. If not provided and tracing
+            is enabled, a random UUID will be generated.
     """
     model = AnthropicModel(
         model_id=os.getenv("GEDCOM_QUERY_MODEL", DEFAULT_MODEL),
         max_tokens=int(os.getenv("GEDCOM_QUERY_MAX_TOKENS", DEFAULT_MAX_TOKENS)),
     )
-    return Agent(
-        model=model,
-        tools=TOOLS,
-        system_prompt=SYSTEM_PROMPT,
-        callback_handler=callback_handler,
-    )
+
+    agent_kwargs: dict[str, Any] = {
+        "model": model,
+        "tools": TOOLS,
+        "system_prompt": SYSTEM_PROMPT,
+        "callback_handler": callback_handler,
+    }
+
+    # Add trace attributes if tracing is enabled
+    if is_tracing_enabled():
+        agent_kwargs["trace_attributes"] = {
+            "session.id": session_id or str(uuid.uuid4()),
+            "user.id": "gedcom-mcp-user",
+        }
+
+    return Agent(**agent_kwargs)
 
 
 def _query_with_callback(question: str) -> Generator[str, None, None]:

@@ -1,0 +1,102 @@
+0 HEAD
+1 SOUR TestGen
+2 VERS 1.0
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @S1@ SOUR
+1 TITL Massachusetts Vital Records
+1 AUTH Commonwealth of Massachusetts
+1 PUBL Boston, MA, 1900-2000
+0 @S2@ SOUR
+1 TITL US Census Records
+1 AUTH US Census Bureau
+0 @I1@ INDI
+1 NAME John /SMITH/
+2 GIVN John
+2 SURN SMITH
+1 SEX M
+1 BIRT
+2 DATE 15 MAR 1930
+2 PLAC Boston, Suffolk, Massachusetts, USA
+2 SOUR @S1@
+3 PAGE Page 42
+1 DEAT
+2 DATE 22 NOV 2010
+2 PLAC New York, New York, USA
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Mary /JONES/
+2 GIVN Mary
+2 SURN JONES
+1 SEX F
+1 BIRT
+2 DATE 8 JUL 1932
+2 PLAC Chicago, Cook, Illinois, USA
+1 DEAT
+2 DATE 14 FEB 2015
+2 PLAC New York, New York, USA
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Robert John /SMITH/
+2 GIVN Robert John
+2 SURN SMITH
+1 SEX M
+1 BIRT
+2 DATE 3 SEP 1955
+2 PLAC New York, New York, USA
+1 OCCU
+2 DATE FROM 1980 TO 2020
+2 NOTE Software Engineer
+1 NOTE Robert was a dedicated family man who loved hiking and photography.
+1 FAMC @F1@
+1 FAMS @F2@
+0 @I4@ INDI
+1 NAME Sarah Ann /WILLIAMS/
+2 GIVN Sarah Ann
+2 SURN WILLIAMS
+1 SEX F
+1 BIRT
+2 DATE 12 DEC 1958
+2 PLAC Los Angeles, Los Angeles, California, USA
+1 FAMS @F2@
+0 @I5@ INDI
+1 NAME Emily Rose /SMITH/
+2 GIVN Emily Rose
+2 SURN SMITH
+1 SEX F
+1 BIRT
+2 DATE 28 APR 1985
+2 PLAC San Francisco, San Francisco, California, USA
+2 SOUR @S1@
+3 PAGE Birth Certificate #12345
+1 RESI
+2 DATE FROM 2010
+2 PLAC Seattle, King, Washington, USA
+1 FAMC @F2@
+0 @I6@ INDI
+1 NAME Michael James /SMITH/
+2 GIVN Michael James
+2 SURN SMITH
+1 SEX M
+1 BIRT
+2 DATE 17 OCT 1987
+2 PLAC San Francisco, San Francisco, California, USA
+1 FAMC @F2@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 MARR
+2 DATE 20 JUN 1954
+2 PLAC Boston, Suffolk, Massachusetts, USA
+0 @F2@ FAM
+1 HUSB @I3@
+1 WIFE @I4@
+1 CHIL @I5@
+1 CHIL @I6@
+1 MARR
+2 DATE 15 AUG 1983
+2 PLAC San Francisco, San Francisco, California, USA
+0 TRLR
