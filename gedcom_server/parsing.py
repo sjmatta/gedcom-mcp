@@ -1,5 +1,7 @@
 """GEDCOM file parsing functions."""
 
+import os
+
 from ged4py import GedcomReader
 
 from . import state
@@ -146,7 +148,12 @@ def parse_name(record) -> tuple[str, str]:
 
 
 def load_gedcom():
-    """Parse the GEDCOM file and build indexes."""
+    """Parse the GEDCOM file and build indexes.
+
+    Requires configure() to be called first to set state.GEDCOM_FILE.
+    """
+    if state.GEDCOM_FILE is None:
+        raise RuntimeError("configure() must be called before load_gedcom()")
     if not state.GEDCOM_FILE.exists():
         raise FileNotFoundError(f"GEDCOM file not found: {state.GEDCOM_FILE}")
 
@@ -306,6 +313,18 @@ def load_gedcom():
 
     # Third pass: geocode places (lazily - only on first spatial query)
     # This is done lazily to avoid slowing down startup
+
+    # Set home person from env var or auto-detect
+    env_home = os.getenv("GEDCOM_HOME_PERSON_ID")
+    if env_home:
+        state.HOME_PERSON_ID = normalize_id(env_home)
+    else:
+        state.HOME_PERSON_ID = state._detect_home_person()
+
+    # Build semantic search embeddings (if enabled)
+    from .semantic import build_embeddings
+
+    build_embeddings()
 
 
 def geocode_all_places():

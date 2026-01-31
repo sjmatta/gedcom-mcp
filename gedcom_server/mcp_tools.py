@@ -18,6 +18,7 @@ from .core import (
 )
 from .narrative import _get_biography
 from .query import _query
+from .semantic import _semantic_search
 
 
 def register_tools(mcp):
@@ -307,10 +308,16 @@ def register_tools(mcp):
         """
         Answer a natural language question about the family tree.
 
-        USE THIS TOOL when subagents are not available and you need to
-        investigate genealogy data without filling context with intermediate
-        tool calls. This tool runs its own reasoning loop internally and
-        returns a synthesized answer.
+        IMPORTANT: This tool is a FALLBACK for MCP clients that lack subagent
+        capabilities. If your client supports spawning subagents/subtasks,
+        use those instead - they will be more capable and have access to
+        your full toolset. This tool runs a simple internal reasoning loop
+        that is less powerful than a proper subagent.
+
+        Use this tool ONLY when:
+        - Your MCP client does not support subagents
+        - You need to investigate genealogy data without filling context
+          with intermediate tool calls
 
         For simple lookups or when you need structured data, use the
         individual tools (get_biography, get_ancestors, etc.) instead.
@@ -329,3 +336,33 @@ def register_tools(mcp):
             Prose answer to the question
         """
         return _query(question)
+
+    # ============== SEMANTIC SEARCH (1) ==============
+
+    @mcp.tool()
+    def semantic_search(query: str, max_results: int = 20) -> dict:
+        """
+        Search for individuals using natural language semantic matching.
+
+        Finds people based on meaning, not keywords. Works best for conceptual
+        queries that traditional text search would miss.
+
+        Examples:
+            "served in Civil War"
+            "emigrated from Ireland"
+            "died in childbirth"
+            "coal miners in Pennsylvania"
+            "farmers in Scotland"
+
+        Requires SEMANTIC_SEARCH_ENABLED=true environment variable.
+        Results include individual IDs usable with get_biography() for full details.
+
+        Args:
+            query: Natural language description of what you're looking for
+            max_results: Max results to return (default 20, max 100)
+
+        Returns:
+            Dictionary with query, result_count, and results list containing
+            individual_id, name, birth_date, death_date, relevance_score, and snippet
+        """
+        return _semantic_search(query, max_results)
