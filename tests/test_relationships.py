@@ -357,6 +357,55 @@ class TestGetRelationship:
         result = _get_relationship(first_id, "@NONEXISTENT999@")
         assert "error" in result
 
+    def test_great_grandparent_relationship(self, individual_with_parents):
+        """Should identify great-grandparent relationship (3 generations)."""
+        indi = individual_with_parents
+        parents = _get_parents(indi.id)
+        if not parents or not parents.get("father"):
+            return  # Skip if no ancestry data
+
+        grandparents = _get_parents(parents["father"]["id"])
+        if not grandparents or not grandparents.get("father"):
+            return  # Skip if no grandparent data
+
+        great_grandparents = _get_parents(grandparents["father"]["id"])
+        if not great_grandparents:
+            return  # Skip if no great-grandparent data
+
+        for key in ["father", "mother"]:
+            ggp = great_grandparents.get(key)
+            if ggp:
+                result = _get_relationship(indi.id, ggp["id"])
+                assert result["relationship"] == "great-grandparent", (
+                    f"Expected great-grandparent, got {result['relationship']}"
+                )
+                # Also test inverse
+                result2 = _get_relationship(ggp["id"], indi.id)
+                assert result2["relationship"] == "great-grandchild", (
+                    f"Expected great-grandchild, got {result2['relationship']}"
+                )
+                return  # Found and tested one, done
+
+    def test_deep_ancestor_naming(self):
+        """Should correctly name ancestors beyond great-grandparent."""
+        from gedcom_server.core import _ancestor_name, _descendant_name
+
+        # Test ancestor naming
+        assert _ancestor_name(1) == "parent"
+        assert _ancestor_name(2) == "grandparent"
+        assert _ancestor_name(3) == "great-grandparent"
+        assert _ancestor_name(4) == "second great-grandparent"
+        assert _ancestor_name(5) == "third great-grandparent"
+        assert _ancestor_name(10) == "eighth great-grandparent"
+        assert _ancestor_name(21) == "19th great-grandparent"
+
+        # Test descendant naming
+        assert _descendant_name(1) == "child"
+        assert _descendant_name(2) == "grandchild"
+        assert _descendant_name(3) == "great-grandchild"
+        assert _descendant_name(4) == "second great-grandchild"
+        assert _descendant_name(5) == "third great-grandchild"
+
 
 class TestDetectPedigreeCollapse:
     """Tests for pedigree collapse detection."""

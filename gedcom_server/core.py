@@ -138,10 +138,63 @@ def _get_siblings(individual_id: str) -> list[dict]:
     return siblings
 
 
-def _get_ancestors(individual_id: str, generations: int = 4) -> dict:
-    lookup_id = _normalize_lookup_id(individual_id)
-    generations = min(generations, 10)  # Cap at 10 to prevent huge responses
+def _get_ancestors(
+    individual_id: str,
+    generations: int = 4,
+    filter: str | None = None,
+) -> dict | list[dict]:
+    """Get ancestor tree up to N generations.
 
+    Args:
+        individual_id: The GEDCOM ID of the individual
+        generations: Number of generations to retrieve (default 4, max 20)
+        filter: Optional filter:
+            - None: Return full nested tree (default)
+            - "terminal": Return only end-of-line ancestors (no known parents)
+
+    Returns:
+        If filter is None: Nested dictionary representing the ancestor tree
+        If filter is "terminal": List of terminal (brick wall) ancestors
+    """
+    lookup_id = _normalize_lookup_id(individual_id)
+    generations = min(generations, 20)  # Cap at 20
+
+    if filter == "terminal":
+        # Find ancestors with no known parents (brick walls)
+        terminal_ancestors: list[dict] = []
+        seen: set[str] = set()
+
+        def find_terminal(indi_id: str | None, gen: int, path: list[str]) -> None:
+            if not indi_id or gen <= 0 or indi_id not in state.individuals:
+                return
+            if indi_id in seen:
+                return
+            seen.add(indi_id)
+
+            indi = state.individuals[indi_id]
+
+            # Check if this person has parents
+            has_parents = False
+            if indi.family_as_child:
+                fam = state.families.get(indi.family_as_child)
+                if fam and (fam.husband_id or fam.wife_id):
+                    has_parents = True
+                    # Recurse to parents
+                    if fam.husband_id:
+                        find_terminal(fam.husband_id, gen - 1, path + ["father"])
+                    if fam.wife_id:
+                        find_terminal(fam.wife_id, gen - 1, path + ["mother"])
+
+            if not has_parents and indi_id != lookup_id:
+                result = indi.to_summary()
+                result["generation"] = generations - gen + 1
+                result["path"] = path
+                terminal_ancestors.append(result)
+
+        find_terminal(lookup_id, generations + 1, [])
+        return terminal_ancestors
+
+    # Default: return nested tree
     def build_ancestor_tree(indi_id: str | None, gen: int) -> dict | None:
         if not indi_id or gen <= 0 or indi_id not in state.individuals:
             return None
@@ -355,6 +408,8 @@ def _get_statistics() -> dict:
 
 def _get_home_person() -> dict | None:
     """Get the home person (tree owner) record."""
+    if state.HOME_PERSON_ID is None:
+        return None
     return _get_individual(state.HOME_PERSON_ID)
 
 
@@ -466,18 +521,22 @@ def _find_common_ancestors(id1: str, id2: str, max_generations: int = 10) -> dic
     }
 
 
-def _get_relationship(id1: str, id2: str) -> dict:
+def _get_relationship(id1: str, id2: str, max_generations: int | None = 10) -> dict:
     """Calculate and name the relationship between two individuals.
 
     Args:
         id1: GEDCOM ID of first individual
         id2: GEDCOM ID of second individual
+        max_generations: How far back to search (default 10, None = unlimited)
 
     Returns:
         Dict with relationship info including relationship name
     """
     lookup_id1 = _normalize_lookup_id(id1)
     lookup_id2 = _normalize_lookup_id(id2)
+
+    # Use a very large number for "unlimited" to avoid changing traversal logic
+    search_depth = max_generations if max_generations is not None else 100
 
     indi1 = state.individuals.get(lookup_id1)
     indi2 = state.individuals.get(lookup_id2)
@@ -547,6 +606,19 @@ def _get_relationship(id1: str, id2: str) -> dict:
                         if gp_fam and lookup_id1 in (gp_fam.husband_id, gp_fam.wife_id):
                             return {**base_result, "relationship": "grandparent"}
 
+    # Check deep direct ancestry (beyond grandparent)
+    # Build ancestor set for id1 and check if id2 is in it
+    ancestors1 = _build_ancestor_set(lookup_id1, search_depth)
+    if lookup_id2 in ancestors1:
+        gen = min(ancestors1[lookup_id2])
+        return {**base_result, "relationship": _ancestor_name(gen)}
+
+    # Check if id1 is a direct ancestor of id2
+    ancestors2 = _build_ancestor_set(lookup_id2, search_depth)
+    if lookup_id1 in ancestors2:
+        gen = min(ancestors2[lookup_id1])
+        return {**base_result, "relationship": _descendant_name(gen)}
+
     # Check aunt/uncle and niece/nephew
     # id2 is aunt/uncle of id1 if id2 is sibling of id1's parent
     if indi1.family_as_child:
@@ -571,38 +643,55 @@ def _get_relationship(id1: str, id2: str) -> dict:
                         if gp_fam and lookup_id1 in gp_fam.children_ids:
                             return {**base_result, "relationship": "aunt/uncle"}
 
-    # Check cousins via common ancestors
-    common = _find_common_ancestors(lookup_id1, lookup_id2, max_generations=10)
-    if common["common_ancestors"]:
-        # Use closest common ancestor
-        closest = common["common_ancestors"][0]
-        gen1 = closest["generations_from_1"]
-        gen2 = closest["generations_from_2"]
+    # Check cousins via common ancestors (reuse already-built ancestor sets)
+    common_ids = set(ancestors1.keys()) & set(ancestors2.keys())
 
-        # Cousin calculation
-        # First cousins share grandparents (gen 2 for both)
-        # Second cousins share great-grandparents (gen 3 for both)
-        cousin_degree = min(gen1, gen2) - 1
-        removal = abs(gen1 - gen2)
+    if common_ids:
+        # Find closest common ancestor
+        closest_id = None
+        closest_gen1 = 0
+        closest_gen2 = 0
+        min_total_gen = float("inf")
+        for ancestor_id in common_ids:
+            gen1 = min(ancestors1[ancestor_id])
+            gen2 = min(ancestors2[ancestor_id])
+            total = gen1 + gen2
+            if total < min_total_gen:
+                min_total_gen = total
+                closest_id = ancestor_id
+                closest_gen1 = gen1
+                closest_gen2 = gen2
 
-        if cousin_degree >= 1:
-            ordinal = _ordinal(cousin_degree)
-            if removal == 0:
-                rel = f"{ordinal} cousin"
-            elif removal == 1:
-                rel = f"{ordinal} cousin once removed"
-            elif removal == 2:
-                rel = f"{ordinal} cousin twice removed"
-            else:
-                rel = f"{ordinal} cousin {removal}x removed"
+        if closest_id:
+            # Cousin calculation
+            # First cousins share grandparents (gen 2 for both)
+            # Second cousins share great-grandparents (gen 3 for both)
+            cousin_degree = min(closest_gen1, closest_gen2) - 1
+            removal = abs(closest_gen1 - closest_gen2)
 
-            return {
-                **base_result,
-                "relationship": rel,
-                "common_ancestor": {"id": closest["id"], "name": closest["name"]},
-            }
+            if cousin_degree >= 1:
+                ordinal = _ordinal(cousin_degree)
+                if removal == 0:
+                    rel = f"{ordinal} cousin"
+                elif removal == 1:
+                    rel = f"{ordinal} cousin once removed"
+                elif removal == 2:
+                    rel = f"{ordinal} cousin twice removed"
+                else:
+                    rel = f"{ordinal} cousin {removal}x removed"
 
-    return {**base_result, "relationship": "not related (within 10 generations)"}
+                ancestor = state.individuals.get(closest_id)
+                return {
+                    **base_result,
+                    "relationship": rel,
+                    "common_ancestor": {
+                        "id": closest_id,
+                        "name": ancestor.full_name() if ancestor else None,
+                    },
+                }
+
+    depth_msg = f"within {search_depth} generations" if max_generations else "in tree"
+    return {**base_result, "relationship": f"not related ({depth_msg})"}
 
 
 def _ordinal(n: int) -> str:
@@ -620,6 +709,42 @@ def _ordinal(n: int) -> str:
         10: "tenth",
     }
     return ordinals.get(n, f"{n}th")
+
+
+def _ancestor_name(gen: int) -> str:
+    """Convert generation distance to ancestor relationship name.
+
+    gen 1 = parent
+    gen 2 = grandparent
+    gen 3 = great-grandparent
+    gen 4 = 2nd great-grandparent
+    gen 5 = 3rd great-grandparent, etc.
+    """
+    if gen == 1:
+        return "parent"
+    if gen == 2:
+        return "grandparent"
+    if gen == 3:
+        return "great-grandparent"
+    # gen 4 = 2nd great-grandparent, gen 5 = 3rd, etc.
+    return f"{_ordinal(gen - 2)} great-grandparent"
+
+
+def _descendant_name(gen: int) -> str:
+    """Convert generation distance to descendant relationship name.
+
+    gen 1 = child
+    gen 2 = grandchild
+    gen 3 = great-grandchild
+    gen 4 = 2nd great-grandchild, etc.
+    """
+    if gen == 1:
+        return "child"
+    if gen == 2:
+        return "grandchild"
+    if gen == 3:
+        return "great-grandchild"
+    return f"{_ordinal(gen - 2)} great-grandchild"
 
 
 def _get_relationship_matrix(individual_ids: list[str]) -> dict:
@@ -744,6 +869,17 @@ def _get_relationship_with_cache(
                         if gp_fam and id1 in (gp_fam.husband_id, gp_fam.wife_id):
                             return {**base_result, "relationship": "grandparent"}
 
+    # Check deep direct ancestry (beyond grandparent) using cached ancestors
+    ancestors1 = ancestor_cache.get(id1, {})
+    if id2 in ancestors1:
+        gen = min(ancestors1[id2])
+        return {**base_result, "relationship": _ancestor_name(gen)}
+
+    ancestors2 = ancestor_cache.get(id2, {})
+    if id1 in ancestors2:
+        gen = min(ancestors2[id1])
+        return {**base_result, "relationship": _descendant_name(gen)}
+
     # Check aunt/uncle and niece/nephew
     if indi1.family_as_child:
         fam = state.families.get(indi1.family_as_child)
@@ -767,9 +903,7 @@ def _get_relationship_with_cache(
                         if gp_fam and id1 in gp_fam.children_ids:
                             return {**base_result, "relationship": "aunt/uncle"}
 
-    # Check cousins via cached ancestor data
-    ancestors1 = ancestor_cache.get(id1, {})
-    ancestors2 = ancestor_cache.get(id2, {})
+    # Check cousins via cached ancestor data (reuse already-fetched ancestors)
     common_ids = set(ancestors1.keys()) & set(ancestors2.keys())
 
     if common_ids:
@@ -802,6 +936,89 @@ def _get_relationship_with_cache(
                 return {**base_result, "relationship": rel}
 
     return {**base_result, "relationship": "not related (within 10 generations)"}
+
+
+def _traverse(
+    individual_id: str,
+    direction: str,
+    depth: int = 1,
+) -> list[dict]:
+    """Generic graph traversal for advanced queries.
+
+    Args:
+        individual_id: Starting person's GEDCOM ID
+        direction: "parents" | "children" | "spouses" | "siblings"
+        depth: How many levels to traverse (default 1, max 10)
+
+    Returns:
+        List of individuals at each level, with a "level" field indicating depth
+    """
+    lookup_id = _normalize_lookup_id(individual_id)
+    depth = min(max(depth, 1), 10)  # Clamp between 1 and 10
+
+    results: list[dict] = []
+    seen: set[str] = {lookup_id}  # Track visited to avoid cycles
+
+    def get_related(indi_id: str, dir_type: str) -> list[str]:
+        """Get related individual IDs for a given direction."""
+        indi = state.individuals.get(indi_id)
+        if not indi:
+            return []
+
+        related_ids: list[str] = []
+
+        if dir_type == "parents":
+            if indi.family_as_child:
+                fam = state.families.get(indi.family_as_child)
+                if fam:
+                    if fam.husband_id and fam.husband_id in state.individuals:
+                        related_ids.append(fam.husband_id)
+                    if fam.wife_id and fam.wife_id in state.individuals:
+                        related_ids.append(fam.wife_id)
+
+        elif dir_type == "children":
+            for fam_id in indi.families_as_spouse:
+                fam = state.families.get(fam_id)
+                if fam:
+                    for child_id in fam.children_ids:
+                        if child_id in state.individuals:
+                            related_ids.append(child_id)
+
+        elif dir_type == "spouses":
+            for fam_id in indi.families_as_spouse:
+                fam = state.families.get(fam_id)
+                if fam:
+                    spouse_id = fam.wife_id if fam.husband_id == indi_id else fam.husband_id
+                    if spouse_id and spouse_id in state.individuals:
+                        related_ids.append(spouse_id)
+
+        elif dir_type == "siblings" and indi.family_as_child:
+            fam = state.families.get(indi.family_as_child)
+            if fam:
+                for child_id in fam.children_ids:
+                    if child_id != indi_id and child_id in state.individuals:
+                        related_ids.append(child_id)
+
+        return related_ids
+
+    # BFS traversal
+    current_level = [lookup_id]
+    for level in range(1, depth + 1):
+        next_level: list[str] = []
+        for indi_id in current_level:
+            for related_id in get_related(indi_id, direction):
+                if related_id not in seen:
+                    seen.add(related_id)
+                    next_level.append(related_id)
+                    indi = state.individuals[related_id]
+                    result = indi.to_summary()
+                    result["level"] = level
+                    results.append(result)
+        current_level = next_level
+        if not current_level:
+            break
+
+    return results
 
 
 def _detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> dict:
