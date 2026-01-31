@@ -324,6 +324,74 @@ def _geocode_place(place: str) -> dict | None:
     return None
 
 
+def _get_place_cluster(place: str, max_results: int = 100) -> dict:
+    """Get all individuals connected to a location with event breakdown.
+
+    Uses fuzzy place matching to find all individuals with events at or near
+    the specified location, grouped by event type.
+
+    Args:
+        place: Place name to search for (fuzzy matched)
+        max_results: Maximum individuals to return (default 100)
+
+    Returns:
+        Dict with place, result_count, individuals, place_variants, event_breakdown
+    """
+    # Use existing fuzzy search to find individuals
+    individuals_at_place = _fuzzy_search_place(place, threshold=70, max_results=max_results)
+
+    # Get place variants
+    place_variants = _get_place_variants(place)
+
+    # Build event breakdown by scanning matched individuals' events
+    event_breakdown: dict[str, int] = {}
+    place_lower = place.lower()
+
+    for indi_info in individuals_at_place:
+        indi_id = indi_info.get("id")
+        if not indi_id:
+            continue
+        indi = state.individuals.get(indi_id)
+        if not indi:
+            continue
+
+        for event in indi.events:
+            if event.place and place_lower in event.place.lower():
+                event_type = event.type
+                event_breakdown[event_type] = event_breakdown.get(event_type, 0) + 1
+
+    # Also check for matches against variant places
+    variant_places = {v.get("place", "").lower() for v in place_variants}
+    for indi_info in individuals_at_place:
+        indi_id = indi_info.get("id")
+        if not indi_id:
+            continue
+        indi = state.individuals.get(indi_id)
+        if not indi:
+            continue
+
+        for event in indi.events:
+            if event.place:
+                event_place_lower = event.place.lower()
+                # Skip if already counted via direct match
+                if place_lower in event_place_lower:
+                    continue
+                # Check variant matches
+                for variant in variant_places:
+                    if variant and variant in event_place_lower:
+                        event_type = event.type
+                        event_breakdown[event_type] = event_breakdown.get(event_type, 0) + 1
+                        break
+
+    return {
+        "place": place,
+        "result_count": len(individuals_at_place),
+        "individuals": individuals_at_place,
+        "place_variants": [v.get("place") for v in place_variants if v.get("place")],
+        "event_breakdown": dict(sorted(event_breakdown.items(), key=lambda x: -x[1])),
+    }
+
+
 def _search_nearby(
     place: str,
     radius_km: float = 50,

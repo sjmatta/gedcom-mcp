@@ -215,3 +215,141 @@ def _get_family_timeline(
 
     events.sort(key=sort_key)
     return events
+
+
+# Military-related keywords for detecting service
+_MILITARY_KEYWORDS = {
+    "war",
+    "military",
+    "army",
+    "navy",
+    "marine",
+    "marines",
+    "soldier",
+    "regiment",
+    "corps",
+    "veteran",
+    "enlisted",
+    "drafted",
+    "served",
+    "service",
+    "wwi",
+    "wwii",
+    "ww1",
+    "ww2",
+    "civil war",
+    "revolutionary",
+    "infantry",
+    "cavalry",
+    "artillery",
+    "battalion",
+    "company",
+    "brigade",
+    "division",
+    "air force",
+    "airforce",
+    "usaf",
+    "usmc",
+    "usn",
+    "coast guard",
+    "national guard",
+    "pvt",
+    "private",
+    "corporal",
+    "sergeant",
+    "lieutenant",
+    "captain",
+    "major",
+    "colonel",
+    "general",
+    "admiral",
+    "seaman",
+    "petty officer",
+    "combat",
+    "battle",
+    "campaign",
+    "deployment",
+    "discharge",
+    "honorable",
+    "medal",
+    "purple heart",
+    "bronze star",
+    "silver star",
+}
+
+
+def _is_military_event(event: Event) -> bool:
+    """Check if an event is military-related."""
+    # Check event type
+    if event.type in ("MILT", "SERV", "_MILT", "_SERV"):
+        return True
+
+    # Check description for military keywords
+    description = (event.description or "").lower()
+    for keyword in _MILITARY_KEYWORDS:
+        if keyword in description:
+            return True
+
+    # Check notes for military keywords
+    for note in event.notes:
+        note_lower = note.lower()
+        for keyword in _MILITARY_KEYWORDS:
+            if keyword in note_lower:
+                return True
+
+    return False
+
+
+def _get_military_service() -> dict:
+    """Find all individuals with military service across the tree.
+
+    Scans all individuals' events for military indicators:
+    - Event types: MILT, SERV, EVEN with military description
+    - Keywords in description/notes: war, military, army, navy, etc.
+
+    Returns:
+        Dict with result_count, individuals list, time_periods, and service_locations
+    """
+    individuals_with_service: list[dict] = []
+    time_periods: dict[str, int] = {}
+    location_counts: dict[str, int] = {}
+
+    for indi in state.individuals.values():
+        military_events: list[dict] = []
+
+        for event in indi.events:
+            if _is_military_event(event):
+                event_dict = event.to_dict()
+                military_events.append(event_dict)
+
+                # Track time period
+                year = extract_year(event.date)
+                if year:
+                    century = (year // 100) * 100
+                    period = f"{century}s"
+                    time_periods[period] = time_periods.get(period, 0) + 1
+
+                # Track location
+                if event.place:
+                    location_counts[event.place] = location_counts.get(event.place, 0) + 1
+
+        if military_events:
+            individuals_with_service.append(
+                {
+                    "id": indi.id,
+                    "name": indi.full_name(),
+                    "birth_date": indi.birth_date,
+                    "death_date": indi.death_date,
+                    "military_events": military_events,
+                }
+            )
+
+    # Sort locations by count
+    top_locations = sorted(location_counts.items(), key=lambda x: -x[1])[:10]
+
+    return {
+        "result_count": len(individuals_with_service),
+        "individuals": individuals_with_service,
+        "time_periods": dict(sorted(time_periods.items())),
+        "service_locations": [{"place": p, "count": c} for p, c in top_locations],
+    }

@@ -13,10 +13,13 @@ from .core import (
     _get_siblings,
     _get_spouses,
     _get_statistics,
+    _get_surname_origins,
     _search_individuals,
     _traverse,
 )
+from .events import _get_military_service, _get_timeline
 from .narrative import _get_biography
+from .places import _get_place_cluster
 from .query import _query
 from .semantic import _semantic_search
 from .spatial import _search_nearby
@@ -424,3 +427,96 @@ def register_tools(mcp):
             max_results=max_results,
             mode=mode,  # type: ignore[arg-type]
         )
+
+    # ============== TIMELINE & EVENTS (2) ==============
+
+    @mcp.tool()
+    def get_timeline(individual_id: str) -> list[dict]:
+        """
+        Get chronological timeline of all life events for an individual.
+
+        Returns events sorted by date, with events lacking dates at the end.
+        Useful for building biographical narratives or understanding life progression.
+
+        Args:
+            individual_id: The GEDCOM ID (e.g., "I123" or "@I123@")
+
+        Returns:
+            List of events sorted chronologically, each with type, date, place, description
+        """
+        return _get_timeline(individual_id)
+
+    @mcp.tool()
+    def get_military_service() -> dict:
+        """
+        Find all individuals with military service across the tree.
+
+        Scans all individuals' events for military indicators:
+        - Event types: MILT, SERV
+        - Keywords: war, military, army, navy, marine, soldier, regiment, etc.
+
+        Useful for finding veterans, understanding family military history,
+        or researching ancestors who served.
+
+        Returns:
+            Dictionary with:
+            - result_count: Number of individuals with military service
+            - individuals: List of individuals with their military events
+            - time_periods: Counts grouped by century (1800s, 1900s, etc.)
+            - service_locations: Top locations where service occurred
+        """
+        return _get_military_service()
+
+    # ============== PLACE ANALYSIS (1) ==============
+
+    @mcp.tool()
+    def get_place_cluster(place: str, max_results: int = 100) -> dict:
+        """
+        Get all individuals connected to a location with event breakdown.
+
+        Uses fuzzy place matching to find everyone with events at or near
+        the specified location. Groups results by event type (births, deaths, etc.).
+
+        Useful for understanding migration patterns, finding relatives in a region,
+        or analyzing geographic concentrations.
+
+        Args:
+            place: Place name to search for (fuzzy matched)
+            max_results: Maximum individuals to return (default 100)
+
+        Returns:
+            Dictionary with:
+            - place: The search query
+            - result_count: Number of individuals found
+            - individuals: List of individuals with match scores
+            - place_variants: Similar place spellings found in tree
+            - event_breakdown: Counts by event type (BIRT, DEAT, RESI, etc.)
+        """
+        return _get_place_cluster(place, max_results)
+
+    # ============== SURNAME ANALYSIS (1) ==============
+
+    @mcp.tool()
+    def get_surname_origins(surname: str) -> dict:
+        """
+        Analyze surname distribution and detect geographic origins.
+
+        Extends surname lookup with origin detection by finding earliest
+        births by location and tracking the surname's geographic spread over time.
+
+        Useful for understanding where a family line originated and how it
+        migrated across generations.
+
+        Args:
+            surname: Surname to analyze (case-insensitive)
+
+        Returns:
+            Dictionary with:
+            - surname: The search query
+            - count: Total individuals with this surname
+            - individuals: List of all individuals
+            - primary_origin: Place with earliest births (likely origin)
+            - place_timeline: Place → [years] showing spread over time
+            - statistics: earliest/latest birth, span, common places
+        """
+        return _get_surname_origins(surname)

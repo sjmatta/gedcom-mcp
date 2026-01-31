@@ -377,6 +377,94 @@ def _get_surname_group(surname: str, include_spouses: bool = False) -> dict:
     }
 
 
+def _get_surname_origins(surname: str) -> dict:
+    """Analyze surname distribution and origins across the tree.
+
+    Extends _get_surname_group with origin detection:
+    - Finds earliest births by place to detect origin
+    - Creates a place timeline showing surname spread
+    - Calculates generation span
+
+    Args:
+        surname: Surname to analyze (case-insensitive)
+
+    Returns:
+        Dict with surname, count, individuals, primary_origin, place_timeline, statistics
+    """
+    from .helpers import extract_year
+
+    surname_lower = surname.lower()
+    indi_ids = state.surname_index.get(surname_lower, [])
+
+    # Collect individuals with birth info
+    individuals_data: list[dict] = []
+    place_years: dict[str, list[int]] = {}  # place -> list of birth years
+    all_birth_years: list[int] = []
+
+    for indi_id in indi_ids:
+        indi = state.individuals.get(indi_id)
+        if not indi:
+            continue
+
+        individuals_data.append(indi.to_summary())
+
+        # Track birth year
+        year = extract_year(indi.birth_date) if indi.birth_date else None
+        if year:
+            all_birth_years.append(year)
+
+            # Track place timeline
+            if indi.birth_place:
+                if indi.birth_place not in place_years:
+                    place_years[indi.birth_place] = []
+                place_years[indi.birth_place].append(year)
+
+    # Find primary origin (place with earliest births)
+    primary_origin = None
+    earliest_year_overall = None
+    for place, years in place_years.items():
+        earliest = min(years)
+        if earliest_year_overall is None or earliest < earliest_year_overall:
+            earliest_year_overall = earliest
+            primary_origin = {"place": place, "earliest_year": earliest}
+
+    # Build place timeline (sorted years for each place)
+    place_timeline: dict[str, list[int]] = {}
+    for place, years in place_years.items():
+        place_timeline[place] = sorted(set(years))
+
+    # Sort places by earliest year
+    place_timeline = dict(sorted(place_timeline.items(), key=lambda x: min(x[1]) if x[1] else 9999))
+
+    # Calculate statistics
+    if all_birth_years:
+        earliest_birth = min(all_birth_years)
+        latest_birth = max(all_birth_years)
+        span_years = latest_birth - earliest_birth
+    else:
+        earliest_birth = None
+        latest_birth = None
+        span_years = 0
+
+    # Get common places sorted by count
+    place_counts = {p: len(years) for p, years in place_years.items()}
+    common_places = sorted(place_counts.items(), key=lambda x: -x[1])[:5]
+
+    return {
+        "surname": surname,
+        "count": len(indi_ids),
+        "individuals": individuals_data,
+        "primary_origin": primary_origin,
+        "place_timeline": place_timeline,
+        "statistics": {
+            "earliest_birth": earliest_birth,
+            "latest_birth": latest_birth,
+            "span_years": span_years,
+            "common_places": [{"place": p, "count": c} for p, c in common_places],
+        },
+    }
+
+
 def _get_statistics() -> dict:
     # Calculate date ranges
     birth_years = list(state.birth_year_index.keys())

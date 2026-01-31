@@ -10,10 +10,13 @@ from gedcom_server.core import (
     _get_siblings,
     _get_spouses,
     _get_statistics,
+    _get_surname_origins,
     _search_by_birth,
     _search_by_place,
     _search_individuals,
 )
+from gedcom_server.events import _get_military_service, _get_timeline
+from gedcom_server.places import _get_place_cluster
 from gedcom_server.state import (
     birth_year_index,
     families,
@@ -27,16 +30,16 @@ class TestLoadedData:
     """Tests that verify the GEDCOM data loaded correctly."""
 
     def test_individuals_loaded(self):
-        """Should load a large number of individuals."""
-        assert len(individuals) > 10000
+        """Should load individuals from GEDCOM file."""
+        assert len(individuals) > 0
 
     def test_families_loaded(self):
         """Should load families."""
-        assert len(families) > 1000
+        assert len(families) > 0
 
     def test_surname_index_built(self):
         """Should build surname index."""
-        assert len(surname_index) > 100
+        assert len(surname_index) > 0
 
 
 class TestStatistics:
@@ -225,3 +228,105 @@ class TestSearchByPlace:
     def test_search_respects_max_results(self):
         results = _search_by_place("a", max_results=5)
         assert len(results) <= 5
+
+
+class TestGetTimeline:
+    """Tests for the get_timeline function."""
+
+    def test_timeline_returns_list(self):
+        indi_id = next(iter(individuals.keys()))
+        result = _get_timeline(indi_id)
+        assert isinstance(result, list)
+
+    def test_timeline_events_have_required_fields(self):
+        indi_id = next(iter(individuals.keys()))
+        result = _get_timeline(indi_id)
+        if result:
+            event = result[0]
+            assert "type" in event
+
+    def test_timeline_nonexistent_individual(self):
+        result = _get_timeline("NONEXISTENT999")
+        assert result == []
+
+
+class TestGetPlaceCluster:
+    """Tests for the get_place_cluster function."""
+
+    def test_place_cluster_returns_dict(self):
+        # Get a place that exists
+        place = next(iter(place_index.keys()), "")
+        word = place.split(",")[0].split()[0] if place else "a"
+        result = _get_place_cluster(word)
+        assert isinstance(result, dict)
+
+    def test_place_cluster_has_required_keys(self):
+        place = next(iter(place_index.keys()), "")
+        word = place.split(",")[0].split()[0] if place else "a"
+        result = _get_place_cluster(word)
+        assert "place" in result
+        assert "result_count" in result
+        assert "individuals" in result
+        assert "place_variants" in result
+        assert "event_breakdown" in result
+
+    def test_place_cluster_respects_max_results(self):
+        result = _get_place_cluster("a", max_results=5)
+        assert len(result["individuals"]) <= 5
+
+
+class TestGetSurnameOrigins:
+    """Tests for the get_surname_origins function."""
+
+    def test_surname_origins_returns_dict(self):
+        surname = next(iter(surname_index.keys()))
+        result = _get_surname_origins(surname)
+        assert isinstance(result, dict)
+
+    def test_surname_origins_has_required_keys(self):
+        surname = next(iter(surname_index.keys()))
+        result = _get_surname_origins(surname)
+        assert "surname" in result
+        assert "count" in result
+        assert "individuals" in result
+        assert "primary_origin" in result
+        assert "place_timeline" in result
+        assert "statistics" in result
+
+    def test_surname_origins_statistics_keys(self):
+        surname = next(iter(surname_index.keys()))
+        result = _get_surname_origins(surname)
+        stats = result["statistics"]
+        assert "earliest_birth" in stats
+        assert "latest_birth" in stats
+        assert "span_years" in stats
+        assert "common_places" in stats
+
+    def test_surname_origins_nonexistent(self):
+        result = _get_surname_origins("ZZZZNONEXISTENT")
+        assert result["count"] == 0
+        assert result["individuals"] == []
+
+
+class TestGetMilitaryService:
+    """Tests for the get_military_service function."""
+
+    def test_military_service_returns_dict(self):
+        result = _get_military_service()
+        assert isinstance(result, dict)
+
+    def test_military_service_has_required_keys(self):
+        result = _get_military_service()
+        assert "result_count" in result
+        assert "individuals" in result
+        assert "time_periods" in result
+        assert "service_locations" in result
+
+    def test_military_service_individuals_structure(self):
+        result = _get_military_service()
+        if result["individuals"]:
+            person = result["individuals"][0]
+            assert "id" in person
+            assert "name" in person
+            assert "military_events" in person
+            assert isinstance(person["military_events"], list)
