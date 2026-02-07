@@ -54,7 +54,7 @@ def get_biography(individual_id: str) -> dict | None:
 
 
 @tool
-def get_ancestors(individual_id: str, generations: int = 4) -> dict:
+def get_ancestors(individual_id: str, generations: int = 4) -> dict | list[dict]:
     """Get the ancestor tree for a person up to N generations.
 
     Returns a nested structure with father/mother branches.
