@@ -4,20 +4,44 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-- **13 MCP Tools** for querying genealogy data:
+- **24 MCP Tools** for comprehensive genealogy research:
+
+  **Core Tools:**
   - `get_home_person` - Get the tree owner's record
-  - `search_individuals` - Search by name (partial match)
-  - `get_individual` - Get full details by ID
+  - `get_statistics` - Tree stats (counts, date ranges, top surnames)
+  - `get_individual` - Get basic details by ID
+  - `get_biography` - Get comprehensive narrative package for one person
   - `get_family` - Get family info (spouses, children, marriage)
+
+  **Navigation Tools:**
   - `get_parents` - Get parents of an individual
-  - `get_children` - Get all children
+  - `get_children` - Get all children from all marriages
   - `get_spouses` - Get all spouses with marriage details
   - `get_siblings` - Get siblings (same parents)
   - `get_ancestors` - Ancestor tree up to N generations
   - `get_descendants` - Descendant tree up to N generations
-  - `search_by_birth` - Search by birth year and/or place
-  - `search_by_place` - Search by any place (birth, death)
-  - `get_statistics` - Tree stats (counts, date ranges, top surnames)
+  - `traverse` - Generic graph traversal for custom navigation
+
+  **Search & Discovery:**
+  - `search_individuals` - Search by name (partial match)
+  - `semantic_search` - Vector-based semantic search (e.g., "farmers in Scotland")
+  - `search_nearby` - GIS proximity search or bounding box search
+
+  **Relationship Analysis:**
+  - `get_relationship` - Calculate relationships between two people
+  - `detect_pedigree_collapse` - Find ancestors appearing multiple times
+  - `find_associates` - FAN Club technique (Friends, Associates, Neighbors)
+
+  **Timeline & Events:**
+  - `get_timeline` - Chronological life events for an individual
+  - `get_military_service` - Find all veterans in the tree
+
+  **Place & Surname Analysis:**
+  - `get_place_cluster` - Get all people connected to a location
+  - `get_surname_origins` - Analyze surname distribution and geographic origins
+
+  **Natural Language:**
+  - `query` - Natural language questions (fallback for non-agent MCP clients)
 
 - **4 MCP Resources**:
   - `gedcom://individual/{id}` - Individual record by ID
@@ -26,6 +50,29 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
   - `gedcom://surnames` - All surnames with counts
 
 - **Optimized for large files** - Parses GEDCOM once at startup, builds in-memory indexes for fast search
+
+### Optional Features
+
+**Semantic Search**
+Enable natural language semantic matching (e.g., "coal miners in Pennsylvania", "emigrated from Ireland"):
+```bash
+export SEMANTIC_SEARCH_ENABLED=true
+```
+Requires sentence-transformers (included in dependencies). First run builds embeddings (~15-30 seconds for large files), subsequent runs load from cache.
+
+**GIS Proximity Search**
+Find people within X miles of a location or within a region's bounding box. Enabled by default with background geocoding. Results include:
+- Proximity mode: Within X miles of a point
+- Within mode: Inside a region's bounding box
+
+No configuration needed - geocoding runs automatically at startup and caches results.
+
+**Telemetry & Observability**
+OpenTelemetry tracing with Arize Phoenix for debugging and performance monitoring:
+```bash
+export PHOENIX_ENABLED=true
+```
+Requires Phoenix server running (see `.env.example` and `docker-compose.yml`).
 
 ## Installation
 
@@ -163,6 +210,8 @@ uv run poe check
 # Start server (requires GEDCOM_FILE env var)
 uv run poe serve
 ```
+
+For detailed development instructions, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Pre-commit Hooks
 

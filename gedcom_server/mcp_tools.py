@@ -1,5 +1,6 @@
 """MCP tool definitions for the GEDCOM genealogy server."""
 
+from .associates import _find_associates
 from .core import (
     _detect_pedigree_collapse,
     _get_ancestors,
@@ -520,3 +521,63 @@ def register_tools(mcp):
             - statistics: earliest/latest birth, span, common places
         """
         return _get_surname_origins(surname)
+
+    # ============== ASSOCIATES / FAN CLUB (1) ==============
+
+    @mcp.tool()
+    def find_associates(
+        individual_id: str,
+        place: str | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        exclude_relatives: bool = True,
+        max_results: int = 50,
+    ) -> dict:
+        """
+        Find likely neighbors and associates based on time+place overlap.
+
+        Implements the genealogist's FAN Club technique (Friends, Associates, Neighbors)
+        to discover people who overlap in time AND place but are NOT known relatives.
+        Useful for finding witnesses, godparents, business partners, or migration companions.
+
+        Scoring factors:
+        - Same place + same year: highest score
+        - Same place + within 5 years: moderate score
+        - Lifespan overlap: bonus up to 30%
+        - Multiple matching places: bonus per additional place
+
+        Args:
+            individual_id: GEDCOM ID of the focal individual (e.g., "I123" or "@I123@")
+            place: Optional - filter to specific location (fuzzy matched)
+            start_year: Optional - filter time range start
+            end_year: Optional - filter time range end
+            exclude_relatives: Filter out blood/marriage relatives (default True)
+            max_results: Limit results (default 50, max 200)
+
+        Returns:
+            Dictionary with:
+            - individual: The focal person's info
+            - filters_applied: Active filters
+            - result_count: Number of associates found
+            - associates: List sorted by association_strength (0.0-1.0) with:
+              - id, name, birth_date, death_date
+              - association_strength: Overall score
+              - overlapping_events: Where/when paths crossed
+              - lifespan_overlap_years: Years alive at same time
+              - is_relative: Whether related (when exclude_relatives=False)
+            - computation_stats: Performance metrics
+
+        Examples:
+            find_associates("@I123@")  # All associates
+            find_associates("@I123@", place="Pittsburgh")  # Only Pittsburgh connections
+            find_associates("@I123@", start_year=1880, end_year=1920)  # Time-bounded
+            find_associates("@I123@", exclude_relatives=False)  # Include relatives
+        """
+        return _find_associates(
+            individual_id=individual_id,
+            place=place,
+            start_year=start_year,
+            end_year=end_year,
+            exclude_relatives=exclude_relatives,
+            max_results=max_results,
+        )

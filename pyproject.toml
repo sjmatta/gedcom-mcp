@@ -1,8 +1,25 @@
 [project]
 name = "gedcom-server"
-version = "0.1.0"
-description = "FastMCP3 GEDCOM Genealogy Server"
+version = "1.0.0"
+description = "MCP server for querying genealogy data from GEDCOM files"
+readme = "README.md"
+license = {file = "LICENSE"}
 requires-python = ">=3.11"
+authors = [
+    {name = "Stephen Matta", email = "stephen.matta@gmail.com"}
+]
+keywords = ["genealogy", "gedcom", "mcp", "family-tree", "anthropic", "claude", "genealogy-research"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Sociology :: Genealogy",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "fastmcp>=2.0.0",
     "ged4py>=0.4.0",
@@ -22,6 +39,13 @@ dependencies = [
     "sentence-transformers>=2.2.0",
     "numpy>=1.24.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/sjmatta/gedcom-mcp"
+Documentation = "https://github.com/sjmatta/gedcom-mcp#readme"
+Repository = "https://github.com/sjmatta/gedcom-mcp"
+Changelog = "https://github.com/sjmatta/gedcom-mcp/blob/main/CHANGELOG.md"
+Issues = "https://github.com/sjmatta/gedcom-mcp/issues"
 
 [project.scripts]
 gedcom-server = "gedcom_server.__main__:main"
