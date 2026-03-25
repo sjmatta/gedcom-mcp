@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-GEDCOM MCP Server - A Python FastMCP3 server that enables AI assistants to query genealogy data from GEDCOM files. Provides 24 MCP tools and 4 resources for searching individuals, families, places, events, semantic search, GIS queries, and generating narrative biographies.
+GEDCOM MCP Server - A Python FastMCP server that enables AI assistants to query genealogy data from GEDCOM files. Provides 24 MCP tools and 4 resources for searching individuals, families, places, events, semantic search, GIS queries, and generating narrative biographies. Requires Python >=3.12, tested on 3.12 and 3.13.
 
 ## Development Commands
 
@@ -105,9 +105,10 @@ export PHOENIX_ENABLED=true          # Enable OpenTelemetry tracing to Phoenix
 
 ## Code Quality
 
-- **Linting**: ruff with line-length 100, rules E/F/I/N/W/UP/B/C4/SIM
-- **Type checking**: mypy with check_untyped_defs=true
+- **Linting**: ruff with line-length 100, target py312, rules E/F/I/N/W/UP/B/C4/SIM
+- **Type checking**: mypy with python_version 3.12, check_untyped_defs=true
 - **Pre-commit hooks**: ruff lint/format and mypy on pre-commit; pytest on pre-push
+- **CI**: GitHub Actions runs lint, format check, typecheck, and tests on Python 3.12 + 3.13
 
 ## Testing
 
