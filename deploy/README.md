@@ -102,3 +102,23 @@ References: [Cloudflare MCP portals](https://developers.cloudflare.com/cloudflar
   authorization code, refresh tokens, dynamic registration, and S256 PKCE.
 - ChatGPT account linking remains a separate user OAuth step; browser automation
   was blocked on the ChatGPT URL and no connection-complete claim has been made.
+
+## OAuth discovery configuration
+
+Use the MCP portal's own OAuth implementation. The portal Access application has
+`oauth_configuration.enabled=false`: this disables the additional self-hosted
+Access managed-OAuth interceptor, **not** portal authentication. The owner-only
+Access policy remains attached. Enabling both layers caused discovery to point
+at the team-domain issuer while the MCP gateway used its own portal token flow,
+and ChatGPT reported a generic connection failure.
+
+Expected public discovery:
+
+- Resource: `https://gedcom-mcp.matta.family/mcp`
+- Authorization server / issuer: `https://gedcom-mcp.matta.family`
+- Authorization: `/authorize`; token: `/token`; registration: `/register`
+- Unauthenticated MCP: HTTP 401 with `WWW-Authenticate` resource metadata
+
+This configuration was compared directly with the working Places portal and
+corrected on 2026-09-09 UTC. Do not re-enable the extra managed-OAuth layer without
+an end-to-end client test. ChatGPT account connection still requires user OAuth.
