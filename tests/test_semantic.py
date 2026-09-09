@@ -283,6 +283,7 @@ class TestBuildEmbeddings:
                 cache_path,
                 gedcom_hash=semantic._compute_gedcom_hash(),
                 model_name=semantic.MODEL_NAME,
+                content_version=semantic.CONTENT_VERSION,
                 embeddings=test_embeddings,
                 ids=np.array(["@I1@", "@I2@", "@I3@"], dtype=object),
                 texts=np.array(["t1", "t2", "t3"], dtype=object),

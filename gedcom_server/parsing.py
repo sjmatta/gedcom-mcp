@@ -5,7 +5,7 @@ import os
 from ged4py import GedcomReader
 
 from . import state
-from .constants import EVENT_TAGS
+from .constants import EVENT_TAGS, FAMILY_EVENT_TAGS
 from .helpers import (
     create_place,
     extract_year,
@@ -15,7 +15,7 @@ from .helpers import (
     get_record_value,
     normalize_id,
 )
-from .models import Citation, Event, Family, Individual, Repository, Source
+from .models import Citation, Event, Family, Individual, ParentFamily, Repository, Source
 
 
 def parse_citation(cite_record) -> Citation | None:
@@ -78,11 +78,14 @@ def parse_event(event_record) -> Event:
         if place_sub and place_sub.value:
             place_val = str(place_sub.value)
 
-        # Get description (for EVEN type records)
-        if event_type == "EVEN":
-            type_sub = event_record.sub_tag("TYPE")
-            if type_sub and type_sub.value:
-                description = str(type_sub.value)
+        # Preserve attribute values (e.g. OCCU Coal miner) and event subtypes.
+        value = str(event_record.value) if event_record.value is not None else ""
+        if value and value != "Y":
+            description = value
+        type_sub = event_record.sub_tag("TYPE")
+        if type_sub and type_sub.value:
+            subtype = str(type_sub.value)
+            description = f"{subtype}: {description}" if description else subtype
 
         # Parse citations (SOUR references)
         for sub in event_record.sub_records:
@@ -111,7 +114,8 @@ def parse_events_from_record(record) -> list[Event]:
     events = []
     try:
         for sub in record.sub_records:
-            if sub.tag in EVENT_TAGS:
+            tags = FAMILY_EVENT_TAGS if record.tag == "FAM" else EVENT_TAGS
+            if sub.tag in tags:
                 event = parse_event(sub)
                 events.append(event)
     except (AttributeError, KeyError):
@@ -219,16 +223,35 @@ def load_gedcom():
 
             # Get family references and individual-level notes
             famc = None
+            parent_links = []
             fams_list = []
             indi_notes = []
             for sub in record.sub_records:
                 if sub.tag == "FAMC" and sub.value:
-                    famc = normalize_id(sub.value)
+                    family_id = normalize_id(sub.value)
+                    if family_id:
+                        parent_links.append(
+                            ParentFamily(
+                                family_id=family_id,
+                                pedigree=get_record_value(sub, "PEDI"),
+                                status=get_record_value(sub, "STAT"),
+                            )
+                        )
                 elif sub.tag == "FAMS" and sub.value:
                     fams_list.append(normalize_id(sub.value))
                 elif sub.tag == "NOTE" and sub.value:
                     # Individual-level note (level 1) - biographical content
                     indi_notes.append(str(sub.value))
+
+            # Never select the last FAMC merely because of file ordering.
+            usable = [link for link in parent_links if (link.status or "").lower() != "disproven"]
+            birth = [link for link in usable if (link.pedigree or "").lower() == "birth"]
+            selected = birth if len(birth) == 1 else usable
+            if len(selected) == 1:
+                famc = selected[0].family_id
+                selection = "explicit_birth" if len(birth) == 1 else "only_usable_family"
+            else:
+                selection = "ambiguous" if usable else "none"
 
             indi = Individual(
                 id=indi_id,  # type: ignore[arg-type]
@@ -240,6 +263,8 @@ def load_gedcom():
                 death_date=death_date,
                 death_place=death_place,
                 family_as_child=famc,
+                parent_families=parent_links,
+                parent_selection=selection,
                 families_as_spouse=fams_list,  # type: ignore[arg-type]
                 events=events,
                 notes=indi_notes,
@@ -295,6 +320,7 @@ def load_gedcom():
                 children_ids=child_ids,  # type: ignore[arg-type]
                 marriage_date=marr_date,
                 marriage_place=marr_place,
+                events=parse_events_from_record(record),
             )
             state.families[fam_id] = fam  # type: ignore[index]
 
@@ -304,9 +330,19 @@ def load_gedcom():
                 if place_id not in state.places:
                     state.places[place_id] = create_place(marr_place)
 
-    # Second pass: populate source titles in citations
-    for indi in state.individuals.values():
-        for event in indi.events:
+            for event in fam.events:
+                if event.place:
+                    place_id = get_place_id(event.place)
+                    state.places.setdefault(place_id, create_place(event.place))
+                    for spouse_id in (fam.husband_id, fam.wife_id):
+                        if spouse_id:
+                            state.place_index[event.place.lower()].append(spouse_id)
+                            state.individual_places[spouse_id].append(place_id)
+
+    # Second pass: populate source titles in individual AND family citations.
+    entities: list[Individual | Family] = [*state.individuals.values(), *state.families.values()]
+    for entity in entities:
+        for event in entity.events:
             for citation in event.citations:
                 if citation.source_id and citation.source_id in state.sources:
                     citation.source_title = state.sources[citation.source_id].title

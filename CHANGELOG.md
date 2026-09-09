@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `get_relationship_to_me`: one shortest path to the configured home person,
+  with names, family IDs, pedigree qualifiers, lineage selection and search limits.
+- `get_parent_families`: all parent links and their imported qualifiers/status.
+- Family events (including marriage and divorce) with citations in family records,
+  biographies, timelines and semantic search. Shared timeline events appear once.
+
+### Fixed
+
+- Local geocoding requires unique city/jurisdiction matches; ambiguous provider
+  responses remain unresolved. Old city-only cache entries are rechecked while
+  successful full-query Nominatim entries are retained.
+- Parent selection prefers a unique explicit birth family or a sole usable family;
+  conflicting links remain visible as ambiguous, and disproven links are not traversed.
+- Graph queries have depth/node/path budgets and cycle handling. Nested trees mark
+  repeated references and truncation; excessive requests return an explicit error.
+
+- Relationship labels consistently describe person 1 relative to person 2,
+  including great-grandparents and deeper ancestry in cached and direct queries.
+- Individual and family timelines use GEDCOM date ordering, including partial
+  dates and ranges, while retaining the original date text.
+- Individual imports retain burial, baptism, christening, military, and other
+  event/attribute records, including occupation values, notes, and citations.
+- Military discovery avoids broad civilian keywords and includes evidence labels
+  distinguishing explicit service tags from possible references in prose.
+- Semantic caches now track an indexed-content version. Existing caches rebuild
+  once on startup with semantic search enabled, so newly imported events are searchable.
+
 ## [1.0.0] - 2025-02-07
 
 First stable release! The GEDCOM MCP Server provides comprehensive genealogy research tools for querying family tree data from GEDCOM files.

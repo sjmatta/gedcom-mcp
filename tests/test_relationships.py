@@ -358,7 +358,7 @@ class TestGetRelationship:
         assert "error" in result
 
     def test_great_grandparent_relationship(self, individual_with_parents):
-        """Should identify great-grandparent relationship (3 generations)."""
+        """Should identify great-grandchild relationship (3 generations)."""
         indi = individual_with_parents
         parents = _get_parents(indi.id)
         if not parents or not parents.get("father"):
@@ -370,19 +370,19 @@ class TestGetRelationship:
 
         great_grandparents = _get_parents(grandparents["father"]["id"])
         if not great_grandparents:
-            return  # Skip if no great-grandparent data
+            return  # Skip if no great-grandchild data
 
         for key in ["father", "mother"]:
             ggp = great_grandparents.get(key)
             if ggp:
                 result = _get_relationship(indi.id, ggp["id"])
-                assert result["relationship"] == "great-grandparent", (
-                    f"Expected great-grandparent, got {result['relationship']}"
+                assert result["relationship"] == "great-grandchild", (
+                    f"Expected great-grandchild, got {result['relationship']}"
                 )
                 # Also test inverse
                 result2 = _get_relationship(ggp["id"], indi.id)
-                assert result2["relationship"] == "great-grandchild", (
-                    f"Expected great-grandchild, got {result2['relationship']}"
+                assert result2["relationship"] == "great-grandparent", (
+                    f"Expected great-grandparent, got {result2['relationship']}"
                 )
                 return  # Found and tested one, done
 

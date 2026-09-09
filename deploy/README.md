@@ -2,7 +2,7 @@
 
 Connect ChatGPT using OAuth to **https://gedcom-mcp.matta.family/mcp**.
 Sign in through Cloudflare Access as `stephenjmatta@gmail.com`. The portal exposes
-22 genealogy tools; the separate Claude-powered `query` fallback is hidden so
+24 genealogy tools; the separate Claude-powered `query` fallback is hidden so
 ChatGPT can reason using the structured tools without another model API key.
 No Codex MCP configuration is required or created.
 
@@ -33,7 +33,7 @@ Nominatim; geocoding coverage is partial and reported with search results.
   `GEDCOM_HOME_PERSON_ID` for the selected GEDCOM record. This server-wide setting
   is shared by all clients; restart the service after changing it.
 - Access issuer/audience: `/home/sjmatta/.config/gedcom-mcp/cf-access.json` (600)
-- Container: `gedcom-mcp`, image `gedcom-mcp:chatgpt-1`
+- Container: `gedcom-mcp`, image `gedcom-mcp:chatgpt-2`
 
 The isolated Compose project uses a non-root UID, read-only root filesystem,
 dropped capabilities, loopback-only published port, 2 GiB memory and 1.5 CPU limits.
@@ -125,3 +125,18 @@ Expected public discovery:
 This configuration was compared directly with the working Places portal and
 corrected on 2026-09-09 UTC. Do not re-enable the extra managed-OAuth layer without
 an end-to-end client test. ChatGPT account connection still requires user OAuth.
+
+
+## Accuracy release and rollback
+
+Before deploying `chatgpt-2`, retain the old image and a private copy of the data
+and source directory. The semantic cache content version is now 3 and rebuilds
+once; prebuild it using an isolated Compose run with GIS disabled before switching
+the HTTP service. Geocache version 2 preserves successful full-query Nominatim
+entries, discards legacy city-only coordinates, and rechecks the remainder in the
+background. Coverage can decrease while more conservative matching runs.
+
+For rollback, stop only `gedcom-mcp`, restore the saved data and source directory,
+and run the saved Compose definition with its retained old image using `--no-build`.
+Do not restore caches while the current service is writing them. The private
+home-person configuration and Cloudflare authentication settings are unchanged.

@@ -1,6 +1,12 @@
 """Core logic functions for querying genealogy data."""
 
+from collections import deque
+
 from . import state
+
+MAX_GRAPH_NODES = 50000
+MAX_TREE_NODES = 1000
+MAX_PEDIGREE_PATHS = 5000
 
 
 def _normalize_lookup_id(id_str: str) -> str:
@@ -61,19 +67,35 @@ def _get_family(family_id: str) -> dict | None:
 def _get_parents(individual_id: str) -> dict | None:
     lookup_id = _normalize_lookup_id(individual_id)
     indi = state.individuals.get(lookup_id)
-    if not indi or not indi.family_as_child:
+    if not indi:
+        return None
+    if not indi.family_as_child:
+        if indi.parent_families:
+            return {
+                "family_id": None,
+                "father": None,
+                "mother": None,
+                "parent_selection": indi.parent_selection,
+                "parent_families": [link.to_dict() for link in indi.parent_families],
+            }
         return None
 
     fam = state.families.get(indi.family_as_child)
     if not fam:
         return None
 
-    result = {"family_id": fam.id, "father": None, "mother": None}
+    result: dict = {
+        "family_id": fam.id,
+        "father": None,
+        "mother": None,
+        "parent_selection": indi.parent_selection,
+        "parent_families": [link.to_dict() for link in indi.parent_families],
+    }
 
     if fam.husband_id and fam.husband_id in state.individuals:
-        result["father"] = state.individuals[fam.husband_id].to_dict()  # type: ignore[assignment]
+        result["father"] = state.individuals[fam.husband_id].to_dict()
     if fam.wife_id and fam.wife_id in state.individuals:
-        result["mother"] = state.individuals[fam.wife_id].to_dict()  # type: ignore[assignment]
+        result["mother"] = state.individuals[fam.wife_id].to_dict()
 
     return result
 
@@ -157,7 +179,11 @@ def _get_ancestors(
         If filter is "terminal": List of terminal (brick wall) ancestors
     """
     lookup_id = _normalize_lookup_id(individual_id)
-    generations = min(generations, 20)  # Cap at 20
+    if not 0 <= generations <= 20:
+        raise ValueError("Ancestor depth must be between 0 and 20")
+    tree_seen: set[str] = set()
+    tree_nodes = 0
+    truncated = False
 
     if filter == "terminal":
         # Find ancestors with no known parents (brick walls)
@@ -169,6 +195,8 @@ def _get_ancestors(
                 return
             if indi_id in seen:
                 return
+            if len(seen) >= MAX_TREE_NODES:
+                raise ValueError("Terminal ancestor search incomplete: node budget exceeded")
             seen.add(indi_id)
 
             indi = state.individuals[indi_id]
@@ -196,12 +224,25 @@ def _get_ancestors(
 
     # Default: return nested tree
     def build_ancestor_tree(indi_id: str | None, gen: int) -> dict | None:
+        nonlocal truncated, tree_nodes
         if not indi_id or gen <= 0 or indi_id not in state.individuals:
             return None
 
+        if tree_nodes >= MAX_TREE_NODES:
+            truncated = True
+            return None
+        tree_nodes += 1
         indi = state.individuals[indi_id]
         result = indi.to_summary()
 
+        result["parent_selection"] = indi.parent_selection
+        if indi_id in tree_seen:
+            result["repeated_reference"] = True
+            return result
+        if len(tree_seen) >= MAX_TREE_NODES:
+            truncated = True
+            return None
+        tree_seen.add(indi_id)
         if gen > 1 and indi.family_as_child:
             fam = state.families.get(indi.family_as_child)
             if fam:
@@ -210,20 +251,40 @@ def _get_ancestors(
 
         return result
 
-    return build_ancestor_tree(lookup_id, generations + 1) or {}
+    result = build_ancestor_tree(lookup_id, generations + 1) or {}
+    if result:
+        result["truncated"] = truncated
+        result["requested_generations"] = generations
+    return result
 
 
 def _get_descendants(individual_id: str, generations: int = 4) -> dict:
     lookup_id = _normalize_lookup_id(individual_id)
-    generations = min(generations, 10)
+    if not 0 <= generations <= 10:
+        raise ValueError("Descendant depth must be between 0 and 10")
+    tree_seen: set[str] = set()
+    tree_nodes = 0
+    truncated = False
 
     def build_descendant_tree(indi_id: str | None, gen: int) -> dict | None:
+        nonlocal truncated, tree_nodes
         if not indi_id or gen <= 0 or indi_id not in state.individuals:
             return None
 
+        if tree_nodes >= MAX_TREE_NODES:
+            truncated = True
+            return None
+        tree_nodes += 1
         indi = state.individuals[indi_id]
         result = indi.to_summary()
 
+        if indi_id in tree_seen:
+            result["repeated_reference"] = True
+            return result
+        if len(tree_seen) >= MAX_TREE_NODES:
+            truncated = True
+            return None
+        tree_seen.add(indi_id)
         if gen > 1:
             children_list = []
             for fam_id in indi.families_as_spouse:
@@ -238,7 +299,11 @@ def _get_descendants(individual_id: str, generations: int = 4) -> dict:
 
         return result
 
-    return build_descendant_tree(lookup_id, generations + 1) or {}
+    result = build_descendant_tree(lookup_id, generations + 1) or {}
+    if result:
+        result["truncated"] = truncated
+        result["requested_generations"] = generations
+    return result
 
 
 def _search_by_birth(
@@ -519,36 +584,32 @@ def _get_individuals_batch(individual_ids: list[str]) -> dict[str, dict | None]:
 
 
 def _build_ancestor_set(individual_id: str, max_generations: int = 10) -> dict[str, list[int]]:
-    """Build a set of all ancestors with their generation depths.
+    """Find minimum ancestor distances with bounded breadth-first traversal.
 
-    Returns dict mapping ancestor_id -> list of generation distances
-    (list because ancestor may appear multiple times via different paths).
+    Distances retain the legacy list shape. Enumerating duplicate paths belongs
+    to detect_pedigree_collapse, not ordinary relationship lookup.
     """
+    if not 0 <= max_generations <= 100:
+        raise ValueError("Ancestor search depth must be between 0 and 100")
     lookup_id = _normalize_lookup_id(individual_id)
     ancestors: dict[str, list[int]] = {}
-
-    def traverse(indi_id: str | None, generation: int) -> None:
-        if not indi_id or generation > max_generations:
-            return
-        if indi_id not in state.individuals:
-            return
-
-        indi = state.individuals[indi_id]
-        if not indi.family_as_child:
-            return
-
-        fam = state.families.get(indi.family_as_child)
+    seen = {lookup_id}
+    queue = deque([(lookup_id, 0)])
+    while queue:
+        current_id, generation = queue.popleft()
+        if generation >= max_generations:
+            continue
+        indi = state.individuals.get(current_id)
+        fam = state.families.get(indi.family_as_child or "") if indi else None
         if not fam:
-            return
-
-        for parent_id in [fam.husband_id, fam.wife_id]:
-            if parent_id and parent_id in state.individuals:
-                if parent_id not in ancestors:
-                    ancestors[parent_id] = []
-                ancestors[parent_id].append(generation)
-                traverse(parent_id, generation + 1)
-
-    traverse(lookup_id, 1)
+            continue
+        for parent_id in (fam.husband_id, fam.wife_id):
+            if parent_id and parent_id in state.individuals and parent_id not in seen:
+                if len(seen) >= MAX_GRAPH_NODES:
+                    raise ValueError("Ancestor search incomplete: node budget exceeded")
+                seen.add(parent_id)
+                ancestors[parent_id] = [generation + 1]
+                queue.append((parent_id, generation + 1))
     return ancestors
 
 
@@ -625,6 +686,8 @@ def _get_relationship(id1: str, id2: str, max_generations: int | None = 10) -> d
 
     # Use a very large number for "unlimited" to avoid changing traversal logic
     search_depth = max_generations if max_generations is not None else 100
+    if not 0 <= search_depth <= 100:
+        raise ValueError("Relationship depth must be between 0 and 100")
 
     indi1 = state.individuals.get(lookup_id1)
     indi2 = state.individuals.get(lookup_id2)
@@ -699,13 +762,13 @@ def _get_relationship(id1: str, id2: str, max_generations: int | None = 10) -> d
     ancestors1 = _build_ancestor_set(lookup_id1, search_depth)
     if lookup_id2 in ancestors1:
         gen = min(ancestors1[lookup_id2])
-        return {**base_result, "relationship": _ancestor_name(gen)}
+        return {**base_result, "relationship": _descendant_name(gen)}
 
     # Check if id1 is a direct ancestor of id2
     ancestors2 = _build_ancestor_set(lookup_id2, search_depth)
     if lookup_id1 in ancestors2:
         gen = min(ancestors2[lookup_id1])
-        return {**base_result, "relationship": _descendant_name(gen)}
+        return {**base_result, "relationship": _ancestor_name(gen)}
 
     # Check aunt/uncle and niece/nephew
     # id2 is aunt/uncle of id1 if id2 is sibling of id1's parent
@@ -847,6 +910,8 @@ def _get_relationship_matrix(individual_ids: list[str]) -> dict:
     Returns:
         Dict with individuals list and relationships matrix
     """
+    if len(individual_ids) > 50:
+        raise ValueError("Relationship matrix accepts at most 50 individuals")
     # Normalize IDs and validate
     normalized_ids: list[str] = []
     individuals_info: list[dict] = []
@@ -961,12 +1026,12 @@ def _get_relationship_with_cache(
     ancestors1 = ancestor_cache.get(id1, {})
     if id2 in ancestors1:
         gen = min(ancestors1[id2])
-        return {**base_result, "relationship": _ancestor_name(gen)}
+        return {**base_result, "relationship": _descendant_name(gen)}
 
     ancestors2 = ancestor_cache.get(id2, {})
     if id1 in ancestors2:
         gen = min(ancestors2[id1])
-        return {**base_result, "relationship": _descendant_name(gen)}
+        return {**base_result, "relationship": _ancestor_name(gen)}
 
     # Check aunt/uncle and niece/nephew
     if indi1.family_as_child:
@@ -1096,6 +1161,8 @@ def _traverse(
         for indi_id in current_level:
             for related_id in get_related(indi_id, direction):
                 if related_id not in seen:
+                    if len(seen) >= MAX_TREE_NODES:
+                        raise ValueError("Traversal incomplete: node budget exceeded; reduce depth")
                     seen.add(related_id)
                     next_level.append(related_id)
                     indi = state.individuals[related_id]
@@ -1129,10 +1196,16 @@ def _detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> 
             "error": "Individual not found",
         }
 
-    # Track all paths to each ancestor
+    if not 0 <= max_generations <= 20:
+        raise ValueError("Pedigree-collapse depth must be between 0 and 20")
+    path_count = 0
+    truncated = False
+    cycle_detected = False
+    # Track a bounded set of paths to each ancestor.
     ancestor_paths: dict[str, list[list[str]]] = {}
 
     def traverse(indi_id: str, path: list[str], generation: int) -> None:
+        nonlocal path_count, truncated, cycle_detected
         if generation > max_generations:
             return
         if indi_id not in state.individuals:
@@ -1148,6 +1221,13 @@ def _detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> 
 
         for parent_id in [fam.husband_id, fam.wife_id]:
             if parent_id and parent_id in state.individuals:
+                if parent_id in path:
+                    cycle_detected = True
+                    continue
+                if path_count >= MAX_PEDIGREE_PATHS:
+                    truncated = True
+                    return
+                path_count += 1
                 new_path = path + [parent_id]
                 if parent_id not in ancestor_paths:
                     ancestor_paths[parent_id] = []
@@ -1185,4 +1265,8 @@ def _detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> 
         "individual": {"id": lookup_id, "name": indi.full_name()},
         "collapse_points": collapse_points,
         "total_collapse_ancestors": len(collapse_points),
+        "truncated": truncated,
+        "cycle_detected": cycle_detected,
+        "requested_generations": max_generations,
+        "paths_examined": path_count,
     }

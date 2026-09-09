@@ -111,6 +111,14 @@ def _get_biography(individual_id: str) -> dict | None:
         "death": {"date": indi.death_date, "place": indi.death_place},
         "sex": indi.sex,
         "parents": parents,
+        "parent_families": [link.to_dict() for link in indi.parent_families],
+        "parent_selection": indi.parent_selection,
+        "family_events": [
+            {**event.to_dict(), "family_id": family_id}
+            for family_id in dict.fromkeys(indi.families_as_spouse)
+            if (family := state.families.get(family_id))
+            for event in family.events
+        ],
         "spouses": spouses_info,
         "children": children_names,
         "events": events_data,

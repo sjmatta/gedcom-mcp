@@ -4,6 +4,7 @@ import hashlib
 import re
 
 import geonamescache
+from ged4py.date import DateValue
 
 from .constants import PLACE_ABBREVIATIONS
 from .models import Place
@@ -72,7 +73,7 @@ def normalize_place_string(place: str) -> str:
 
     # Expand abbreviations
     for abbr, full in PLACE_ABBREVIATIONS.items():
-        result = result.replace(abbr, full)
+        result = re.sub(r"(?<!\w)" + re.escape(abbr) + r"(?!\w)", full, result)
 
     # Collapse whitespace
     result = " ".join(result.split())
@@ -120,32 +121,18 @@ def geocode_place_coords(place_normalized: str) -> tuple[float, float] | None:
 
     Tries to match city first, then country.
     """
-    gc = _get_geonames_cache()
-    components = parse_place_components(place_normalized)
+    from .geocoding import local_geocode
 
-    if not components:
-        return None
+    return local_geocode(place_normalized)[0]
 
-    # Try to find city (first component)
-    city_name = components[0].lower()
-    cities = gc.get_cities()
 
-    # Try exact city match
-    for city in cities.values():
-        if city["name"].lower() == city_name:
-            return (city["latitude"], city["longitude"])
+def date_sort_key(date_str: str | None) -> DateValue:
+    """Order GEDCOM dates/ranges with undated phrases last; preserve source text.
 
-    # Try country match (last component)
-    if len(components) >= 1:
-        country_name = components[-1].lower()
-        countries = gc.get_countries()
-        country_by_name = gc.get_countries_by_names()
-
-        # Try by country name
-        if country_name in country_by_name:
-            iso = country_by_name[country_name]
-            if iso in countries:
-                # Return approximate center (not available directly, use first major city)
-                return None  # Skip country-level geocoding for now
-
-    return None
+    Ordering an approximate date is a display convention, not an assertion of
+    its exact day. ged4py handles partial dates, qualifiers, and calendars.
+    """
+    try:
+        return DateValue.parse(date_str)
+    except (ValueError, TypeError):
+        return DateValue.parse(None)

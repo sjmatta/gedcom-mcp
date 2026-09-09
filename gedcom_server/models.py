@@ -4,6 +4,16 @@ from dataclasses import dataclass, field
 
 
 @dataclass
+class ParentFamily:
+    family_id: str
+    pedigree: str | None = None
+    status: str | None = None
+
+    def to_dict(self) -> dict:
+        return {"family_id": self.family_id, "pedigree": self.pedigree, "status": self.status}
+
+
+@dataclass
 class Individual:
     id: str
     given_name: str = ""
@@ -17,6 +27,9 @@ class Individual:
     families_as_spouse: list[str] = field(default_factory=list)  # FAMS references
     events: list["Event"] = field(default_factory=list)  # All life events
     notes: list[str] = field(default_factory=list)  # Biographical notes
+
+    parent_families: list[ParentFamily] = field(default_factory=list)
+    parent_selection: str = "legacy_single_family"
 
     def full_name(self) -> str:
         parts = [self.given_name, self.surname]
@@ -34,6 +47,8 @@ class Individual:
             "death_date": self.death_date,
             "death_place": self.death_place,
             "family_as_child": self.family_as_child,
+            "parent_families": [link.to_dict() for link in self.parent_families],
+            "parent_selection": self.parent_selection,
             "families_as_spouse": self.families_as_spouse,
             "notes": self.notes,
         }
@@ -56,6 +71,7 @@ class Family:
     children_ids: list[str] = field(default_factory=list)
     marriage_date: str | None = None
     marriage_place: str | None = None
+    events: list["Event"] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -65,6 +81,7 @@ class Family:
             "children_ids": self.children_ids,
             "marriage_date": self.marriage_date,
             "marriage_place": self.marriage_place,
+            "events": [event.to_dict() for event in self.events],
         }
 
 

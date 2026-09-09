@@ -1,7 +1,47 @@
 """Constants for GEDCOM parsing and place normalization."""
 
 # Event tags to parse from individuals
-EVENT_TAGS = ["BIRT", "DEAT", "RESI", "OCCU", "EVEN", "IMMI", "CENS", "NATU"]
+EVENT_TAGS = [
+    "BIRT",
+    "DEAT",
+    "RESI",
+    "OCCU",
+    "EVEN",
+    "IMMI",
+    "EMIG",
+    "CENS",
+    "NATU",
+    "BURI",
+    "CREM",
+    "BAPM",
+    "CHR",
+    "CHRA",
+    "CONF",
+    "FCOM",
+    "ORDN",
+    "ADOP",
+    "BARM",
+    "BASM",
+    "BLES",
+    "GRAD",
+    "RETI",
+    "PROB",
+    "WILL",
+    "EDUC",
+    "RELI",
+    "NATI",
+    "TITL",
+    "CAST",
+    "DSCR",
+    "NCHI",
+    "NMR",
+    "PROP",
+    "FACT",
+    "MILT",
+    "SERV",
+    "_MILT",
+    "_SERV",
+]
 
 # Place normalization - common abbreviations
 PLACE_ABBREVIATIONS = {
@@ -74,3 +114,19 @@ for old_name, new_name in HISTORICAL_NAMES.items():
     if new_name not in HISTORICAL_MAPPINGS:
         HISTORICAL_MAPPINGS[new_name] = []
     HISTORICAL_MAPPINGS[new_name].append(old_name)
+
+# Family events are preserved on the family rather than copied onto children.
+FAMILY_EVENT_TAGS = {
+    "ANUL",
+    "CENS",
+    "DIV",
+    "DIVF",
+    "ENGA",
+    "MARB",
+    "MARC",
+    "MARL",
+    "MARR",
+    "MARS",
+    "RESI",
+    "EVEN",
+}

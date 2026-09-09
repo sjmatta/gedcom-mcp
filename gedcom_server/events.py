@@ -1,8 +1,10 @@
 """Event-related functions for querying genealogy data."""
 
+import re
+
 from . import state
 from .core import _normalize_lookup_id
-from .helpers import extract_year
+from .helpers import date_sort_key, extract_year
 from .models import Event
 
 
@@ -93,6 +95,19 @@ def _get_notes(individual_id: str) -> list[dict]:
     return notes
 
 
+def _person_events(individual_id: str) -> list[dict]:
+    """Personal events plus spouse-family events with their owning family ID."""
+    indi = state.individuals.get(individual_id)
+    if not indi:
+        return []
+    result = [event.to_dict() for event in indi.events]
+    for family_id in dict.fromkeys(indi.families_as_spouse):
+        fam = state.families.get(family_id)
+        if fam:
+            result.extend({**event.to_dict(), "family_id": family_id} for event in fam.events)
+    return result
+
+
 def _get_timeline(individual_id: str) -> list[dict]:
     """Get chronological timeline of events for an individual."""
     lookup_id = _normalize_lookup_id(individual_id)
@@ -100,14 +115,7 @@ def _get_timeline(individual_id: str) -> list[dict]:
     if not indi:
         return []
 
-    # Sort events by date (events without dates come last)
-    def sort_key(event: Event) -> tuple[int, str]:
-        year = extract_year(event.date)
-        # Put events without years at the end, sort by year then by date string
-        return (year if year else 9999, event.date or "")
-
-    sorted_events = sorted(indi.events, key=sort_key)
-    return [event.to_dict() for event in sorted_events]
+    return sorted(_person_events(lookup_id), key=lambda event: date_sort_key(event.get("date")))
 
 
 def _get_family_events(family_id: str) -> list[dict]:
@@ -144,12 +152,10 @@ def _get_family_events(family_id: str) -> list[dict]:
                 event_dict["individual_name"] = indi.full_name()
                 events.append(event_dict)
 
-    # Sort by date
-    def sort_key(e: dict) -> tuple[int, str]:
-        year = extract_year(e.get("date"))
-        return (year if year else 9999, e.get("date") or "")
-
-    events.sort(key=sort_key)
+    events.extend(
+        {**event.to_dict(), "family_id": fam.id, "individual_id": None} for event in fam.events
+    )
+    events.sort(key=lambda event: date_sort_key(event.get("date")))
     return events
 
 
@@ -208,104 +214,61 @@ def _get_family_timeline(
                 event_dict["individual_name"] = indi.full_name()
                 events.append(event_dict)
 
-    # Sort by date
-    def sort_key(e: dict) -> tuple[int, str]:
-        year = extract_year(e.get("date"))
-        return (year if year else 9999, e.get("date") or "")
-
-    events.sort(key=sort_key)
+    family_ids = {
+        family_id
+        for id_str in individual_ids
+        if (indi := state.individuals.get(_normalize_lookup_id(id_str)))
+        for family_id in indi.families_as_spouse
+    }
+    for family_id in sorted(family_ids):
+        fam = state.families.get(family_id)
+        if fam:
+            for event in fam.events:
+                year = extract_year(event.date)
+                if year and ((start_year and year < start_year) or (end_year and year > end_year)):
+                    continue
+                events.append({**event.to_dict(), "family_id": family_id, "individual_id": None})
+    events.sort(key=lambda event: date_sort_key(event.get("date")))
     return events
 
 
-# Military-related keywords for detecting service
-_MILITARY_KEYWORDS = {
-    "war",
-    "military",
-    "army",
-    "navy",
-    "marine",
-    "marines",
-    "soldier",
-    "regiment",
-    "corps",
-    "veteran",
-    "enlisted",
-    "drafted",
-    "served",
-    "service",
-    "wwi",
-    "wwii",
-    "ww1",
-    "ww2",
-    "civil war",
-    "revolutionary",
-    "infantry",
-    "cavalry",
-    "artillery",
-    "battalion",
-    "company",
-    "brigade",
-    "division",
-    "air force",
-    "airforce",
-    "usaf",
-    "usmc",
-    "usn",
-    "coast guard",
-    "national guard",
-    "pvt",
-    "private",
-    "corporal",
-    "sergeant",
-    "lieutenant",
-    "captain",
-    "major",
-    "colonel",
-    "general",
-    "admiral",
-    "seaman",
-    "petty officer",
-    "combat",
-    "battle",
-    "campaign",
-    "deployment",
-    "discharge",
-    "honorable",
-    "medal",
-    "purple heart",
-    "bronze star",
-    "silver star",
-}
+# Explicit records are stronger evidence than contextual references in prose.
+_MILITARY_PATTERN = re.compile(
+    r"\b(?:military|army|navy|marines?|soldiers?|regiments?|veterans?|"
+    r"enlisted|drafted|infantry|cavalry|artillery|battalion|brigade|"
+    r"air[ -]?force|usaf|usmc|usn|coast guard|national guard|"
+    r"civil war|revolutionary war|world war(?: [12i]+)?|ww[12i]+|"
+    r"purple heart|bronze star|silver star)\b",
+    re.IGNORECASE,
+)
+
+
+def _military_evidence(event: Event) -> dict | None:
+    """Explain explicit service records or possible military references.
+
+    A keyword in a note is a research lead, not proof that its subject served.
+    Broad terms such as 'general', 'private', and 'service' are insufficient.
+    """
+    if event.type.upper() in ("MILT", "SERV", "_MILT", "_SERV"):
+        return {"basis": "explicit_tag", "matched_text": event.type}
+    for text in [event.description or "", *event.notes]:
+        match = _MILITARY_PATTERN.search(text)
+        if match:
+            return {"basis": "possible_reference", "matched_text": match.group(0)}
+    return None
 
 
 def _is_military_event(event: Event) -> bool:
-    """Check if an event is military-related."""
-    # Check event type
-    if event.type in ("MILT", "SERV", "_MILT", "_SERV"):
-        return True
-
-    # Check description for military keywords
-    description = (event.description or "").lower()
-    for keyword in _MILITARY_KEYWORDS:
-        if keyword in description:
-            return True
-
-    # Check notes for military keywords
-    for note in event.notes:
-        note_lower = note.lower()
-        for keyword in _MILITARY_KEYWORDS:
-            if keyword in note_lower:
-                return True
-
-    return False
+    """Whether an event has explicit or contextual military evidence."""
+    return _military_evidence(event) is not None
 
 
 def _get_military_service() -> dict:
-    """Find all individuals with military service across the tree.
+    """Find explicit military records and possible military references.
 
-    Scans all individuals' events for military indicators:
-    - Event types: MILT, SERV, EVEN with military description
-    - Keywords in description/notes: war, military, army, navy, etc.
+    Scans individual events for military tags and contextual phrases in notes
+    or descriptions. Each event reports its evidence basis; references in prose
+    do not establish that the individual served.
 
     Returns:
         Dict with result_count, individuals list, time_periods, and service_locations
@@ -318,8 +281,10 @@ def _get_military_service() -> dict:
         military_events: list[dict] = []
 
         for event in indi.events:
-            if _is_military_event(event):
+            evidence = _military_evidence(event)
+            if evidence:
                 event_dict = event.to_dict()
+                event_dict["military_evidence"] = evidence
                 military_events.append(event_dict)
 
                 # Track time period

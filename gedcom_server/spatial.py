@@ -22,14 +22,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from haversine import Unit, haversine
-from rapidfuzz import fuzz, process
 
 from . import state
 from .helpers import (
-    _get_geonames_cache,
     get_place_id,
     normalize_place_string,
-    parse_place_components,
 )
 
 if TYPE_CHECKING:
@@ -91,7 +88,7 @@ def _compute_gedcom_hash() -> str:
 
 def _load_geocache() -> bool:
     """Load geocoding cache from disk if valid. Returns True on success."""
-    global _geocache
+    global _geocache, _geocache_dirty
 
     cache_path = _get_cache_path()
     if cache_path is None or not cache_path.exists():
@@ -109,7 +106,17 @@ def _load_geocache() -> bool:
             return False
 
         # Load geocoded places
-        _geocache = data.get("geocoded", {})
+        entries = data.get("geocoded", {})
+        if data.get("geocoder_version") != 2:
+            # Old city-only coordinates (even those labeled 'gedcom') lack
+            # jurisdiction evidence. Keep successful full-query provider data.
+            entries = {
+                key: value
+                for key, value in entries.items()
+                if value.get("source") == "nominatim" and value.get("lat") is not None
+            }
+            _geocache_dirty = True
+        _geocache = {key: value for key, value in entries.items() if key in state.places}
         logger.info(f"Loaded {len(_geocache)} geocoded places from cache")
         return True
     except Exception as e:
@@ -127,11 +134,14 @@ def _save_geocache() -> None:
 
     try:
         data = {
+            "geocoder_version": 2,
             "gedcom_hash": _compute_gedcom_hash(),
             "geocoded": _geocache,
         }
-        with open(cache_path, "w") as f:
+        temporary = cache_path.with_suffix(cache_path.suffix + ".tmp")
+        with open(temporary, "w") as f:
             json.dump(data, f)
+        temporary.replace(cache_path)
         _geocache_dirty = False
         logger.info(f"Saved geocache with {len(_geocache)} places to {cache_path}")
     except Exception as e:
@@ -162,38 +172,9 @@ def _geocode_via_geonamescache(
 
     Returns (coords, confidence) where confidence is "high", "medium", or "low".
     """
-    gc = _get_geonames_cache()
-    components = parse_place_components(place_normalized)
+    from .geocoding import local_geocode
 
-    if not components:
-        return None, "low"
-
-    city_name = components[0].lower()
-    cities = gc.get_cities()
-
-    # Try exact city match first (high confidence)
-    for city in cities.values():
-        if city["name"].lower() == city_name:
-            return (city["latitude"], city["longitude"]), "high"
-
-    # Try fuzzy match on city name (medium confidence)
-    city_names = {cid: c["name"].lower() for cid, c in cities.items()}
-    matches = process.extract(
-        city_name,
-        city_names.values(),
-        scorer=fuzz.ratio,
-        limit=3,
-        score_cutoff=85,
-    )
-
-    if matches:
-        best_match = matches[0][0]
-        for cid, name in city_names.items():
-            if name == best_match:
-                city = cities[cid]
-                return (city["latitude"], city["longitude"]), "medium"
-
-    return None, "low"
+    return local_geocode(place_normalized)
 
 
 def _geocode_via_nominatim(
@@ -237,7 +218,7 @@ def _geocode_via_nominatim_full(
         params: dict[str, str | int] = {
             "q": place_str,
             "format": "json",
-            "limit": 1,
+            "limit": 5,
         }
         headers = {"User-Agent": "GEDCOM-MCP-Server/1.0"}
 
@@ -246,6 +227,18 @@ def _geocode_via_nominatim_full(
 
         data = response.json()
         if data:
+            # Multiple materially different matches require clarification.
+            locations = {(round(float(row["lat"]), 2), round(float(row["lon"]), 2)) for row in data}
+            if len(locations) > 1:
+                return {
+                    "coords": None,
+                    "confidence": "low",
+                    "bbox": None,
+                    "is_region": False,
+                    "display_name": place_str,
+                    "ambiguous": True,
+                    "candidates": [row.get("display_name", "") for row in data],
+                }
             result = data[0]
             lat = float(result["lat"])
             lon = float(result["lon"])
@@ -294,6 +287,7 @@ def _geocode_place_full(
     if place_id in _geocache:
         cached = _geocache[place_id]
         if cached["lat"] is not None:
+            place.latitude, place.longitude = cached["lat"], cached["lon"]
             return (cached["lat"], cached["lon"]), cached["source"], cached["confidence"]
         # Already tried and failed
         return None, cached["source"], cached["confidence"]
@@ -384,6 +378,8 @@ def _geocode_worker() -> None:
     geocoded_count = 0
     for place in state.places.values():
         if place.id in _geocache and _geocache[place.id]["lat"] is not None:
+            place.latitude = _geocache[place.id]["lat"]
+            place.longitude = _geocache[place.id]["lon"]
             geocoded_count += 1
             continue
         if place.latitude is not None:
@@ -449,60 +445,27 @@ def _resolve_location(
     """
     query_normalized = normalize_place_string(query)
 
-    # Strategy 1: Exact match in GEDCOM places
+    # Use cached provenance instead of upgrading every tree match to high confidence.
     for place in state.places.values():
         if place.normalized == query_normalized:
-            if place.latitude is not None and place.longitude is not None:
-                return (
-                    (place.latitude, place.longitude),
-                    place.original,
-                    "gedcom",
-                    "high",
-                )
-            # Found place but no coords - geocode it
             coords, source, confidence = _geocode_place_full(place)
             if coords:
                 return coords, place.original, source, confidence
 
-    # Strategy 2: Fuzzy match in GEDCOM places
-    place_names = {p.id: p.normalized for p in state.places.values()}
-    if place_names:
-        matches = process.extract(
-            query_normalized,
-            list(place_names.values()),
-            scorer=fuzz.WRatio,
-            limit=5,
-            score_cutoff=80,
-        )
-
-        for match_name, score, _ in matches:
-            # Find the place with this normalized name
-            for place in state.places.values():
-                if place.normalized == match_name:
-                    if place.latitude is not None and place.longitude is not None:
-                        confidence = "high" if score >= 95 else "medium"
-                        return (
-                            (place.latitude, place.longitude),
-                            place.original,
-                            "gedcom",
-                            confidence,
-                        )
-                    # Geocode the matched place
-                    coords, source, geo_confidence = _geocode_place_full(place)
-                    if coords:
-                        # Lower confidence if fuzzy match
-                        confidence = geo_confidence if score >= 95 else "medium"
-                        return coords, place.original, source, confidence
-                    break
+    # A fuzzy tree match can silently substitute a different state/country.
+    # Resolve the supplied query itself instead.
 
     # Strategy 3: Direct geocoding of query
     coords, confidence = _geocode_via_geonamescache(query_normalized)
     if coords:
         return coords, query, "geonamescache", confidence
 
-    coords, confidence = _geocode_via_nominatim(query)
-    if coords:
-        return coords, query, "nominatim", confidence
+    result = _geocode_via_nominatim_full(query)
+    if result:
+        if result.get("ambiguous"):
+            return None, query, "ambiguous", "low"
+        if result.get("coords"):
+            return result["coords"], query, "nominatim", result["confidence"]
 
     return None, query, "not_found", "low"
 
@@ -541,11 +504,12 @@ def _resolve_location_with_bbox(
     for place in state.places.values():
         if place.normalized == query_normalized:
             if place.latitude is not None:
+                cached = _geocache.get(place.id, {})
                 return {
                     "coords": (place.latitude, place.longitude),
                     "matched": place.original,
-                    "source": "gedcom",
-                    "confidence": "high",
+                    "source": cached.get("source", "gedcom"),
+                    "confidence": cached.get("confidence", "low"),
                     "bbox": None,
                     "is_region": False,
                 }
@@ -785,13 +749,13 @@ def _search_within_mode(
 
     if loc_info["coords"] is None:
         return {
-            "error": f"Could not geocode location: {location}",
+            "error": f"Location unresolved or ambiguous: {location}. Include state/region and country.",
             "reference_location": {
                 "query": location,
                 "matched": None,
                 "bounding_box": None,
                 "match_confidence": "low",
-                "match_source": "not_found",
+                "match_source": loc_info.get("source", "not_found"),
             },
             "mode": "within",
             "results": [],
@@ -859,13 +823,13 @@ def _search_proximity_mode(
 
     if ref_coords is None:
         return {
-            "error": f"Could not geocode location: {location}",
+            "error": f"Location unresolved or ambiguous: {location}. Include state/region and country.",
             "reference_location": {
                 "query": location,
                 "matched": None,
                 "coordinates": None,
                 "match_confidence": "low",
-                "match_source": "not_found",
+                "match_source": match_source,
             },
             "mode": "proximity",
             "results": [],

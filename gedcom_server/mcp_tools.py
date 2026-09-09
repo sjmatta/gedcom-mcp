@@ -22,6 +22,7 @@ from .events import _get_military_service, _get_timeline
 from .narrative import _get_biography
 from .places import _get_place_cluster
 from .query import _query
+from .relationships import Lineage, _get_parent_families, _get_relationship_to_me
 from .semantic import _semantic_search
 from .spatial import _search_nearby
 from .telemetry import traced_tool
@@ -29,6 +30,31 @@ from .telemetry import traced_tool
 
 def register_tools(mcp):
     """Register all MCP tools with the server."""
+
+    @mcp.tool()
+    @traced_tool
+    def get_parent_families(individual_id: str) -> dict:
+        """List every parent family, pedigree qualifier, status, and selected default.
+
+        Use when birth/adoptive/foster families or ambiguous parents matter.
+        Disproven links remain visible here but are excluded from traversal.
+        """
+        return _get_parent_families(individual_id)
+
+    @mcp.tool()
+    @traced_tool
+    def get_relationship_to_me(
+        individual_id: str, lineage: Lineage = "default", max_steps: int = 30
+    ) -> dict:
+        """Explain this person's relationship to the configured home person.
+
+        Returns one shortest family path with names, family IDs and parent-link
+        qualifiers. Label describes the queried person relative to the home person.
+        default uses an unambiguous selected family; all includes every usable
+        family; birth/adopted/foster/sealing require explicit matching qualifiers.
+        A pedigree marked birth does not establish genetic parentage.
+        """
+        return _get_relationship_to_me(individual_id, lineage, max_steps)
 
     # ============== CONTEXT TOOLS (2) ==============
 
@@ -246,7 +272,7 @@ def register_tools(mcp):
         max_generations: int | None = 10,
     ) -> dict:
         """
-        Calculate and name the relationship between two individuals.
+        Calculate person 1's relationship to person 2 (e.g. child, parent).
 
         Detects these relationship types:
         - Direct lineage: parent, grandparent, great-grandparent, 2nd great-grandparent,
@@ -471,11 +497,14 @@ def register_tools(mcp):
     @traced_tool
     def get_military_service() -> dict:
         """
-        Find all individuals with military service across the tree.
+        Find explicit military records and possible military references across the tree.
 
         Scans all individuals' events for military indicators:
         - Event types: MILT, SERV
-        - Keywords: war, military, army, navy, marine, soldier, regiment, etc.
+        - Contextual military phrases in descriptions and notes
+
+        Each matching event includes military_evidence: explicit_tag or
+        possible_reference. A prose reference does not prove the person served.
 
         Useful for finding veterans, understanding family military history,
         or researching ancestors who served.

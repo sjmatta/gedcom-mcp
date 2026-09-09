@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 MODEL_NAME = "all-MiniLM-L6-v2"
+# Bump when parsing or embedding-text construction changes.
+CONTENT_VERSION = 3
 
 # Module-level state (set by build_embeddings)
 _encoder = None
@@ -64,6 +66,9 @@ def _load_cache() -> bool:
 
     try:
         with np.load(cache_path, allow_pickle=True) as data:
+            if "content_version" not in data or int(data["content_version"]) != CONTENT_VERSION:
+                logger.info("Cache invalidated: indexed content changed")
+                return False
             cached_hash = str(data["gedcom_hash"])
             cached_model = str(data["model_name"])
 
@@ -97,6 +102,7 @@ def _save_cache() -> None:
             cache_path,
             gedcom_hash=_compute_gedcom_hash(),
             model_name=MODEL_NAME,
+            content_version=CONTENT_VERSION,
             embeddings=_embeddings,
             ids=np.array(_embedding_ids, dtype=object),
             texts=np.array(_embedding_texts, dtype=object),
@@ -188,6 +194,19 @@ def _build_embedding_text(indi_id: str) -> str:
     for note in indi.notes:
         parts.append(note)
 
+    for family_id in dict.fromkeys(indi.families_as_spouse):
+        family = state.families.get(family_id)
+        if family:
+            for event in family.events:
+                parts.append(
+                    " ".join(
+                        str(value)
+                        for value in (event.type, event.date, event.place, event.description)
+                        if value
+                    )
+                )
+                parts.extend(event.notes)
+                parts.extend(citation.text for citation in event.citations if citation.text)
     return " ".join(parts)
 
 

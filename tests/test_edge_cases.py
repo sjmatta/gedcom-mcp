@@ -1,5 +1,7 @@
 """Tests for edge cases and error handling."""
 
+import pytest
+
 from gedcom_server.core import (
     _get_ancestors,
     _get_descendants,
@@ -171,13 +173,17 @@ class TestAncestorTreeEdgeCases:
 
     def test_generation_cap_at_20(self, sample_individual_id):
         """Generations should be capped at 20."""
-        result = _get_ancestors(sample_individual_id, generations=100)
+        with pytest.raises(ValueError, match="between 0 and 20"):
+            _get_ancestors(sample_individual_id, generations=100)
+        result = _get_ancestors(sample_individual_id, generations=20)
         # Should not crash, result should be valid
         assert isinstance(result, dict)
 
     def test_negative_generations(self, sample_individual_id):
         """Negative generations should return empty or just person."""
-        result = _get_ancestors(sample_individual_id, generations=-5)
+        with pytest.raises(ValueError, match="between 0 and 20"):
+            _get_ancestors(sample_individual_id, generations=-5)
+        result = _get_ancestors(sample_individual_id, generations=0)
         assert isinstance(result, dict)
 
     def test_nonexistent_person(self):
@@ -205,7 +211,9 @@ class TestDescendantTreeEdgeCases:
 
     def test_generation_cap_at_10(self, sample_individual_id):
         """Generations should be capped at 10."""
-        result = _get_descendants(sample_individual_id, generations=100)
+        with pytest.raises(ValueError, match="between 0 and 10"):
+            _get_descendants(sample_individual_id, generations=100)
+        result = _get_descendants(sample_individual_id, generations=10)
         assert isinstance(result, dict)
 
 

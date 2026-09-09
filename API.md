@@ -698,3 +698,39 @@ When using tools that filter by event type (like `search_nearby`), these are com
 - `EVEN` - Generic event
 
 For a complete list, consult the GEDCOM 5.5.1 specification.
+
+
+## Family provenance and bounded graph queries
+
+`get_relationship_to_me(individual_id, lineage="default", max_steps=30)` returns
+one shortest recorded path from the queried person to the home person. The label
+is the queried person's relationship to the home person. Every step includes
+names, direction and family ID; parent steps also carry imported `pedigree` and
+`status`. This is one connection, not an enumeration of all relationships.
+
+`lineage` is `default`, `all`, `birth`, `adopted`, `foster` or `sealing`. Default
+uses the selected parent family (unique explicit birth, otherwise sole usable
+family); ambiguity stops default parent traversal. Other named selections require
+that exact imported qualifier. Disproven links are excluded. The `birth` qualifier
+is not proof of genetic parentage. Marriage edges are available in every mode.
+
+`get_parent_families(individual_id)` exposes all links, including disproven or
+missing-family references, and explains the default selection. Individual records
+and biographies also include `parent_families` and `parent_selection`.
+
+Families now have `events` with citations. Biographies include `family_events`,
+and timelines include events from the person's spouse families with `family_id`.
+Merged family events have `individual_id: null` and are not duplicated for spouses.
+
+Limits: ancestor tree 20 generations / 1,000 output nodes; descendant tree 10 /
+1,000; ancestor-distance search 100 generations / 50,000 nodes; pedigree collapse
+20 generations / 5,000 paths; relationship matrices 50 people. Nested tree and
+pedigree results expose `truncated`; repeat tree references stop expansion and are
+marked `repeated_reference`. List-only queries fail explicitly on exhausted budgets.
+Relationship-to-me has a maximum of 100 steps, 50,000 visited nodes and 200,000
+adjacency entries. No-path results distinguish a depth-limited search from exhaustion
+of the selected graph. Partial and missing data never prove unrelatedness.
+
+Geocoding uses complete supplied jurisdiction context. Ambiguous locations should
+be retried with state/region and country; fuzzy matching never silently substitutes
+a different place. Region searches still use bounding boxes, not exact borders.

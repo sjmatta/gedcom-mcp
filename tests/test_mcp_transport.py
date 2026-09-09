@@ -25,7 +25,7 @@ def test_stdio_tools_and_resources():
         )
         async with Client(transport, timeout=20) as client:
             tools = await client.list_tools()
-            assert len(tools) == 23
+            assert len(tools) == 25
             assert "get_statistics" in {tool.name for tool in tools}
             result = await client.call_tool("get_statistics", {})
             assert not result.is_error

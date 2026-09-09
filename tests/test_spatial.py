@@ -136,7 +136,7 @@ class TestResolveLocation:
     def test_resolve_known_gedcom_place(self):
         """Should resolve places that exist in the GEDCOM."""
         # The sample.ged has places in Boston, New York, etc.
-        coords, matched, source, confidence = _resolve_location("Boston")
+        coords, matched, source, confidence = _resolve_location("Boston, Massachusetts, USA")
         assert coords is not None
         assert "Boston" in matched
         # Could be from gedcom or geonamescache
@@ -144,7 +144,7 @@ class TestResolveLocation:
 
     def test_resolve_by_geonamescache(self):
         """Should fall back to geonamescache for unknown places."""
-        coords, matched, source, confidence = _resolve_location("London")
+        coords, matched, source, confidence = _resolve_location("London, United Kingdom")
         # London should be geocodable
         assert coords is not None
         assert source in ("geonamescache", "nominatim")
@@ -216,7 +216,7 @@ class TestSearchNearby:
 
     def test_coverage_info(self):
         """Should include coverage information."""
-        result = _search_nearby("Boston", radius_miles=50)
+        result = _search_nearby("Boston, Massachusetts, USA", radius_miles=50)
 
         coverage = result["coverage"]
         assert "geocoded" in coverage

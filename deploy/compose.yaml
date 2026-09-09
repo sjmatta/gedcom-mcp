@@ -3,7 +3,7 @@ services:
   gedcom-mcp:
     build:
       context: ..
-    image: gedcom-mcp:chatgpt-1
+    image: gedcom-mcp:chatgpt-2
     container_name: gedcom-mcp
     restart: unless-stopped
     user: "1000:1000"
