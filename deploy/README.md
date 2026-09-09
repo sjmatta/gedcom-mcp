@@ -140,3 +140,21 @@ For rollback, stop only `gedcom-mcp`, restore the saved data and source director
 and run the saved Compose definition with its retained old image using `--no-build`.
 Do not restore caches while the current service is writing them. The private
 home-person configuration and Cloudflare authentication settings are unchanged.
+
+### Accuracy release verification (2026-09-09 UTC)
+
+- Runtime release: `c300fe0`, image `gedcom-mcp:chatgpt-2`.
+- 514 tests passed locally and in GitHub CI on Python 3.12 and 3.13.
+- Prebuilt content-version-3 semantic index: 20,129 nonempty records. The temporary
+  build used six CPUs; production remains at 1.5 CPUs and 2 GiB memory.
+- Deployed-image MCP smoke test: 25 tools, 20,132 people, 6,273 families; configured
+  home person and parent relationship path verified; semantic search returned results.
+- HTTP container healthy, zero restarts; missing/forged origin assertions return 401.
+- Public backend returns 403; portal returns 401; OAuth discovery returns 200 with
+  the expected portal issuer. Cloudflare authenticated catalog sync is ready and
+  includes both new tools. The `query` override remains disabled (24 exposed tools).
+- Original GEDCOM hash unchanged and all other pre-existing container IDs unchanged.
+- Geocache version 2 written; background rechecking remains in progress. A verification
+  snapshot contained 3,032 resolved entries; this is not a final coverage count.
+- Rollback image: `gedcom-mcp:pre-accuracy-20260909`; source and data snapshot:
+  `/home/sjmatta/.local/share/gedcom-mcp/rollback-accuracy-20260909`.
