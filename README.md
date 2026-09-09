@@ -227,3 +227,8 @@ uv run pre-commit install --install-hooks
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+## ChatGPT deployment
+
+The authenticated Rivendell deployment is documented in [deploy/README.md](deploy/README.md),
+including the OAuth portal URL, service operations, credential rotation, and rollback.

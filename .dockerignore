@@ -1,0 +1,8 @@
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!gedcom_server/
+!gedcom_server/**
+**/__pycache__

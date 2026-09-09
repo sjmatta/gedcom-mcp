@@ -21,7 +21,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "fastmcp>=3.1.0",
+    "fastmcp>=4.0.3",
+    "PyJWT[crypto]>=2.13.0",
+    "uvicorn>=0.52.4",
+    "starlette>=1.6.0",
     "ged4py>=0.4.0",
     "rapidfuzz>=3.0.0",
     "jellyfish>=1.0.0",
@@ -37,6 +40,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.20.0",
     # Semantic search (optional - only loaded if SEMANTIC_SEARCH_ENABLED=true)
     "sentence-transformers>=2.2.0",
+    "torch>=2.14.0",
     "numpy>=1.24.0",
     "arize-otel>=0.11.0",
 ]
@@ -92,3 +96,12 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.14.14",
 ]
+
+# Rivendell is CPU-only; do not install CUDA runtimes in the deployment image.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]

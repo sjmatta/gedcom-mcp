@@ -1,0 +1,39 @@
+name: gedcom-mcp
+services:
+  gedcom-mcp:
+    build:
+      context: ..
+    image: gedcom-mcp:chatgpt-1
+    container_name: gedcom-mcp
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports: ["127.0.0.1:8768:8768"]
+    volumes:
+      - /home/sjmatta/.local/share/gedcom-mcp/data:/data
+      - /home/sjmatta/.local/share/gedcom-mcp/cache:/cache
+      - /home/sjmatta/.config/gedcom-mcp:/secrets:ro
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    environment:
+      GEDCOM_FILE: /data/tree.ged
+      CF_ACCESS_CONFIG_FILE: /secrets/cf-access.json
+      MCP_ALLOWED_HOSTS: localhost:8768,127.0.0.1:8768
+      PHOENIX_ENABLED: "false"
+      SEMANTIC_SEARCH_ENABLED: "true"
+      GIS_SEARCH_ENABLED: "true"
+      TOKENIZERS_PARALLELISM: "false"
+      OMP_NUM_THREADS: "2"
+    mem_limit: 2g
+    cpus: 1.5
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8768/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
