@@ -3,7 +3,7 @@ default_install_hook_types: [pre-commit, pre-push]
 repos:
   # Ruff - linting and formatting (pre-commit)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12
+    rev: v0.16.6
     hooks:
       - id: ruff
         args: [--fix]
@@ -15,10 +15,10 @@ repos:
       # MyPy - type checking (pre-commit)
       - id: mypy
         name: mypy
-        entry: uv run mypy gedcom_server.py
+        entry: uv run mypy gedcom_server
         language: system
         types: [python]
-        files: ^gedcom_server\.py$
+        files: ^gedcom_server/.*\.py$
         pass_filenames: false
 
       # Pytest - run tests (pre-push only)

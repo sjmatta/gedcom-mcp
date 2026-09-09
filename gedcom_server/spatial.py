@@ -234,7 +234,7 @@ def _geocode_via_nominatim_full(
 
     try:
         url = "https://nominatim.openstreetmap.org/search"
-        params = {
+        params: dict[str, str | int] = {
             "q": place_str,
             "format": "json",
             "limit": 1,

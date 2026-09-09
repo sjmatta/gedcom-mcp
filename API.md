@@ -313,7 +313,7 @@ Use this when you need multi-level traversal beyond what the specific navigation
 **Examples:**
 ```python
 traverse("@I123@", "children", 2)  # Children and grandchildren
-traverse("@I123@", "parents", 3)   # Parents, grandparents, great-grandparents
+traverse("@I123@", "parents", 3)  # Parents, grandparents, great-grandparents
 traverse("@I123@", "siblings", 1)  # Just siblings
 ```
 

@@ -12,7 +12,6 @@ class TestIsTracingEnabled:
         from gedcom_server.telemetry import is_tracing_enabled
 
         with patch.dict(os.environ, {}, clear=True):
-            # Remove the var if it exists
             os.environ.pop("PHOENIX_ENABLED", None)
             assert is_tracing_enabled() is False
 
@@ -44,20 +43,84 @@ class TestIsTracingEnabled:
 class TestGetPhoenixEndpoint:
     """Tests for get_phoenix_endpoint function."""
 
-    def test_default_endpoint(self):
-        """Should return default endpoint when not configured."""
+    def test_returns_none_when_not_configured(self):
+        """Should return None when no endpoint env vars are set."""
         from gedcom_server.telemetry import get_phoenix_endpoint
 
         with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("PHOENIX_COLLECTOR_ENDPOINT", None)
             os.environ.pop("PHOENIX_ENDPOINT", None)
-            assert get_phoenix_endpoint() == "http://localhost:6006"
+            assert get_phoenix_endpoint() is None
 
-    def test_custom_endpoint(self):
-        """Should return custom endpoint when configured."""
+    def test_collector_endpoint(self):
+        """Should return PHOENIX_COLLECTOR_ENDPOINT when set."""
         from gedcom_server.telemetry import get_phoenix_endpoint
 
-        with patch.dict(os.environ, {"PHOENIX_ENDPOINT": "http://phoenix.example.com:8080"}):
+        with patch.dict(
+            os.environ, {"PHOENIX_COLLECTOR_ENDPOINT": "https://app.phoenix.arize.com"}
+        ):
+            assert get_phoenix_endpoint() == "https://app.phoenix.arize.com"
+
+    def test_legacy_endpoint_fallback(self):
+        """Should fall back to PHOENIX_ENDPOINT for backward compatibility."""
+        from gedcom_server.telemetry import get_phoenix_endpoint
+
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("PHOENIX_COLLECTOR_ENDPOINT", None)
+            os.environ["PHOENIX_ENDPOINT"] = "http://phoenix.example.com:8080"
             assert get_phoenix_endpoint() == "http://phoenix.example.com:8080"
+
+    def test_collector_endpoint_takes_precedence(self):
+        """PHOENIX_COLLECTOR_ENDPOINT should take precedence over PHOENIX_ENDPOINT."""
+        from gedcom_server.telemetry import get_phoenix_endpoint
+
+        with patch.dict(
+            os.environ,
+            {
+                "PHOENIX_COLLECTOR_ENDPOINT": "https://app.phoenix.arize.com",
+                "PHOENIX_ENDPOINT": "http://localhost:6006",
+            },
+        ):
+            assert get_phoenix_endpoint() == "https://app.phoenix.arize.com"
+
+
+class TestUseArize:
+    """Tests for _use_arize function."""
+
+    def test_returns_false_when_no_credentials(self):
+        """Should return False when Arize credentials are not set."""
+        from gedcom_server.telemetry import _use_arize
+
+        with patch.dict(os.environ, {}, clear=True):
+            assert _use_arize() is False
+
+    def test_returns_false_when_only_space_id(self):
+        """Should return False when only ARIZE_SPACE_ID is set."""
+        from gedcom_server.telemetry import _use_arize
+
+        with patch.dict(os.environ, {"ARIZE_SPACE_ID": "test-space"}, clear=True):
+            assert _use_arize() is False
+
+    def test_returns_false_when_only_api_key(self):
+        """Should return False when only ARIZE_API_KEY is set."""
+        from gedcom_server.telemetry import _use_arize
+
+        with patch.dict(os.environ, {"ARIZE_API_KEY": "ak-test"}, clear=True):
+            assert _use_arize() is False
+
+    def test_returns_true_when_both_set(self):
+        """Should return True when both credentials are set."""
+        from gedcom_server.telemetry import _use_arize
+
+        with patch.dict(
+            os.environ,
+            {
+                "ARIZE_SPACE_ID": "test-space",
+                "ARIZE_API_KEY": "ak-test",
+            },
+            clear=True,
+        ):
+            assert _use_arize() is True
 
 
 class TestGetProjectName:
@@ -179,41 +242,108 @@ class TestInitializeTracing:
             result = initialize_tracing()
             assert result is None
 
-    @patch("gedcom_server.telemetry.OTLPSpanExporter")
-    @patch("gedcom_server.telemetry.trace.set_tracer_provider")
-    def test_initializes_when_enabled(self, mock_set_provider, mock_exporter):
-        """Should initialize tracer provider when enabled."""
-        # Reset the global state for this test
+    @patch("dotenv.load_dotenv")
+    @patch("phoenix.otel.register")
+    def test_initializes_with_phoenix_register(self, mock_register, _mock_dotenv):
+        """Should call phoenix.otel.register for local Phoenix."""
         import gedcom_server.telemetry as telemetry_module
 
         telemetry_module._tracer_provider = None
+        mock_provider = MagicMock()
+        mock_register.return_value = mock_provider
 
-        with patch.dict(os.environ, {"PHOENIX_ENABLED": "true"}):
+        with patch.dict(os.environ, {"PHOENIX_ENABLED": "true"}, clear=True):
             result = telemetry_module.initialize_tracing()
 
             assert result is not None
-            mock_set_provider.assert_called_once()
-            mock_exporter.assert_called_once_with(endpoint="http://localhost:6006/v1/traces")
+            mock_register.assert_called_once_with(
+                project_name="gedcom-server",
+                endpoint=None,
+                batch=True,
+                verbose=False,
+            )
 
-        # Reset for other tests
         telemetry_module._tracer_provider = None
 
-    @patch("gedcom_server.telemetry.OTLPSpanExporter")
-    @patch("gedcom_server.telemetry.trace.set_tracer_provider")
-    def test_sets_otel_endpoint_if_not_set(self, mock_set_provider, mock_exporter):
+    @patch("dotenv.load_dotenv")
+    @patch("arize.otel.register")
+    def test_initializes_with_arize_register(self, mock_register, _mock_dotenv):
+        """Should call arize.otel.register when Arize credentials are set."""
+        import gedcom_server.telemetry as telemetry_module
+
+        telemetry_module._tracer_provider = None
+        mock_provider = MagicMock()
+        mock_register.return_value = mock_provider
+
+        env = {
+            "PHOENIX_ENABLED": "true",
+            "ARIZE_SPACE_ID": "test-space-id",
+            "ARIZE_API_KEY": "ak-test-key-123",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            result = telemetry_module.initialize_tracing()
+
+            assert result is not None
+            mock_register.assert_called_once_with(
+                space_id="test-space-id",
+                api_key="ak-test-key-123",
+                project_name="gedcom-server",
+                batch=True,
+                verbose=False,
+            )
+
+        telemetry_module._tracer_provider = None
+
+    @patch("dotenv.load_dotenv")
+    @patch("phoenix.otel.register")
+    def test_sets_otel_endpoint_if_not_set(self, mock_register, _mock_dotenv):
         """Should set OTEL_EXPORTER_OTLP_ENDPOINT if not already set."""
         import gedcom_server.telemetry as telemetry_module
 
         telemetry_module._tracer_provider = None
+        mock_register.return_value = MagicMock()
 
-        env = {"PHOENIX_ENABLED": "true", "PHOENIX_ENDPOINT": "http://custom:9999"}
-        # Ensure OTEL var is not set
-        env_cleared = {k: v for k, v in os.environ.items() if k != "OTEL_EXPORTER_OTLP_ENDPOINT"}
-        env_cleared.update(env)
+        env = {
+            "PHOENIX_ENABLED": "true",
+            "PHOENIX_COLLECTOR_ENDPOINT": "http://custom:9999",
+        }
 
-        with patch.dict(os.environ, env_cleared, clear=True):
+        with patch.dict(os.environ, env, clear=True):
             telemetry_module.initialize_tracing()
             assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == "http://custom:9999"
 
-        # Reset for other tests
         telemetry_module._tracer_provider = None
+
+
+def test_traced_tool_preserves_tool_kind_and_records_errors(monkeypatch):
+    """Real spans retain TOOL classification and exception status through the processor."""
+    import pytest
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    from gedcom_server import telemetry
+
+    provider = TracerProvider()
+    exporter = InMemorySpanExporter()
+    provider.add_span_processor(telemetry.StrandsToOpenInferenceProcessor())
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    monkeypatch.setattr(telemetry, "get_tracer", lambda: provider.get_tracer("test"))
+
+    @telemetry.traced_tool
+    def lookup(*, fail=False):
+        if fail:
+            raise ValueError("test failure")
+        return {"found": True}
+
+    try:
+        assert lookup() == {"found": True}
+        with pytest.raises(ValueError, match="test failure"):
+            lookup(fail=True)
+        success, failure = exporter.get_finished_spans()
+        assert success.attributes[telemetry.OPENINFERENCE_SPAN_KIND] == "TOOL"
+        assert failure.attributes[telemetry.OPENINFERENCE_SPAN_KIND] == "TOOL"
+        assert failure.status.status_code.name == "ERROR"
+        assert failure.attributes["error.type"] == "ValueError"
+    finally:
+        provider.shutdown()

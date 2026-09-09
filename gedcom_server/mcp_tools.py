@@ -24,6 +24,7 @@ from .places import _get_place_cluster
 from .query import _query
 from .semantic import _semantic_search
 from .spatial import _search_nearby
+from .telemetry import traced_tool
 
 
 def register_tools(mcp):
@@ -32,6 +33,7 @@ def register_tools(mcp):
     # ============== CONTEXT TOOLS (2) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_home_person() -> dict | None:
         """
         Get the home person (tree owner) - Stephen John Matta (1984).
@@ -45,6 +47,7 @@ def register_tools(mcp):
         return _get_home_person()
 
     @mcp.tool()
+    @traced_tool
     def get_statistics() -> dict:
         """
         Get statistics about the genealogy tree.
@@ -60,6 +63,7 @@ def register_tools(mcp):
     # ============== LOOKUP TOOLS (3) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_individual(individual_id: str) -> dict | None:
         """
         Get basic details for an individual by their GEDCOM ID.
@@ -76,6 +80,7 @@ def register_tools(mcp):
         return _get_individual(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_biography(individual_id: str) -> dict | None:
         """
         Get comprehensive narrative package for one person.
@@ -99,6 +104,7 @@ def register_tools(mcp):
         return _get_biography(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_family(family_id: str) -> dict | None:
         """
         Get family unit information by GEDCOM family ID.
@@ -116,6 +122,7 @@ def register_tools(mcp):
     # ============== NAVIGATION TOOLS (6) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_parents(individual_id: str) -> dict | None:
         """
         Get the parents of an individual.
@@ -129,6 +136,7 @@ def register_tools(mcp):
         return _get_parents(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_children(individual_id: str) -> list[dict]:
         """
         Get all children of an individual (from all marriages/partnerships).
@@ -142,6 +150,7 @@ def register_tools(mcp):
         return _get_children(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_spouses(individual_id: str) -> list[dict]:
         """
         Get all spouses/partners of an individual.
@@ -155,6 +164,7 @@ def register_tools(mcp):
         return _get_spouses(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_siblings(individual_id: str) -> list[dict]:
         """
         Get siblings of an individual (same parents).
@@ -168,6 +178,7 @@ def register_tools(mcp):
         return _get_siblings(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_ancestors(
         individual_id: str,
         generations: int = 4,
@@ -194,6 +205,7 @@ def register_tools(mcp):
         return _get_ancestors(individual_id, generations, filter)
 
     @mcp.tool()
+    @traced_tool
     def get_descendants(individual_id: str, generations: int = 4) -> dict:
         """
         Get descendant tree up to N generations.
@@ -210,6 +222,7 @@ def register_tools(mcp):
     # ============== SEARCH TOOLS (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def search_individuals(name: str, max_results: int = 50) -> list[dict]:
         """
         Search for individuals by name (partial match on given name or surname).
@@ -226,6 +239,7 @@ def register_tools(mcp):
     # ============== RELATIONSHIP TOOLS (2) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_relationship(
         id1: str,
         id2: str,
@@ -259,6 +273,7 @@ def register_tools(mcp):
         return _get_relationship(id1, id2, max_generations)
 
     @mcp.tool()
+    @traced_tool
     def detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> dict:
         """
         Detect pedigree collapse (ancestors appearing multiple times).
@@ -280,6 +295,7 @@ def register_tools(mcp):
     # ============== PRIMITIVES (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def traverse(
         individual_id: str,
         direction: str,
@@ -309,6 +325,7 @@ def register_tools(mcp):
     # ============== NON-AGENT CLIENTS (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def query(question: str) -> str:
         """
         Answer a natural language question about the family tree.
@@ -345,6 +362,7 @@ def register_tools(mcp):
     # ============== SEMANTIC SEARCH (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def semantic_search(query: str, max_results: int = 20) -> dict:
         """
         Search for individuals using natural language semantic matching.
@@ -375,6 +393,7 @@ def register_tools(mcp):
     # ============== GIS SEARCH (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def search_nearby(
         location: str,
         radius_miles: float = 50,
@@ -432,6 +451,7 @@ def register_tools(mcp):
     # ============== TIMELINE & EVENTS (2) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_timeline(individual_id: str) -> list[dict]:
         """
         Get chronological timeline of all life events for an individual.
@@ -448,6 +468,7 @@ def register_tools(mcp):
         return _get_timeline(individual_id)
 
     @mcp.tool()
+    @traced_tool
     def get_military_service() -> dict:
         """
         Find all individuals with military service across the tree.
@@ -471,6 +492,7 @@ def register_tools(mcp):
     # ============== PLACE ANALYSIS (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_place_cluster(place: str, max_results: int = 100) -> dict:
         """
         Get all individuals connected to a location with event breakdown.
@@ -498,6 +520,7 @@ def register_tools(mcp):
     # ============== SURNAME ANALYSIS (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def get_surname_origins(surname: str) -> dict:
         """
         Analyze surname distribution and detect geographic origins.
@@ -525,6 +548,7 @@ def register_tools(mcp):
     # ============== ASSOCIATES / FAN CLUB (1) ==============
 
     @mcp.tool()
+    @traced_tool
     def find_associates(
         individual_id: str,
         place: str | None = None,

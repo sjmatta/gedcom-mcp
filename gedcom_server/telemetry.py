@@ -1,22 +1,25 @@
-"""Telemetry setup for Arize Phoenix tracing.
+"""Telemetry setup for Arize tracing.
 
 This module provides OpenTelemetry instrumentation for the GEDCOM MCP Server
-and Strands Agent, sending traces to Arize Phoenix for observability.
+and Strands Agent, sending traces to Arize or local Phoenix for observability.
 
 Environment Variables:
     PHOENIX_ENABLED: Set to 'true' to enable tracing (default: false)
-    PHOENIX_ENDPOINT: Phoenix collector URL (default: http://localhost:6006)
-    PHOENIX_PROJECT_NAME: Project name in Phoenix UI (default: gedcom-server)
-    OTEL_EXPORTER_OTLP_ENDPOINT: Used by Strands SDK (default: http://localhost:6006)
+    PHOENIX_PROJECT_NAME: Project name in UI (default: gedcom-server)
+
+    Arize Cloud (set both):
+        ARIZE_SPACE_ID: Arize space identifier
+        ARIZE_API_KEY: Arize API key
+
+    Local Phoenix (optional):
+        PHOENIX_COLLECTOR_ENDPOINT: Collector URL (default: http://localhost:6006)
 """
 
 import os
 from typing import Any
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import ReadableSpan, SpanProcessor, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # OpenInference semantic conventions for Phoenix
 OPENINFERENCE_SPAN_KIND = "openinference.span.kind"
@@ -27,9 +30,13 @@ def is_tracing_enabled() -> bool:
     return os.getenv("PHOENIX_ENABLED", "false").lower() == "true"
 
 
-def get_phoenix_endpoint() -> str:
-    """Get the Phoenix collector endpoint."""
-    return os.getenv("PHOENIX_ENDPOINT", "http://localhost:6006")
+def get_phoenix_endpoint() -> str | None:
+    """Get the Phoenix collector endpoint.
+
+    Checks PHOENIX_COLLECTOR_ENDPOINT first, then legacy PHOENIX_ENDPOINT.
+    Returns None if neither is set (lets register() use its default).
+    """
+    return os.getenv("PHOENIX_COLLECTOR_ENDPOINT") or os.getenv("PHOENIX_ENDPOINT") or None
 
 
 def get_project_name() -> str:
@@ -52,6 +59,10 @@ class StrandsToOpenInferenceProcessor(SpanProcessor):
     def on_start(self, span: Any, parent_context: Any = None) -> None:
         """Called when a span starts. Sets OpenInference span kind."""
         if not hasattr(span, "name") or not hasattr(span, "set_attribute"):
+            return
+
+        # Preserve explicit kinds supplied by traced_tool or other instrumentation.
+        if OPENINFERENCE_SPAN_KIND in (getattr(span, "attributes", None) or {}):
             return
 
         span_name = span.name.lower()
@@ -82,16 +93,27 @@ class StrandsToOpenInferenceProcessor(SpanProcessor):
 _tracer_provider: TracerProvider | None = None
 
 
-def initialize_tracing() -> TracerProvider | None:
-    """Initialize OpenTelemetry tracing for Phoenix.
+def _use_arize() -> bool:
+    """Check if Arize Cloud credentials are configured."""
+    return bool(os.getenv("ARIZE_SPACE_ID") and os.getenv("ARIZE_API_KEY"))
 
-    Sets up the OTLP exporter to send traces to Phoenix and configures
-    the Strands-to-OpenInference span processor.
+
+def initialize_tracing() -> TracerProvider | None:
+    """Initialize OpenTelemetry tracing.
+
+    Uses arize.otel.register() for Arize Cloud (when ARIZE_SPACE_ID and
+    ARIZE_API_KEY are set), otherwise falls back to phoenix.otel.register()
+    for local Phoenix.
 
     Returns:
         TracerProvider if tracing is enabled, None otherwise.
     """
     global _tracer_provider
+
+    # Load .env before checking config, since tracing initializes before state.configure()
+    from dotenv import load_dotenv
+
+    load_dotenv()
 
     if not is_tracing_enabled():
         return None
@@ -99,25 +121,39 @@ def initialize_tracing() -> TracerProvider | None:
     if _tracer_provider is not None:
         return _tracer_provider
 
-    # Create OTLP exporter for Phoenix
-    endpoint = f"{get_phoenix_endpoint()}/v1/traces"
-    exporter = OTLPSpanExporter(endpoint=endpoint)
+    if _use_arize():
+        from arize.otel import register
 
-    # Create tracer provider with our custom processor
-    _tracer_provider = TracerProvider()
+        provider = register(
+            space_id=os.environ["ARIZE_SPACE_ID"],
+            api_key=os.environ["ARIZE_API_KEY"],
+            project_name=get_project_name(),
+            batch=True,
+            verbose=False,
+        )
+    else:
+        from phoenix.otel import register
 
-    # Add the OpenInference processor first (modifies spans)
-    _tracer_provider.add_span_processor(StrandsToOpenInferenceProcessor())
+        provider = register(
+            project_name=get_project_name(),
+            endpoint=get_phoenix_endpoint(),
+            batch=True,
+            verbose=False,
+        )
 
-    # Add the batch exporter (sends spans to Phoenix)
-    _tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
+    # Add our custom processor to map Strands spans to OpenInference format.
+    # Call the base OTel add_span_processor to avoid replacing the default exporter
+    # (both arize and phoenix TracerProviders override add_span_processor to remove defaults).
+    from opentelemetry.sdk.trace import TracerProvider as _BaseTracerProvider
 
-    # Set as global tracer provider
-    trace.set_tracer_provider(_tracer_provider)
+    _BaseTracerProvider.add_span_processor(provider, StrandsToOpenInferenceProcessor())
 
-    # Also set OTEL_EXPORTER_OTLP_ENDPOINT for Strands if not already set
-    if not os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
-        os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = get_phoenix_endpoint()
+    _tracer_provider = provider
+
+    # Also set OTEL_EXPORTER_OTLP_ENDPOINT for Strands SDK if not already set
+    endpoint = get_phoenix_endpoint()
+    if endpoint and not os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
+        os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint
 
     return _tracer_provider
 
@@ -132,3 +168,34 @@ def get_tracer(name: str = "gedcom-server") -> trace.Tracer:
         A Tracer instance (no-op if tracing disabled)
     """
     return trace.get_tracer(name)
+
+
+def traced_tool(func: Any) -> Any:
+    """Decorator that wraps an MCP tool handler in an OpenTelemetry span.
+
+    Creates a span named after the function with tool arguments as attributes.
+    No-op when tracing is disabled (get_tracer returns a no-op tracer).
+    """
+    import functools
+    import json
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        tracer = get_tracer()
+        with tracer.start_as_current_span(
+            func.__name__,
+            attributes={
+                OPENINFERENCE_SPAN_KIND: "TOOL",
+                "tool.name": func.__name__,
+                "tool.parameters": json.dumps(kwargs, default=str),
+            },
+        ) as span:
+            try:
+                result = func(*args, **kwargs)
+                return result
+            except Exception as e:
+                span.set_attribute("error.type", type(e).__name__)
+                span.set_attribute("error.message", str(e))
+                raise
+
+    return wrapper

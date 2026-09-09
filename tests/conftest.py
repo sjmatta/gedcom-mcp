@@ -12,6 +12,11 @@ _TEST_GEDCOM = Path(__file__).parent / "fixtures" / "sample.ged"
 os.environ["GEDCOM_FILE"] = str(_TEST_GEDCOM)
 os.environ["GEDCOM_HOME_PERSON_ID"] = ""  # Empty string = auto-detect in sample.ged
 
+# Keep tests independent of local tracing credentials and background network work.
+os.environ["PHOENIX_ENABLED"] = "false"
+os.environ["GIS_SEARCH_ENABLED"] = "false"
+os.environ["SEMANTIC_SEARCH_ENABLED"] = "false"
+
 # Now import and initialize gedcom_server (safe because env var is set)
 from gedcom_server import initialize  # noqa: E402
 

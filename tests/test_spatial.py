@@ -18,6 +18,49 @@ from gedcom_server.spatial import (
 )
 
 
+@pytest.fixture(autouse=True)
+def offline_geocoding(monkeypatch):
+    """Exercise GIS logic with fixed HTTP responses and no background geocoder."""
+    from gedcom_server import spatial, state
+
+    monkeypatch.setenv("GIS_SEARCH_ENABLED", "true")
+    locations = {
+        "new york": (40.7128, -74.0060, [40.5, 40.9, -74.2, -73.8]),
+        "pittsburgh": (40.4406, -79.9959, [40.3, 40.5, -80.1, -79.8]),
+        "pennsylvania": (40.9, -77.8, [39.7, 42.3, -80.6, -74.7]),
+    }
+
+    def get_response(url, *, params, headers, timeout):
+        response = mock.Mock()
+        city = params["q"].lower().split(",")[0]
+        location = locations.get(city)
+        data = []
+        if location:
+            lat, lon, bbox = location
+            data = [
+                {
+                    "lat": str(lat),
+                    "lon": str(lon),
+                    "boundingbox": [str(value) for value in bbox],
+                    "importance": 0.8,
+                    "display_name": params["q"],
+                }
+            ]
+        response.json.return_value = data
+        return response
+
+    monkeypatch.setattr("requests.get", get_response)
+    # Keep rate limiting from delaying mocked requests.
+    monkeypatch.setattr(spatial, "_last_nominatim_request", float("-inf"))
+    monkeypatch.setattr(spatial.time, "sleep", lambda _: None)
+    monkeypatch.setattr(spatial, "_geocache", {})
+    monkeypatch.setattr(spatial, "_geocache_dirty", False)
+    for place in state.places.values():
+        monkeypatch.setattr(place, "latitude", None)
+        monkeypatch.setattr(place, "longitude", None)
+        spatial._geocode_place_full(place)
+
+
 class TestIsEnabled:
     """Tests for the is_enabled function."""
 
@@ -131,14 +174,8 @@ class TestSearchNearby:
         """Should find individuals with events near New York."""
         result = _search_nearby("New York", radius_miles=50)
 
-        # Sample.ged has multiple events in New York
-        # Note: This test depends on geocoding being complete. If no results,
-        # it's likely because background geocoding hasn't finished.
-        if result["result_count"] == 0:
-            # Check if geocoding is still in progress
-            status = get_geocoding_status()
-            if status["status"] in ("not_started", "running"):
-                pytest.skip("Geocoding not complete - test cannot verify results")
+        # Fixed geocoder data must find the New York events in sample.ged.
+        assert result["result_count"] > 0
 
         # Check result structure when we have results
         for r in result["results"]:

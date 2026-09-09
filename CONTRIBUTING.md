@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ### Prerequisites
 
-- Python 3.11 or 3.12
+- Python 3.12 or 3.13
 - [uv](https://docs.astral.sh/uv/) package manager
 
 ### Installation

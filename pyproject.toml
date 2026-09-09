@@ -38,6 +38,7 @@ dependencies = [
     # Semantic search (optional - only loaded if SEMANTIC_SEARCH_ENABLED=true)
     "sentence-transformers>=2.2.0",
     "numpy>=1.24.0",
+    "arize-otel>=0.11.0",
 ]
 
 [project.urls]
