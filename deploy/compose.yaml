@@ -16,6 +16,8 @@ services:
       - /home/sjmatta/.local/share/gedcom-mcp/cache:/cache
       - /home/sjmatta/.config/gedcom-mcp:/secrets:ro
     tmpfs: ["/tmp:size=128m,mode=1777"]
+    env_file:
+      - /home/sjmatta/.config/gedcom-mcp/home-person.env
     environment:
       GEDCOM_FILE: /data/tree.ged
       CF_ACCESS_CONFIG_FILE: /secrets/cf-access.json

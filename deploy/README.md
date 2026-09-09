@@ -29,6 +29,9 @@ Nominatim; geocoding coverage is partial and reported with search results.
 - Source: `/home/sjmatta/docker/services/gedcom-mcp`
 - Private tree/caches: `/home/sjmatta/.local/share/gedcom-mcp/data` (directory 700, files 600)
 - Model cache: `/home/sjmatta/.local/share/gedcom-mcp/cache`
+- Home person: `/home/sjmatta/.config/gedcom-mcp/home-person.env` (600), containing
+  `GEDCOM_HOME_PERSON_ID` for the selected GEDCOM record. This server-wide setting
+  is shared by all clients; restart the service after changing it.
 - Access issuer/audience: `/home/sjmatta/.config/gedcom-mcp/cf-access.json` (600)
 - Container: `gedcom-mcp`, image `gedcom-mcp:chatgpt-1`
 
