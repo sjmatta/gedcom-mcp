@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **GEDCOM MCP Server** — a Python FastMCP server that exposes a genealogy database (a parsed GEDCOM file) to AI assistants over the Model Context Protocol. It loads a `.ged` file once at startup, builds in-memory indexes, and layers structured search, fuzzy/phonetic place matching, GIS proximity/region search, vector semantic search, and a Strands Agent fallback on top of the raw genealogy graph.
 
-The server publishes **23 MCP tools** and **6 MCP resources**. Requires Python `>=3.12`; CI matrix runs on 3.12 and 3.13. Typical scale target: 20K+ individuals.
+The server publishes **25 MCP tools** and **6 MCP resources**. Requires Python `>=3.14`; CI tests on 3.14 only, matching the Docker image. Typical scale target: 20K+ individuals.
 
 ## Layered Architecture
 
@@ -15,7 +15,7 @@ The server is best understood as several layers stacked on top of the parsed GED
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ MCP surface (FastMCP)                                           │
-│  - mcp_tools.py: 23 @mcp.tool() registrations                   │
+│  - mcp_tools.py: 25 @tool registrations                         │
 │  - mcp_resources.py: 6 @mcp.resource() endpoints                │
 └─────────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────────────────┐
@@ -139,7 +139,7 @@ A Strands Agent (Claude `claude-sonnet-4-20250514` by default, overridable via `
 
 Tools live in `mcp_tools.py` purely as thin `@tool` wrappers around private `_*()` implementations in domain modules. `@tool` passes the whole docstring as the description: FastMCP 3+ otherwise keeps only the first paragraph of a docstring with an `Args` section, silently dropping Returns/Examples/usage notes (guarded by `test_tool_descriptions_keep_full_docstring`). Resources are URI-templated read-only views.
 
-Tool inventory (23 total, grouped by category in source order):
+Tool inventory (25 total, grouped by category in source order):
 
 | Category | Tools |
 | --- | --- |
@@ -147,7 +147,7 @@ Tool inventory (23 total, grouped by category in source order):
 | Lookup (3) | `get_individual`, `get_biography`, `get_family` |
 | Navigation (6) | `get_parents`, `get_children`, `get_spouses`, `get_siblings`, `get_ancestors`, `get_descendants` |
 | Search (1) | `search_individuals` |
-| Relationship (2) | `get_relationship`, `detect_pedigree_collapse` |
+| Relationship (4) | `get_relationship`, `detect_pedigree_collapse`, `get_relationship_to_me`, `get_parent_families` |
 | Primitives (1) | `traverse` |
 | Non-agent fallback (1) | `query` |
 | Semantic (1) | `semantic_search` |
@@ -234,11 +234,11 @@ uv run pytest tests/test_core.py::test_search_individuals -v
 
 ## Code Quality
 
-- **Ruff** — `line-length=100`, target `py312`, rules `E,F,I,N,W,UP,B,C4,SIM`, `E501` ignored
-- **Mypy** — `python_version=3.12`, `check_untyped_defs=true`, `warn_unused_ignores=true`, lenient on untyped defs and missing `import-untyped`
+- **Ruff** — `line-length=100`, target `py314`, rules `E,F,I,N,W,UP,B,C4,SIM`, `E501` ignored
+- **Mypy** — `python_version=3.14`, `check_untyped_defs=true`, `warn_unused_ignores=true`, lenient on untyped defs and missing `import-untyped`
 - **Deptry** — runs in `poe deps`, ignores `DEP002` (dev-only deps in main code)
 - **Pre-commit** — ruff (`--fix` + format) and mypy on `pre-commit`; pytest on `pre-push`
-- **CI** — GitHub Actions runs lint, format check, typecheck, and tests on Python 3.12 + 3.13
+- **CI** — GitHub Actions runs lint, format check, typecheck, and tests on Python 3.14
 
 ## Testing
 
