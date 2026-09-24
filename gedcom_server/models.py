@@ -25,7 +25,7 @@ class Individual:
     death_place: str | None = None
     family_as_child: str | None = None  # FAMC reference
     families_as_spouse: list[str] = field(default_factory=list)  # FAMS references
-    events: list["Event"] = field(default_factory=list)  # All life events
+    events: list[Event] = field(default_factory=list)  # All life events
     notes: list[str] = field(default_factory=list)  # Biographical notes
 
     parent_families: list[ParentFamily] = field(default_factory=list)
@@ -71,7 +71,7 @@ class Family:
     children_ids: list[str] = field(default_factory=list)
     marriage_date: str | None = None
     marriage_place: str | None = None
-    events: list["Event"] = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {

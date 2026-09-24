@@ -44,7 +44,7 @@ class AccessVerifier:
                 options={"require": ["exp", "iat", "iss", "aud", "sub"]},
             )
             return True
-        except (jwt.PyJWTError, ValueError):
+        except jwt.PyJWTError, ValueError:
             return False
 
 

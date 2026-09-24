@@ -54,7 +54,7 @@ def parse_citation(cite_record) -> Citation | None:
             text=text,
             url=url,
         )
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         return None
 
 
@@ -96,7 +96,7 @@ def parse_event(event_record) -> Event:
             elif sub.tag == "NOTE" and sub.value:
                 notes.append(str(sub.value))
 
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         pass
 
     return Event(
@@ -118,7 +118,7 @@ def parse_events_from_record(record) -> list[Event]:
             if sub.tag in tags:
                 event = parse_event(sub)
                 events.append(event)
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         pass
     return events
 
@@ -146,7 +146,7 @@ def parse_name(record) -> tuple[str, str]:
         surn = name_rec.sub_tag("SURN") if name_rec else None
         if surn and surn.value:
             surname = str(surn.value)
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         pass
     return given, surname
 

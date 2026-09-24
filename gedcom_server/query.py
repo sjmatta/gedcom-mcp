@@ -192,7 +192,7 @@ def _create_agent(callback_handler: Any = None, session_id: str | None = None) -
     return Agent(**agent_kwargs)
 
 
-def _query_with_callback(question: str) -> Generator[str, None, None]:
+def _query_with_callback(question: str) -> Generator[str]:
     """Answer a natural language question with callback-based streaming.
 
     Uses a callback handler to capture streaming text as it's generated.

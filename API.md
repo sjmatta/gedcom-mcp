@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for all 24 MCP tools and 4 resources provided by the GEDCOM MCP Server.
+Complete reference for all 25 MCP tools and 6 resources provided by the GEDCOM MCP Server.
 
 ## Table of Contents
 
@@ -8,11 +8,11 @@ Complete reference for all 24 MCP tools and 4 resources provided by the GEDCOM M
 - [Lookup Tools (3)](#lookup-tools)
 - [Navigation Tools (6)](#navigation-tools)
 - [Search Tools (3)](#search-tools)
-- [Relationship Tools (3)](#relationship-tools)
+- [Relationship Tools (3)](#relationship-tools) (plus `get_relationship_to_me` and `get_parent_families`, see [Family provenance](#family-provenance-and-bounded-graph-queries))
 - [Timeline & Events (2)](#timeline--events)
 - [Place & Surname Analysis (2)](#place--surname-analysis)
 - [Natural Language (1)](#natural-language)
-- [MCP Resources (4)](#mcp-resources)
+- [MCP Resources (6)](#mcp-resources)
 
 ---
 
@@ -637,7 +637,7 @@ query("Create a narrative of my family history")
 
 ## MCP Resources
 
-In addition to tools, the server provides 4 MCP resources for direct data access:
+In addition to tools, the server provides 6 MCP resources for direct data access:
 
 ### gedcom://individual/{id}
 
@@ -656,6 +656,26 @@ Get family record by GEDCOM family ID.
 **Example:** `gedcom://family/@F123@`
 
 Returns the complete family record including spouses, children, and marriage information.
+
+---
+
+### gedcom://source/{id}
+
+Get source record by GEDCOM source ID.
+
+**Example:** `gedcom://source/@S12@`
+
+Returns the source record, or a not-found message.
+
+---
+
+### gedcom://sources
+
+Get all sources.
+
+**Example:** `gedcom://sources`
+
+Returns one line per source (up to 1,000): ID, title and author.
 
 ---
 

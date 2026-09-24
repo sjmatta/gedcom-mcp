@@ -4,7 +4,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-- **24 MCP Tools** for comprehensive genealogy research:
+- **25 MCP Tools** for comprehensive genealogy research:
 
   **Core Tools:**
   - `get_home_person` - Get the tree owner's record
@@ -31,6 +31,8 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
   - `get_relationship` - Calculate relationships between two people
   - `detect_pedigree_collapse` - Find ancestors appearing multiple times
   - `find_associates` - FAN Club technique (Friends, Associates, Neighbors)
+  - `get_relationship_to_me` - Explain how someone is related to the home person
+  - `get_parent_families` - List every parent family with pedigree qualifiers
 
   **Timeline & Events:**
   - `get_timeline` - Chronological life events for an individual
@@ -43,9 +45,11 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
   **Natural Language:**
   - `query` - Natural language questions (fallback for non-agent MCP clients)
 
-- **4 MCP Resources**:
+- **6 MCP Resources**:
   - `gedcom://individual/{id}` - Individual record by ID
   - `gedcom://family/{id}` - Family record by ID
+  - `gedcom://source/{id}` - Source record by ID
+  - `gedcom://sources` - All sources
   - `gedcom://stats` - Tree statistics
   - `gedcom://surnames` - All surnames with counts
 

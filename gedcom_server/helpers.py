@@ -41,7 +41,7 @@ def get_record_value(record, tag: str) -> str | None:
         sub = record.sub_tag(tag)
         if sub and sub.value:
             return str(sub.value)
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         pass
     return None
 
@@ -59,7 +59,7 @@ def get_event_details(record, event_tag: str) -> tuple[str | None, str | None]:
             place_sub = event.sub_tag("PLAC")
             if place_sub and place_sub.value:
                 place_val = str(place_sub.value)
-    except (AttributeError, KeyError):
+    except AttributeError, KeyError:
         pass
     return date_val, place_val
 
@@ -134,5 +134,5 @@ def date_sort_key(date_str: str | None) -> DateValue:
     """
     try:
         return DateValue.parse(date_str)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return DateValue.parse(None)
