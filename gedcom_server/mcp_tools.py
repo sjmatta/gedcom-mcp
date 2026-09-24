@@ -1,5 +1,7 @@
 """MCP tool definitions for the GEDCOM genealogy server."""
 
+import inspect
+
 from .associates import _find_associates
 from .core import (
     _detect_pedigree_collapse,
@@ -31,7 +33,13 @@ from .telemetry import traced_tool
 def register_tools(mcp):
     """Register all MCP tools with the server."""
 
-    @mcp.tool()
+    def tool(fn):
+        # FastMCP 3+ keeps only the first paragraph of a docstring that has an
+        # Args section, dropping Returns/Examples/usage notes the model relies
+        # on. Pass the whole docstring; Args still become parameter descriptions.
+        return mcp.tool(description=inspect.getdoc(fn))(fn)
+
+    @tool
     @traced_tool
     def get_parent_families(individual_id: str) -> dict:
         """List every parent family, pedigree qualifier, status, and selected default.
@@ -41,7 +49,7 @@ def register_tools(mcp):
         """
         return _get_parent_families(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_relationship_to_me(
         individual_id: str, lineage: Lineage = "default", max_steps: int = 30
@@ -58,7 +66,7 @@ def register_tools(mcp):
 
     # ============== CONTEXT TOOLS (2) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_home_person() -> dict | None:
         """
@@ -72,7 +80,7 @@ def register_tools(mcp):
         """
         return _get_home_person()
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_statistics() -> dict:
         """
@@ -88,7 +96,7 @@ def register_tools(mcp):
 
     # ============== LOOKUP TOOLS (3) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_individual(individual_id: str) -> dict | None:
         """
@@ -105,7 +113,7 @@ def register_tools(mcp):
         """
         return _get_individual(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_biography(individual_id: str) -> dict | None:
         """
@@ -129,7 +137,7 @@ def register_tools(mcp):
         """
         return _get_biography(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_family(family_id: str) -> dict | None:
         """
@@ -147,7 +155,7 @@ def register_tools(mcp):
 
     # ============== NAVIGATION TOOLS (6) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_parents(individual_id: str) -> dict | None:
         """
@@ -161,7 +169,7 @@ def register_tools(mcp):
         """
         return _get_parents(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_children(individual_id: str) -> list[dict]:
         """
@@ -175,7 +183,7 @@ def register_tools(mcp):
         """
         return _get_children(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_spouses(individual_id: str) -> list[dict]:
         """
@@ -189,7 +197,7 @@ def register_tools(mcp):
         """
         return _get_spouses(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_siblings(individual_id: str) -> list[dict]:
         """
@@ -203,7 +211,7 @@ def register_tools(mcp):
         """
         return _get_siblings(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_ancestors(
         individual_id: str,
@@ -230,7 +238,7 @@ def register_tools(mcp):
         """
         return _get_ancestors(individual_id, generations, filter)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_descendants(individual_id: str, generations: int = 4) -> dict:
         """
@@ -247,7 +255,7 @@ def register_tools(mcp):
 
     # ============== SEARCH TOOLS (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def search_individuals(name: str, max_results: int = 50) -> list[dict]:
         """
@@ -264,7 +272,7 @@ def register_tools(mcp):
 
     # ============== RELATIONSHIP TOOLS (2) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_relationship(
         id1: str,
@@ -298,7 +306,7 @@ def register_tools(mcp):
         """
         return _get_relationship(id1, id2, max_generations)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def detect_pedigree_collapse(individual_id: str, max_generations: int = 10) -> dict:
         """
@@ -320,7 +328,7 @@ def register_tools(mcp):
 
     # ============== PRIMITIVES (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def traverse(
         individual_id: str,
@@ -350,7 +358,7 @@ def register_tools(mcp):
 
     # ============== NON-AGENT CLIENTS (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def query(question: str) -> str:
         """
@@ -387,7 +395,7 @@ def register_tools(mcp):
 
     # ============== SEMANTIC SEARCH (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def semantic_search(query: str, max_results: int = 20) -> dict:
         """
@@ -418,7 +426,7 @@ def register_tools(mcp):
 
     # ============== GIS SEARCH (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def search_nearby(
         location: str,
@@ -476,7 +484,7 @@ def register_tools(mcp):
 
     # ============== TIMELINE & EVENTS (2) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_timeline(individual_id: str) -> list[dict]:
         """
@@ -493,7 +501,7 @@ def register_tools(mcp):
         """
         return _get_timeline(individual_id)
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_military_service() -> dict:
         """
@@ -520,7 +528,7 @@ def register_tools(mcp):
 
     # ============== PLACE ANALYSIS (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_place_cluster(place: str, max_results: int = 100) -> dict:
         """
@@ -548,7 +556,7 @@ def register_tools(mcp):
 
     # ============== SURNAME ANALYSIS (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def get_surname_origins(surname: str) -> dict:
         """
@@ -576,7 +584,7 @@ def register_tools(mcp):
 
     # ============== ASSOCIATES / FAN CLUB (1) ==============
 
-    @mcp.tool()
+    @tool
     @traced_tool
     def find_associates(
         individual_id: str,

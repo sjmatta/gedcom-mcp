@@ -35,3 +35,19 @@ def test_stdio_tools_and_resources():
             assert await client.read_resource("gedcom://stats")
 
     asyncio.run(asyncio.wait_for(exercise_server(), timeout=30))
+
+
+def test_tool_descriptions_keep_full_docstring():
+    """FastMCP 3+ truncates docstrings with an Args section to their first paragraph.
+
+    Tools register through mcp_tools.tool(), which passes the whole docstring so
+    Returns/Examples/usage notes still reach the model.
+    """
+    import inspect
+
+    from gedcom_server import mcp
+
+    tools = asyncio.run(mcp.list_tools())
+    assert len(tools) == 25
+    for tool in tools:
+        assert tool.description == inspect.getdoc(tool.fn), tool.name

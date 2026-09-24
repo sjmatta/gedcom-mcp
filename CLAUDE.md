@@ -137,7 +137,7 @@ A Strands Agent (Claude `claude-sonnet-4-20250514` by default, overridable via `
 
 ### Layer 7 — MCP surface (`mcp_tools.py`, `mcp_resources.py`)
 
-Tools live in `mcp_tools.py` purely as thin `@mcp.tool()` wrappers around private `_*()` implementations in domain modules. Resources are URI-templated read-only views.
+Tools live in `mcp_tools.py` purely as thin `@tool` wrappers around private `_*()` implementations in domain modules. `@tool` passes the whole docstring as the description: FastMCP 3+ otherwise keeps only the first paragraph of a docstring with an `Args` section, silently dropping Returns/Examples/usage notes (guarded by `test_tool_descriptions_keep_full_docstring`). Resources are URI-templated read-only views.
 
 Tool inventory (23 total, grouped by category in source order):
 
