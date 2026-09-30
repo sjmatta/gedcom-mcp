@@ -51,3 +51,69 @@ def test_tool_descriptions_keep_full_docstring():
     assert len(tools) == 25
     for tool in tools:
         assert tool.description == inspect.getdoc(tool.fn), tool.name
+
+
+def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
+    async def exercise_server():
+        root = Path(__file__).resolve().parents[1]
+        transport = StdioTransport(
+            command=sys.executable,
+            args=["-m", "gedcom_server", "--gedcom-file", str(root / "tests/fixtures/sample.ged")],
+            cwd=str(root),
+            env={
+                "PHOENIX_ENABLED": "false",
+                "GIS_SEARCH_ENABLED": "false",
+                "SEMANTIC_SEARCH_ENABLED": "false",
+                "GEDCOM_HOME_PERSON_ID": "",
+                "GEDCOM_WRITES_ENABLED": "true",
+                "GEDCOM_STORE_DIR": str(tmp_path / "store"),
+            },
+            keep_alive=False,
+        )
+        async with Client(transport, timeout=20) as client:
+            tools = await client.list_tools()
+            assert len(tools) == 33
+            status = await client.call_tool("get_tree_revision", {})
+            assert status.data["revision"] == 0
+            prepared = await client.call_tool(
+                "prepare_tree_change",
+                {
+                    "expected_revision": 0,
+                    "reason": "MCP transport verification",
+                    "operations": [
+                        {"op": "add_note", "record_id": "@I1@", "text": "MCP test note"}
+                    ],
+                },
+            )
+            assert not prepared.is_error
+            assert "+1 NOTE MCP test note" in prepared.data["diff"]
+            result = await client.call_tool(
+                "apply_tree_change",
+                {
+                    "proposal_id": prepared.data["proposal_id"],
+                    "expected_revision": 0,
+                },
+            )
+            assert not result.is_error and result.data["revision"] == 1
+            person = await client.call_tool("get_individual", {"individual_id": "@I1@"})
+            assert "MCP test note" in person.data["notes"]
+            resource = await client.read_resource("gedcom://individual/@I1@")
+            assert "MCP test note" in resource[0].text
+            restored = await client.call_tool(
+                "prepare_tree_restore",
+                {
+                    "expected_revision": 1,
+                    "restore_revision": 0,
+                    "reason": "Undo transport test",
+                },
+            )
+            result = await client.call_tool(
+                "apply_tree_change",
+                {
+                    "proposal_id": restored.data["proposal_id"],
+                    "expected_revision": 1,
+                },
+            )
+            assert result.data["revision"] == 2
+
+    asyncio.run(asyncio.wait_for(exercise_server(), timeout=45))

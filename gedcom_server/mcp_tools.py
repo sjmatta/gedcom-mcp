@@ -27,6 +27,7 @@ from .query import _query
 from .relationships import Lineage, _get_parent_families, _get_relationship_to_me
 from .semantic import _semantic_search
 from .spatial import _search_nearby
+from .state import synchronized
 from .telemetry import traced_tool
 
 
@@ -37,7 +38,7 @@ def register_tools(mcp):
         # FastMCP 3+ keeps only the first paragraph of a docstring that has an
         # Args section, dropping Returns/Examples/usage notes the model relies
         # on. Pass the whole docstring; Args still become parameter descriptions.
-        return mcp.tool(description=inspect.getdoc(fn))(fn)
+        return mcp.tool(description=inspect.getdoc(fn))(synchronized(fn))
 
     @tool
     @traced_tool

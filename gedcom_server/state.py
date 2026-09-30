@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import threading
 from collections import defaultdict
+from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -15,6 +17,19 @@ if TYPE_CHECKING:
 # Configuration (set by configure() at startup)
 GEDCOM_FILE: Path | None = None
 HOME_PERSON_ID: str | None = None
+TREE_LOCK = threading.RLock()
+
+
+def synchronized(fn):
+    """Keep an MCP read entirely within one published tree revision."""
+
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        with TREE_LOCK:
+            return fn(*args, **kwargs)
+
+    return wrapped
+
 
 # Global indexes (populated at startup by load_gedcom)
 individuals: dict[str, Individual] = {}
@@ -54,40 +69,42 @@ def _resolve_gedcom_path() -> Path:
     return path
 
 
-def _detect_home_person() -> str | None:
+def _detect_home_person(people=None, family_records=None) -> str | None:
     """Auto-detect home person as individual with most family connections.
 
     Scores each person by: descendants + ancestors + spouse connections.
     Returns the highest-scoring individual's ID.
     """
-    if not individuals:
+    people = individuals if people is None else people
+    family_records = families if family_records is None else family_records
+    if not people:
         return None
 
     def score_individual(indi_id: str) -> int:
         """Calculate connection score for an individual."""
         score = 0
-        indi = individuals.get(indi_id)
+        indi = people.get(indi_id)
         if not indi:
             return 0
 
         # Score for being in a family as a child (has parents)
-        if indi.family_as_child and indi.family_as_child in families:
+        if indi.family_as_child and indi.family_as_child in family_records:
             score += 2
-            parent_family = families[indi.family_as_child]
+            parent_family = family_records[indi.family_as_child]
             # Score for having grandparents
             for parent_id in [parent_family.husband_id, parent_family.wife_id]:
                 if parent_id:
-                    parent = individuals.get(parent_id)
+                    parent = people.get(parent_id)
                     if parent and parent.family_as_child:
                         score += 1
 
         # Score for being in families as spouse (has spouse/children)
         for fam_id in indi.families_as_spouse or []:
-            fam = families.get(fam_id)
+            fam = family_records.get(fam_id)
             if fam:
                 # Score for having a spouse
                 spouse_id = fam.wife_id if fam.husband_id == indi_id else fam.husband_id
-                if spouse_id and spouse_id in individuals:
+                if spouse_id and spouse_id in people:
                     score += 1
                 # Score for each child
                 score += len(fam.children_ids or [])
@@ -97,7 +114,7 @@ def _detect_home_person() -> str | None:
     # Find the individual with the highest score
     best_id = None
     best_score = -1
-    for indi_id in individuals:
+    for indi_id in people:
         score = score_individual(indi_id)
         if score > best_score:
             best_score = score

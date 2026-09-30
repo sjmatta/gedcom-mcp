@@ -82,11 +82,12 @@ The server requires API keys only for optional features:
 
 ### Data Access
 
-The server provides read-only access to GEDCOM data:
-- **Cannot modify** your GEDCOM files
-- **Cannot delete** data
-- **Cannot create** new records
-- Files are opened in read-only mode
+The server is read-only by default. Enabling `GEDCOM_WRITES_ENABLED=true`
+adds prepared-change and apply tools backed by a private revision store; the
+original import is never overwritten. See [WRITES.md](WRITES.md) for the exact
+write scope, integrity checks, backup requirements, and recovery procedures.
+Write-enabled deployments must restrict these tools to trusted operators. The
+configured audit actor is an operator label, not a verified user identity.
 
 ### Network Security
 
