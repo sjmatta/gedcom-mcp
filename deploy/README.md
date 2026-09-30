@@ -194,7 +194,9 @@ compares it byte-for-byte from **each** destination before pruning staging files
 It checks the expected NFS mount before NAS writes and retains three recent,
 30 daily, and 12 monthly tagged snapshots. Retention groups by host/tags, since
 snapshot filenames change. Repository pack pruning remains with existing jobs.
-The script fails on any unavailable destination or failed read-back.
+The script fails on any unavailable destination or failed read-back. Replication
+staging keeps at most three self-contained snapshots even during repeated failures;
+snapshot creation also reserves free space before copying the database.
 
 After deploying the write-enabled service, install one cron entry (host uses UTC):
 
