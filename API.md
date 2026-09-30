@@ -382,7 +382,7 @@ Supports two search modes:
 
 **Parameters:**
 - `location` (str): Place name to search around (fuzzy matched)
-- `radius_miles` (float): Search radius (default 50, max 500) - ignored when mode="within"
+- `radius_miles` (float): Search radius in the selected `unit` (legacy parameter name; default 50, max 500) - ignored when mode="within"
 - `event_types` (list[str] | None): Optional filter - list of event types like ["BIRT", "DEAT", "MARR"]
 - `unit` (str): Distance unit - "miles" (default) or "km"
 - `max_results` (int): Maximum results to return (default 100)
@@ -394,7 +394,10 @@ Supports two search modes:
 - Dictionary with:
   - reference_location: matched place with coordinates/bbox and confidence
   - mode: the search mode used ("proximity" or "within")
-  - search_radius_miles: the search radius (proximity mode only)
+  - search_radius: the radius in the selected unit (proximity mode only)
+  - search_radius_miles: the radius converted to miles (proximity mode only)
+  - results[].distance_miles: distance in miles regardless of the selected unit
+  - results[].distance_km: distance in kilometers, included when `unit="km"`
   - geocoding_status: "running", "complete", or "disabled"
   - coverage: how many places were successfully geocoded
   - result_count: number of matches found

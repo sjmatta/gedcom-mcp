@@ -1,4 +1,4 @@
-"""GEDCOM Genealogy Server - FastMCP3 server for querying genealogy data.
+"""GEDCOM Genealogy Server - FastMCP server for querying genealogy data.
 
 This package provides a complete MCP server for querying genealogy data from GEDCOM files.
 Optimized for large files (20K+ individuals).

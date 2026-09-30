@@ -65,7 +65,7 @@ def _load_cache() -> bool:
         return False
 
     try:
-        with np.load(cache_path, allow_pickle=True) as data:
+        with np.load(cache_path, allow_pickle=False) as data:
             if "content_version" not in data or int(data["content_version"]) != CONTENT_VERSION:
                 logger.info("Cache invalidated: indexed content changed")
                 return False
@@ -81,10 +81,28 @@ def _load_cache() -> bool:
                 logger.info("Cache invalidated: model changed")
                 return False
 
-            # Load embeddings
-            _embeddings = data["embeddings"]
-            _embedding_ids = list(data["ids"])
-            _embedding_texts = list(data["texts"])
+            # Validate all arrays before publishing any cache state.
+            embeddings = data["embeddings"]
+            ids = data["ids"]
+            texts = data["texts"]
+            if (
+                embeddings.ndim != 2
+                or embeddings.shape[1] == 0
+                or not np.issubdtype(embeddings.dtype, np.floating)
+                or not np.isfinite(embeddings).all()
+                or ids.ndim != 1
+                or texts.ndim != 1
+                or ids.dtype.kind != "U"
+                or texts.dtype.kind != "U"
+                or len(ids) != len(texts)
+                or len(ids) != len(embeddings)
+                or len(set(ids)) != len(ids)
+            ):
+                logger.warning("Invalid embedding cache arrays; rebuilding")
+                return False
+            _embeddings = embeddings
+            _embedding_ids = ids.tolist()
+            _embedding_texts = texts.tolist()
             return True
     except Exception as e:
         logger.warning(f"Failed to load embeddings cache: {e}")
@@ -104,8 +122,8 @@ def _save_cache() -> None:
             model_name=MODEL_NAME,
             content_version=CONTENT_VERSION,
             embeddings=_embeddings,
-            ids=np.array(_embedding_ids, dtype=object),
-            texts=np.array(_embedding_texts, dtype=object),
+            ids=np.array(_embedding_ids, dtype=str),
+            texts=np.array(_embedding_texts, dtype=str),
         )
         logger.info(f"Saved embeddings cache to {cache_path}")
     except Exception as e:
@@ -222,6 +240,12 @@ def build_embeddings() -> None:
     - If no valid cache, builds embeddings and saves to cache
     """
     global _encoder, _embeddings, _embedding_ids, _embedding_texts
+
+    # A failed or disabled rebuild must never leave the previous tree searchable.
+    _encoder = None
+    _embeddings = None
+    _embedding_ids = []
+    _embedding_texts = []
 
     if not is_enabled():
         logger.debug("Semantic search disabled")

@@ -198,7 +198,8 @@ class TestSearchNearby:
         result = _search_nearby("New York", radius_miles=100, unit="km")
 
         assert result["unit"] == "km"
-        assert result["search_radius_miles"] == 100
+        assert result["search_radius_miles"] == pytest.approx(100 / 1.609344)
+        assert result["search_radius"] == 100
 
     def test_unknown_location(self):
         """Should handle unknown locations gracefully."""
@@ -438,3 +439,111 @@ class TestSearchNearbyModeParameter:
         # Both should return the same results (radius is ignored)
         if "error" not in result1 and "error" not in result2:
             assert result1.get("result_count") == result2.get("result_count")
+
+
+@pytest.fixture
+def event_search_tree(monkeypatch):
+    """A person with repeated census visits and a marriage at two indexed places."""
+    from gedcom_server import state
+    from gedcom_server.helpers import create_place
+    from gedcom_server.models import Event, Family, Individual
+
+    first, second = create_place("First city"), create_place("Second city")
+    first.latitude, first.longitude = 0.0, 0.0
+    second.latitude, second.longitude = 0.1, 0.0
+    person = Individual(
+        id="@I1@",
+        birth_place=first.original,
+        birth_date="1900",
+        families_as_spouse=["@F1@"],
+        events=[
+            Event(type="BIRT", date="1900", place=first.original),
+            Event(type="CENS", date="1920", place=first.original),
+            Event(type="CENS", date="1930", place=first.original),
+        ],
+    )
+    family = Family(
+        id="@F1@",
+        husband_id=person.id,
+        marriage_date="1940",
+        marriage_place=second.original,
+        events=[Event(type="MARR", date="1940", place=second.original)],
+    )
+    monkeypatch.setattr(state, "individuals", {person.id: person})
+    monkeypatch.setattr(state, "families", {family.id: family})
+    monkeypatch.setattr(state, "places", {p.id: p for p in [first, second]})
+    monkeypatch.setattr(state, "individual_places", {person.id: [first.id, second.id]})
+    return person
+
+
+@pytest.mark.parametrize("mode", ["within", "proximity"])
+def test_spatial_search_keeps_all_events_at_result_limit(event_search_tree, monkeypatch, mode):
+    from gedcom_server import spatial
+
+    monkeypatch.setattr(spatial, "_resolve_location", lambda _: ((0, 0), "Origin", "test", "high"))
+    monkeypatch.setattr(spatial, "_geocode_via_nominatim_full", lambda _: None)
+    if mode == "within":
+        result = spatial._search_within_bbox(
+            {"south": -1, "north": 1, "west": -1, "east": 1}, max_results=1
+        )
+    else:
+        result = spatial._search_nearby("Origin", max_results=1)["results"]
+    assert len(result) == 1
+    assert [(e["event"], e["date"]) for e in result[0]["matching_places"]] == [
+        ("BIRT", "1900"),
+        ("CENS", "1920"),
+        ("CENS", "1930"),
+        ("MARR", "1940"),
+    ]
+
+
+@pytest.mark.parametrize("mode", ["within", "proximity"])
+def test_spatial_marriage_filter_includes_family_events(event_search_tree, monkeypatch, mode):
+    from gedcom_server import spatial
+
+    monkeypatch.setattr(spatial, "_resolve_location", lambda _: ((0, 0), "Origin", "test", "high"))
+    monkeypatch.setattr(spatial, "_geocode_via_nominatim_full", lambda _: None)
+    if mode == "within":
+        results = spatial._search_within_bbox(
+            {"south": -1, "north": 1, "west": -1, "east": 1}, event_types=["MARR"]
+        )
+    else:
+        results = spatial._search_nearby("Origin", event_types=["MARR"])["results"]
+    assert len(results) == 1
+    assert [e["event"] for e in results[0]["matching_places"]] == ["MARR"]
+
+
+@pytest.mark.parametrize("longitude, expected", [(179, True), (-179, True), (0, False)])
+def test_bbox_crossing_antimeridian(longitude, expected):
+    assert (
+        _point_in_bbox(0, longitude, {"south": -10, "north": 10, "west": 170, "east": -170})
+        is expected
+    )
+
+
+def test_kilometer_search_reports_distances_in_the_named_units(event_search_tree, monkeypatch):
+    from haversine import Unit, haversine
+
+    from gedcom_server import spatial
+
+    monkeypatch.setattr(spatial, "_resolve_location", lambda _: ((0, 0), "Origin", "test", "high"))
+    monkeypatch.setattr(spatial, "_geocode_via_nominatim_full", lambda _: None)
+    result = spatial._search_nearby("Origin", radius_miles=20, unit="km", event_types=["MARR"])
+    assert result["search_radius"] == 20
+    assert result["search_radius_miles"] == pytest.approx(20 / 1.609344)
+    assert result["results"][0]["distance_miles"] == round(
+        haversine((0, 0), (0.1, 0), unit=Unit.MILES), 1
+    )
+    assert result["results"][0]["distance_km"] == pytest.approx(11.1, abs=0.1)
+    assert (
+        spatial._search_nearby("Origin", radius_miles=10, unit="km", event_types=["MARR"])[
+            "result_count"
+        ]
+        == 0
+    )
+    assert (
+        spatial._search_nearby("Origin", radius_miles=10, unit="miles", event_types=["MARR"])[
+            "result_count"
+        ]
+        == 1
+    )
