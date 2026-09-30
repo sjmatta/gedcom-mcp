@@ -87,16 +87,38 @@ def _load_cache() -> bool:
             # Validate all arrays before publishing any cache state.
             embeddings = data["embeddings"]
             ids = data["ids"]
-            texts = data["texts"]
+            if "texts_utf8" in data:
+                encoded = data["texts_utf8"]
+                offsets = data["text_offsets"]
+                if (
+                    encoded.ndim != 1
+                    or encoded.dtype != np.uint8
+                    or offsets.ndim != 1
+                    or offsets.dtype != np.int64
+                    or len(offsets) != len(ids) + 1
+                    or offsets[0] != 0
+                    or offsets[-1] != len(encoded)
+                    or np.any(offsets[1:] < offsets[:-1])
+                ):
+                    return False
+                raw = encoded.tobytes()
+                texts = [
+                    raw[start:end].decode("utf-8")
+                    for start, end in zip(offsets[:-1], offsets[1:], strict=True)
+                ]
+            else:
+                # Read safe caches from the previous Unicode-array format.
+                legacy_texts = data["texts"]
+                if legacy_texts.ndim != 1 or legacy_texts.dtype.kind != "U":
+                    return False
+                texts = legacy_texts.tolist()
             if (
                 embeddings.ndim != 2
                 or embeddings.shape[1] == 0
                 or not np.issubdtype(embeddings.dtype, np.floating)
                 or not np.isfinite(embeddings).all()
                 or ids.ndim != 1
-                or texts.ndim != 1
                 or ids.dtype.kind != "U"
-                or texts.dtype.kind != "U"
                 or len(ids) != len(texts)
                 or len(ids) != len(embeddings)
                 or len(set(ids)) != len(ids)
@@ -105,7 +127,7 @@ def _load_cache() -> bool:
                 return False
             _embeddings = embeddings
             _embedding_ids = ids.tolist()
-            _embedding_texts = texts.tolist()
+            _embedding_texts = texts
             return True
     except Exception as e:
         logger.warning(f"Failed to load embeddings cache: {e}")
@@ -119,6 +141,11 @@ def _save_cache() -> None:
         return
 
     try:
+        # Fixed-width Unicode arrays multiply the longest biography by the tree
+        # size. UTF-8 plus offsets instead uses space proportional to actual text.
+        chunks = [text.encode("utf-8") for text in _embedding_texts]
+        offsets = np.zeros(len(chunks) + 1, dtype=np.int64)
+        offsets[1:] = np.cumsum([len(chunk) for chunk in chunks], dtype=np.int64)
         np.savez_compressed(
             cache_path,
             gedcom_hash=_compute_gedcom_hash(),
@@ -126,7 +153,8 @@ def _save_cache() -> None:
             content_version=CONTENT_VERSION,
             embeddings=_embeddings,
             ids=np.array(_embedding_ids, dtype=str),
-            texts=np.array(_embedding_texts, dtype=str),
+            texts_utf8=np.frombuffer(b"".join(chunks), dtype=np.uint8),
+            text_offsets=offsets,
         )
         logger.info(f"Saved embeddings cache to {cache_path}")
     except Exception as e:

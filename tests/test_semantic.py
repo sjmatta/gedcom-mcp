@@ -391,6 +391,53 @@ def test_invalid_cache_does_not_publish_partial_state(tmp_path, monkeypatch, bad
     assert semantic._embedding_texts == []
 
 
+def test_cache_long_biography_uses_actual_text_size(tmp_path, monkeypatch):
+    gedcom = tmp_path / "tree.ged"
+    gedcom.write_text("0 HEAD\n")
+    monkeypatch.setattr(semantic.state, "GEDCOM_FILE", gedcom)
+    texts = ["short"] * 1000 + ["Život 🧬 " * 4000]
+    ids = [f"@I{i}@" for i in range(len(texts))]
+    monkeypatch.setattr(semantic, "_embeddings", np.ones((len(texts), 3), dtype=np.float32))
+    monkeypatch.setattr(semantic, "_embedding_ids", ids)
+    monkeypatch.setattr(semantic, "_embedding_texts", texts)
+    semantic._save_cache()
+    with np.load(semantic._get_cache_path(), allow_pickle=False) as cached:
+        assert cached["texts_utf8"].nbytes == sum(len(t.encode("utf-8")) for t in texts)
+        assert cached["text_offsets"].nbytes == (len(texts) + 1) * 8
+        assert "texts" not in cached
+    semantic._embedding_texts = []
+    assert semantic._load_cache()
+    assert semantic._embedding_texts == texts
+
+
+@pytest.mark.parametrize("corruption", ["length", "decreasing", "end", "utf8"])
+def test_compact_cache_corruption_does_not_publish(tmp_path, monkeypatch, corruption):
+    gedcom = tmp_path / "tree.ged"
+    gedcom.write_text("0 HEAD\n")
+    monkeypatch.setattr(semantic.state, "GEDCOM_FILE", gedcom)
+    monkeypatch.setattr(semantic, "_embeddings", np.ones((2, 3), dtype=np.float32))
+    monkeypatch.setattr(semantic, "_embedding_ids", ["@I1@", "@I2@"])
+    monkeypatch.setattr(semantic, "_embedding_texts", ["first", "second"])
+    semantic._save_cache()
+    with np.load(semantic._get_cache_path(), allow_pickle=False) as cached:
+        arrays = {key: cached[key] for key in cached.files}
+    if corruption == "length":
+        arrays["text_offsets"] = arrays["text_offsets"][:2]
+    elif corruption == "decreasing":
+        arrays["text_offsets"][1] = -1
+    elif corruption == "end":
+        arrays["text_offsets"][-1] += 1
+    else:
+        arrays["texts_utf8"][0] = 255
+    np.savez_compressed(semantic._get_cache_path(), **arrays)
+    semantic._embeddings = None
+    semantic._embedding_ids = []
+    semantic._embedding_texts = []
+    assert not semantic._load_cache()
+    assert semantic._embeddings is None
+    assert semantic._embedding_ids == semantic._embedding_texts == []
+
+
 def test_disabled_rebuild_clears_previous_tree(monkeypatch):
     monkeypatch.setenv("SEMANTIC_SEARCH_ENABLED", "false")
     monkeypatch.setattr(semantic, "_embeddings", np.ones((1, 3), dtype=np.float32))
