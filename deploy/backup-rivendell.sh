@@ -12,6 +12,16 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 snapshot="snapshot-$stamp.sqlite"
 docker exec gedcom-mcp python -m gedcom_server.recovery snapshot \
   /state/tree.sqlite "/state/replication/$snapshot"
+# Completed snapshots are self-contained, including all historical revisions.
+# Bound staging even if a destination stays unavailable for many days.
+python3 - "$store/replication" <<'PYTHON'
+import sys
+from pathlib import Path
+paths = sorted(Path(sys.argv[1]).glob("snapshot-*.sqlite"),
+               key=lambda path: path.stat().st_mtime, reverse=True)
+for path in paths[3:]:
+    path.unlink()
+PYTHON
 for target in s3 nas; do
   container="restic-$target"
   if [[ "$target" == nas ]]; then

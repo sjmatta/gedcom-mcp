@@ -160,7 +160,7 @@ MCP operation contracts need not change when replacing the editing backend.
 
 ## Verification recorded 2026-09-30
 
-The implementation passed 572 tests, Ruff/format checks, mypy, dependency checks,
+The implementation passed 574 tests, Ruff/format checks, mypy, dependency checks,
 ShellCheck, and resolved Compose validation. Tests cover both the default read-only
 MCP catalog and the enabled write/review/read/resource/restore flow. Backup-script
 tests verify successful S3/NAS read-backs and retention, and refusal to clean up

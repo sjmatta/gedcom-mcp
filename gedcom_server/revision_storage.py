@@ -6,6 +6,7 @@ No GEDCOM syntax knowledge or query-state mutation belongs in this module.
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import tempfile
 import zlib
@@ -168,6 +169,9 @@ def snapshot_database(source: Path, destination: Path) -> dict:
     if destination.exists() or destination.is_symlink():
         raise ValueError("Snapshot destination already exists")
     private_directory(destination.parent)
+    minimum = int(os.getenv("GEDCOM_MIN_FREE_BYTES", str(512 * 1024 * 1024)))
+    if shutil.disk_usage(destination.parent).free < minimum + source.stat().st_size * 2:
+        raise ValueError("Insufficient free disk space for a safe replication snapshot")
     fd, temporary = tempfile.mkstemp(dir=destination.parent, suffix=".sqlite.tmp")
     os.close(fd)
     temporary_path = Path(temporary)

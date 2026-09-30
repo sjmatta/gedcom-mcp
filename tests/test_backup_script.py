@@ -11,7 +11,8 @@ SCRIPT = Path(__file__).resolve().parents[1] / "deploy" / "backup-rivendell.sh"
 
 
 @pytest.mark.parametrize("failure", ["", "nas"])
-def test_backup_script_requires_both_readbacks_before_cleanup(tmp_path, failure):
+@pytest.mark.parametrize("older_snapshots", [0, 4])
+def test_backup_script_requires_both_readbacks_before_cleanup(tmp_path, failure, older_snapshots):
     binaries = tmp_path / "bin"
     binaries.mkdir()
     store = tmp_path / "store"
@@ -19,6 +20,11 @@ def test_backup_script_requires_both_readbacks_before_cleanup(tmp_path, failure)
     replication.mkdir(parents=True)
     old = replication / "snapshot-old.sqlite"
     old.write_bytes(b"old")
+    os.utime(old, (10, 10))
+    for index in range(older_snapshots):
+        previous = replication / f"snapshot-older-{index}.sqlite"
+        previous.write_bytes(b"older")
+        os.utime(previous, (index + 1, index + 1))
     trace = tmp_path / "trace.jsonl"
     docker = binaries / "docker"
     docker.write_text("""#!/usr/bin/env python3
@@ -82,4 +88,5 @@ elif args[0] == 'exec' and args[2:4] == ['restic','dump']:
         assert len(forgotten) == 2
         assert all(args[args.index("--group-by") + 1] == "host,tags" for args in forgotten)
         assert len(list(replication.glob("snapshot-*.sqlite"))) == 1
+    assert len(list(replication.glob("snapshot-*.sqlite"))) <= 3
     assert not list(replication.glob(".restore-*"))
