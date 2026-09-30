@@ -72,6 +72,9 @@ def _get_cache_path() -> Path | None:
     """Get path for geocoding cache file based on GEDCOM file location."""
     if state.GEDCOM_FILE is None:
         return None
+    directory = os.getenv("GEDCOM_CACHE_DIR")
+    if directory:
+        return Path(directory) / "tree.geocache.json"
     return state.GEDCOM_FILE.with_suffix(".geocache.json")
 
 

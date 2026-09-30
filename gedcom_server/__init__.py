@@ -15,6 +15,8 @@ from .mcp_tools import register_tools
 from .parsing import load_gedcom
 from .state import configure
 from .telemetry import initialize_tracing
+from .write_tools import register_write_tools
+from .writes import initialize_store
 
 # Initialize tracing FIRST (before creating server)
 # This is a no-op if PHOENIX_ENABLED is not set to 'true'
@@ -26,6 +28,7 @@ mcp = FastMCP("GEDCOM Genealogy Server")
 # Register tools and resources
 register_tools(mcp)
 register_resources(mcp)
+register_write_tools(mcp)
 
 _initialized = False
 
@@ -40,6 +43,7 @@ def initialize():
     if _initialized:
         return
     configure()
+    initialize_store()
     load_gedcom()
     _initialized = True
 

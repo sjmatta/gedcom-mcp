@@ -158,3 +158,56 @@ home-person configuration and Cloudflare authentication settings are unchanged.
   snapshot contained 3,032 resolved entries; this is not a final coverage count.
 - Rollback image: `gedcom-mcp:pre-accuracy-20260909`; source and data snapshot:
   `/home/sjmatta/.local/share/gedcom-mcp/rollback-accuracy-20260909`.
+
+## Opt-in write deployment and independent backups
+
+The implementation and recovery contract are in [WRITES.md](../WRITES.md).
+Production remains read-only until this overlay is deployed:
+
+```sh
+install -d -m 700 /home/sjmatta/.local/share/gedcom-mcp/store
+cd /home/sjmatta/docker/services/gedcom-mcp
+# Review resolved mounts/environment before rebuilding/restarting.
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml config
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml up -d --build
+```
+
+The overlay mounts the imported data read-only and the new private store at
+`/state`. Confirm the import matches the chosen immutable baseline before starting.
+Update any MCP Portal tool allowlist to expose only the desired write tools to
+trusted operators. Check the authenticated catalog, prepare a test proposal without
+applying it, inspect `get_tree_revision`, and exercise a separate restored instance
+before accepting family-data edits. The default 25-tool read-only catalog is
+unchanged; enabling writes yields 33 tools.
+
+Rivendell's existing NAS and S3 Restic containers both mount the complete
+`/home/sjmatta/.local/share/gedcom-mcp` directory. On 2026-09-30, live inspection
+confirmed those mounts and a 03:00 America/New_York whole-stack schedule, but the
+latest whole-stack snapshots were September 28. Its coverage audit currently
+rejects an unrelated image-service bind mount. Do not treat that scheduler as
+verified-current protection for the new store.
+
+`deploy/backup-rivendell.sh` provides a scoped job using the same repositories and
+host backup lock. It publishes a consistent SQLite snapshot through the running
+GEDCOM container, backs up only that snapshot to S3 and NAS, and downloads and
+compares it byte-for-byte from **each** destination before pruning staging files.
+It checks the expected NFS mount before NAS writes and retains three recent,
+30 daily, and 12 monthly tagged snapshots. Retention groups by host/tags, since
+snapshot filenames change. Repository pack pruning remains with existing jobs.
+The script fails on any unavailable destination or failed read-back.
+
+After deploying the write-enabled service, install one cron entry (host uses UTC):
+
+```cron
+30 8 * * * /bin/bash /home/sjmatta/docker/services/gedcom-mcp/deploy/backup-rivendell.sh 2>&1 | logger -t gedcom-backup
+```
+
+This runs daily at 04:30 Eastern daylight time / 03:30 standard time, after the
+existing 03:00 backup slot. Run it once immediately and verify both tagged Restic
+snapshots before enabling real writes. To recover, download a tagged snapshot,
+run the deep verifier, restore to a new directory, and change the service mounts
+only after verifying the restored tree. Never restore a raw live SQLite file from
+a generic filesystem snapshot when a verified GEDCOM snapshot is available.
+
+The overlay and scheduled job are prepared here; this section does not assert
+that they have been activated or that the new revision store exists in production.

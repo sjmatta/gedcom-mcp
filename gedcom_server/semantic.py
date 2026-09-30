@@ -42,6 +42,9 @@ def _get_cache_path() -> Path | None:
     """Get path for embeddings cache file based on GEDCOM file location."""
     if state.GEDCOM_FILE is None:
         return None
+    directory = os.getenv("GEDCOM_CACHE_DIR")
+    if directory:
+        return Path(directory) / "tree.embeddings.npz"
     return state.GEDCOM_FILE.with_suffix(state.GEDCOM_FILE.suffix + ".embeddings.npz")
 
 
@@ -369,3 +372,65 @@ def _semantic_search(query: str, max_results: int = 20) -> dict:
         "result_count": len(results),
         "results": results,
     }
+
+
+_refresh_running = False
+
+
+def refresh_after_write(revision: int) -> None:
+    """Coalesce edits into one background rebuild; publish only matching content.
+
+    Capture texts under the tree lock, encode outside it. A newer edit discards
+    the completed result and repeats against the newest revision.
+    """
+    global _refresh_running
+    import threading
+
+    if not is_enabled():
+        return
+    with state.TREE_LOCK:
+        if _refresh_running:
+            return
+        _refresh_running = True
+
+    def worker():
+        global _encoder, _embeddings, _embedding_ids, _embedding_texts, _refresh_running
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            encoder = _encoder if _encoder is not None else SentenceTransformer(MODEL_NAME)
+            while True:
+                with state.TREE_LOCK:
+                    path = state.GEDCOM_FILE
+                    pairs = [(key, _build_embedding_text(key)) for key in state.individuals]
+                    pairs = [(key, text) for key, text in pairs if text.strip()]
+                ids = [key for key, _ in pairs]
+                texts = [text for _, text in pairs]
+                embeddings = (
+                    encoder.encode(
+                        texts,
+                        normalize_embeddings=True,
+                        show_progress_bar=False,
+                        convert_to_numpy=True,
+                    )
+                    if texts
+                    else None
+                )
+                with state.TREE_LOCK:
+                    if path != state.GEDCOM_FILE:
+                        continue
+                    _encoder = encoder
+                    _embeddings = embeddings
+                    _embedding_ids = ids
+                    _embedding_texts = texts
+                    _save_cache()
+                    _refresh_running = False
+                    return
+        except Exception:
+            logger.exception(
+                "Semantic rebuild failed; current tree remains unavailable to semantic search"
+            )
+            with state.TREE_LOCK:
+                _refresh_running = False
+
+    threading.Thread(target=worker, name=f"tree-semantic-{revision}", daemon=True).start()

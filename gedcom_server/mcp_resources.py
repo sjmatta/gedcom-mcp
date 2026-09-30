@@ -9,6 +9,7 @@ def register_resources(mcp):
     """Register all MCP resources with the server."""
 
     @mcp.resource("gedcom://individual/{id}")
+    @state.synchronized
     def resource_individual(id: str) -> str:
         """Get individual record by ID."""
         indi = _get_individual(id)
@@ -17,6 +18,7 @@ def register_resources(mcp):
         return f"Individual {id} not found"
 
     @mcp.resource("gedcom://family/{id}")
+    @state.synchronized
     def resource_family(id: str) -> str:
         """Get family record by ID."""
         fam = _get_family(id)
@@ -25,6 +27,7 @@ def register_resources(mcp):
         return f"Family {id} not found"
 
     @mcp.resource("gedcom://source/{id}")
+    @state.synchronized
     def resource_source(id: str) -> str:
         """Get source record by ID."""
         source = _get_source(id)
@@ -33,6 +36,7 @@ def register_resources(mcp):
         return f"Source {id} not found"
 
     @mcp.resource("gedcom://sources")
+    @state.synchronized
     def resource_sources() -> str:
         """Get list of all sources."""
         source_list = _get_sources(max_results=1000)
@@ -44,11 +48,13 @@ def register_resources(mcp):
         return "\n".join(lines)
 
     @mcp.resource("gedcom://stats")
+    @state.synchronized
     def resource_stats() -> str:
         """Get tree statistics."""
         return str(_get_statistics())
 
     @mcp.resource("gedcom://surnames")
+    @state.synchronized
     def resource_surnames() -> str:
         """Get list of all surnames with counts."""
         surname_counts = [(surname, len(ids)) for surname, ids in state.surname_index.items()]

@@ -236,3 +236,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 The authenticated Rivendell deployment is documented in [deploy/README.md](deploy/README.md),
 including the OAuth portal URL, service operations, credential rotation, and rollback.
+
+## Versioned writes (opt-in)
+
+The original GEDCOM remains an immutable baseline. Optional write tools support
+reviewed notes, citations, sourced events, selected corrections, revision history,
+whole-tree undo, lossless exports, and verified backups. Unchanged records are
+shared between revisions to keep storage growth small. See [WRITES.md](WRITES.md)
+for configuration, limitations, recovery, and the replaceable editor interface.

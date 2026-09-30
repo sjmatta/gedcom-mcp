@@ -151,17 +151,18 @@ def parse_name(record) -> tuple[str, str]:
     return given, surname
 
 
-def load_gedcom():
+def load_gedcom(target=None, *, derived=True):
     """Parse the GEDCOM file and build indexes.
 
     Requires configure() to be called first to set state.GEDCOM_FILE.
     """
-    if state.GEDCOM_FILE is None:
+    target = state if target is None else target
+    if target.GEDCOM_FILE is None:
         raise RuntimeError("configure() must be called before load_gedcom()")
-    if not state.GEDCOM_FILE.exists():
-        raise FileNotFoundError(f"GEDCOM file not found: {state.GEDCOM_FILE}")
+    if not target.GEDCOM_FILE.exists():
+        raise FileNotFoundError(f"GEDCOM file not found: {target.GEDCOM_FILE}")
 
-    with GedcomReader(str(state.GEDCOM_FILE)) as reader:
+    with GedcomReader(str(target.GEDCOM_FILE)) as reader:
         # Parse repositories (level-0 REPO records)
         for record in reader.records0("REPO"):
             repo_id = record.xref_id
@@ -182,7 +183,7 @@ def load_gedcom():
                 address=address,
                 url=url,
             )
-            state.repositories[repo_id] = repo  # type: ignore[index]
+            target.repositories[repo_id] = repo
 
         # Parse sources (level-0 SOUR records)
         for record in reader.records0("SOUR"):
@@ -208,7 +209,7 @@ def load_gedcom():
                 repository_id=repo_id,
                 note=note,
             )
-            state.sources[source_id] = source  # type: ignore[index]
+            target.sources[source_id] = source
 
         # Parse individuals
         for record in reader.records0("INDI"):
@@ -269,15 +270,15 @@ def load_gedcom():
                 events=events,
                 notes=indi_notes,
             )
-            state.individuals[indi_id] = indi  # type: ignore[index]
+            target.individuals[indi_id] = indi
 
             # Build indexes
             if surname:
-                state.surname_index[surname.lower()].append(indi_id)  # type: ignore[arg-type]
+                target.surname_index[surname.lower()].append(indi_id)
 
             birth_year = extract_year(birth_date)
             if birth_year:
-                state.birth_year_index[birth_year].append(indi_id)  # type: ignore[arg-type]
+                target.birth_year_index[birth_year].append(indi_id)
 
             # Index all places (from birth/death and all events)
             all_places = [birth_place, death_place]
@@ -288,13 +289,13 @@ def load_gedcom():
             for place_str in all_places:
                 if place_str:
                     place_lower = place_str.lower()
-                    state.place_index[place_lower].append(indi_id)  # type: ignore[arg-type]
+                    target.place_index[place_lower].append(indi_id)
 
                     # Build Place object and add to places index
                     place_id = get_place_id(place_str)
-                    if place_id not in state.places:
-                        state.places[place_id] = create_place(place_str)
-                    state.individual_places[indi_id].append(place_id)  # type: ignore[index]
+                    if place_id not in target.places:
+                        target.places[place_id] = create_place(place_str)
+                    target.individual_places[indi_id].append(place_id)
 
         # Parse families
         for record in reader.records0("FAM"):
@@ -322,30 +323,30 @@ def load_gedcom():
                 marriage_place=marr_place,
                 events=parse_events_from_record(record),
             )
-            state.families[fam_id] = fam  # type: ignore[index]
+            target.families[fam_id] = fam
 
             # Index marriage place
             if marr_place:
                 place_id = get_place_id(marr_place)
-                if place_id not in state.places:
-                    state.places[place_id] = create_place(marr_place)
+                if place_id not in target.places:
+                    target.places[place_id] = create_place(marr_place)
 
             for event in fam.events:
                 if event.place:
                     place_id = get_place_id(event.place)
-                    state.places.setdefault(place_id, create_place(event.place))
+                    target.places.setdefault(place_id, create_place(event.place))
                     for spouse_id in (fam.husband_id, fam.wife_id):
                         if spouse_id:
-                            state.place_index[event.place.lower()].append(spouse_id)
-                            state.individual_places[spouse_id].append(place_id)
+                            target.place_index[event.place.lower()].append(spouse_id)
+                            target.individual_places[spouse_id].append(place_id)
 
     # Second pass: populate source titles in individual AND family citations.
-    entities: list[Individual | Family] = [*state.individuals.values(), *state.families.values()]
+    entities: list[Individual | Family] = [*target.individuals.values(), *target.families.values()]
     for entity in entities:
         for event in entity.events:
             for citation in event.citations:
-                if citation.source_id and citation.source_id in state.sources:
-                    citation.source_title = state.sources[citation.source_id].title
+                if citation.source_id and citation.source_id in target.sources:
+                    citation.source_title = target.sources[citation.source_id].title
 
     # Third pass: geocode places (lazily - only on first spatial query)
     # This is done lazily to avoid slowing down startup
@@ -353,19 +354,20 @@ def load_gedcom():
     # Set home person from env var or auto-detect
     env_home = os.getenv("GEDCOM_HOME_PERSON_ID")
     if env_home:
-        state.HOME_PERSON_ID = normalize_id(env_home)
+        target.HOME_PERSON_ID = normalize_id(env_home)
     else:
-        state.HOME_PERSON_ID = state._detect_home_person()
+        target.HOME_PERSON_ID = state._detect_home_person(target.individuals, target.families)
 
-    # Build semantic search embeddings (if enabled)
-    from .semantic import build_embeddings
+    if derived:
+        # Build semantic search embeddings (if enabled)
+        from .semantic import build_embeddings
 
-    build_embeddings()
+        build_embeddings()
 
-    # Start background geocoding for GIS search (if enabled)
-    from .spatial import start_geocoding_thread
+        # Start background geocoding for GIS search (if enabled)
+        from .spatial import start_geocoding_thread
 
-    start_geocoding_thread()
+        start_geocoding_thread()
 
 
 def geocode_all_places():

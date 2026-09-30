@@ -1,0 +1,14 @@
+# Opt-in overlay: docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml ...
+# Keep the imported GEDCOM mounted read-only. Prepare the host store with mode 700.
+services:
+  gedcom-mcp:
+    image: gedcom-mcp:versioned-writes-1
+    volumes:
+      - /home/sjmatta/.local/share/gedcom-mcp/data:/data:ro
+      - /home/sjmatta/.local/share/gedcom-mcp/store:/state
+    environment:
+      GEDCOM_WRITES_ENABLED: "true"
+      GEDCOM_STORE_DIR: /state
+      GEDCOM_WRITE_ACTOR: family-tree-operator
+      GEDCOM_MIN_FREE_BYTES: "536870912"
+      GEDCOM_MAX_STORE_BYTES: "1073741824"
