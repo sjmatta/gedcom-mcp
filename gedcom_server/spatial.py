@@ -30,7 +30,7 @@ from .helpers import (
 )
 
 if TYPE_CHECKING:
-    from .models import Place
+    from .models import Individual, Place
 
 logger = logging.getLogger(__name__)
 
@@ -549,7 +549,41 @@ def _resolve_location_with_bbox(
 
 def _point_in_bbox(lat: float, lon: float, bbox: dict) -> bool:
     """Check if a point falls within a bounding box."""
-    return bbox["south"] <= lat <= bbox["north"] and bbox["west"] <= lon <= bbox["east"]
+    if not bbox["south"] <= lat <= bbox["north"]:
+        return False
+    if bbox["west"] > bbox["east"]:  # Region crosses the antimeridian.
+        return lon >= bbox["west"] or lon <= bbox["east"]
+    return bbox["west"] <= lon <= bbox["east"]
+
+
+def _matching_place_events(
+    indi: Individual, place_id: str, event_types: list[str] | None
+) -> list[dict]:
+    """Collect individual and spouse-family events without duplicate vital summaries."""
+    events = [(event.place, event.type, event.date) for event in indi.events]
+    events.extend(
+        [(indi.birth_place, "BIRT", indi.birth_date), (indi.death_place, "DEAT", indi.death_date)]
+    )
+    for family_id in dict.fromkeys(indi.families_as_spouse):
+        family = state.families.get(family_id)
+        if family:
+            events.extend((event.place, event.type, event.date) for event in family.events)
+            events.append((family.marriage_place, "MARR", family.marriage_date))
+
+    cached = _geocache.get(place_id, {})
+    return [
+        {
+            "place": place,
+            "event": event_type,
+            "date": date,
+            "geocode_confidence": cached.get("confidence", "unknown"),
+            "geocode_source": cached.get("source", "unknown"),
+        }
+        for place, event_type, date in dict.fromkeys(events)
+        if place
+        and get_place_id(place) == place_id
+        and (not event_types or event_type in event_types)
+    ]
 
 
 def _search_within_bbox(
@@ -557,111 +591,36 @@ def _search_within_bbox(
     event_types: list[str] | None = None,
     max_results: int = 100,
 ) -> list[dict]:
-    """Find individuals with events inside a bounding box.
-
-    Args:
-        bbox: Dict with south, north, west, east coordinates
-        event_types: Optional filter ["BIRT", "DEAT", "MARR", etc.]
-        max_results: Maximum results to return
-
-    Returns:
-        List of result dicts with individual_id, name, and matching_places.
-    """
-    results: list[dict] = []
-    seen_individuals: set[str] = set()
+    """Find individuals inside a bounding box, retaining all their matching events."""
+    results: dict[str, dict] = {}
+    if max_results <= 0:
+        return []
 
     for place in state.places.values():
         if place.latitude is None or place.longitude is None:
             continue
-
-        # Check if place is inside the bounding box
         if not _point_in_bbox(place.latitude, place.longitude, bbox):
             continue
-
-        # Find individuals associated with this place
-        place_id = place.id
         for indi_id, indi_place_ids in state.individual_places.items():
-            if place_id not in indi_place_ids:
+            if place.id not in indi_place_ids:
                 continue
-
+            if indi_id not in results and len(results) >= max_results:
+                continue
             indi = state.individuals.get(indi_id)
             if not indi:
                 continue
-
-            # Collect matching events at this place
-            matching_events: list[dict] = []
-            for event in indi.events:
-                if event.place:
-                    event_place_id = get_place_id(event.place)
-                    if event_place_id == place_id:
-                        if event_types and event.type not in event_types:
-                            continue
-                        cached = _geocache.get(place_id, {})
-                        matching_events.append(
-                            {
-                                "place": event.place,
-                                "event": event.type,
-                                "date": event.date,
-                                "geocode_confidence": cached.get("confidence", "unknown"),
-                                "geocode_source": cached.get("source", "unknown"),
-                            }
-                        )
-
-            # Check birth/death places
-            if indi.birth_place:
-                bp_id = get_place_id(indi.birth_place)
-                if bp_id == place_id and (not event_types or "BIRT" in event_types):
-                    cached = _geocache.get(place_id, {})
-                    matching_events.append(
-                        {
-                            "place": indi.birth_place,
-                            "event": "BIRT",
-                            "date": indi.birth_date,
-                            "geocode_confidence": cached.get("confidence", "unknown"),
-                            "geocode_source": cached.get("source", "unknown"),
-                        }
-                    )
-
-            if indi.death_place:
-                dp_id = get_place_id(indi.death_place)
-                if dp_id == place_id and (not event_types or "DEAT" in event_types):
-                    cached = _geocache.get(place_id, {})
-                    matching_events.append(
-                        {
-                            "place": indi.death_place,
-                            "event": "DEAT",
-                            "date": indi.death_date,
-                            "geocode_confidence": cached.get("confidence", "unknown"),
-                            "geocode_source": cached.get("source", "unknown"),
-                        }
-                    )
-
+            matching_events = _matching_place_events(indi, place.id, event_types)
             if not matching_events:
                 continue
-
-            if indi_id in seen_individuals:
-                # Add new matching places to existing result
-                for r in results:
-                    if r["individual_id"] == indi_id:
-                        existing_places = {(e["place"], e["event"]) for e in r["matching_places"]}
-                        for me in matching_events:
-                            if (me["place"], me["event"]) not in existing_places:
-                                r["matching_places"].append(me)
-                        break
+            if indi_id in results:
+                results[indi_id]["matching_places"].extend(matching_events)
             else:
-                seen_individuals.add(indi_id)
-                results.append(
-                    {
-                        "individual_id": indi_id,
-                        "name": indi.full_name(),
-                        "matching_places": matching_events,
-                    }
-                )
-
-                if len(results) >= max_results:
-                    return results
-
-    return results
+                results[indi_id] = {
+                    "individual_id": indi_id,
+                    "name": indi.full_name(),
+                    "matching_places": matching_events,
+                }
+    return list(results.values())
 
 
 def _search_nearby(
@@ -817,6 +776,9 @@ def _search_proximity_mode(
     # Clamp radius
     radius_miles = min(max(1, radius_miles), 500)
     radius_display = radius_miles
+    # Preserve the input's historical unit behavior, but keep miles fields in miles.
+    if unit == "km":
+        radius_miles /= 1.609344
 
     # Resolve reference location
     ref_coords, matched_place, match_source, match_confidence = _resolve_location(location)
@@ -856,10 +818,10 @@ def _search_proximity_mode(
         dist = haversine(
             ref_coords,
             (place.latitude, place.longitude),
-            unit=Unit.KILOMETERS if unit == "km" else Unit.MILES,
+            unit=Unit.MILES,
         )
 
-        if dist > radius_display:
+        if dist > radius_miles:
             continue
 
         # Find individuals associated with this place
@@ -872,55 +834,7 @@ def _search_proximity_mode(
             if not indi:
                 continue
 
-            # Collect matching events at this place
-            matching_events: list[dict] = []
-            for event in indi.events:
-                if event.place:
-                    event_place_id = get_place_id(event.place)
-                    if event_place_id == place_id:
-                        # Filter by event type if specified
-                        if event_types and event.type not in event_types:
-                            continue
-                        # Get geocode info for this place
-                        cached = _geocache.get(place_id, {})
-                        matching_events.append(
-                            {
-                                "place": event.place,
-                                "event": event.type,
-                                "date": event.date,
-                                "geocode_confidence": cached.get("confidence", "unknown"),
-                                "geocode_source": cached.get("source", "unknown"),
-                            }
-                        )
-
-            # Also check birth/death places
-            if indi.birth_place:
-                bp_id = get_place_id(indi.birth_place)
-                if bp_id == place_id and (not event_types or "BIRT" in event_types):
-                    cached = _geocache.get(place_id, {})
-                    matching_events.append(
-                        {
-                            "place": indi.birth_place,
-                            "event": "BIRT",
-                            "date": indi.birth_date,
-                            "geocode_confidence": cached.get("confidence", "unknown"),
-                            "geocode_source": cached.get("source", "unknown"),
-                        }
-                    )
-
-            if indi.death_place:
-                dp_id = get_place_id(indi.death_place)
-                if dp_id == place_id and (not event_types or "DEAT" in event_types):
-                    cached = _geocache.get(place_id, {})
-                    matching_events.append(
-                        {
-                            "place": indi.death_place,
-                            "event": "DEAT",
-                            "date": indi.death_date,
-                            "geocode_confidence": cached.get("confidence", "unknown"),
-                            "geocode_source": cached.get("source", "unknown"),
-                        }
-                    )
+            matching_events = _matching_place_events(indi, place_id, event_types)
 
             if not matching_events:
                 continue
@@ -931,11 +845,13 @@ def _search_proximity_mode(
                     if r["individual_id"] == indi_id:
                         # Update distance if closer
                         if dist < r["distance_miles"]:
-                            r["distance_miles"] = round(dist, 1)
+                            r["distance_miles"] = dist
                         # Add new matching events
-                        existing_places = {(e["place"], e["event"]) for e in r["matching_places"]}
+                        existing_places = {
+                            (e["place"], e["event"], e["date"]) for e in r["matching_places"]
+                        }
                         for me in matching_events:
-                            if (me["place"], me["event"]) not in existing_places:
+                            if (me["place"], me["event"], me["date"]) not in existing_places:
                                 r["matching_places"].append(me)
                         break
             else:
@@ -944,14 +860,19 @@ def _search_proximity_mode(
                     {
                         "individual_id": indi_id,
                         "name": indi.full_name(),
-                        "distance_miles": round(dist, 1),
+                        "distance_miles": dist,
                         "matching_places": matching_events,
                     }
                 )
 
     # Sort by distance
     results.sort(key=lambda x: x["distance_miles"])
-    results = results[:max_results]
+    results = results[: max(0, max_results)]
+
+    for result in results:
+        if unit == "km":
+            result["distance_km"] = round(result["distance_miles"] * 1.609344, 1)
+        result["distance_miles"] = round(result["distance_miles"], 1)
 
     # Build response
     response = {
@@ -963,7 +884,8 @@ def _search_proximity_mode(
             "match_source": match_source,
         },
         "mode": "proximity",
-        "search_radius_miles": radius_display,
+        "search_radius_miles": radius_miles,
+        "search_radius": radius_display,
         "unit": unit,
         "geocoding_status": geo_status["status"],
         "coverage": coverage_info,

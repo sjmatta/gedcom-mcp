@@ -15,7 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family events (including marriage and divorce) with citations in family records,
   biographies, timelines and semantic search. Shared timeline events appear once.
 
+### Changed
+
+- Refresh runtime, development, and build dependencies.
+  The lockfile retains CPU-only PyTorch packages for Linux deployments.
+
 ### Fixed
+
+- Spatial searches include spouse-family events and deduplicate vital summaries
+  while preserving repeated events on different dates. Bounded region searches
+  retain all matching events for the selected individuals.
+- Region searches support bounding boxes that cross the antimeridian.
+- Kilometer searches retain their radius behavior but now report miles fields
+  in miles, with explicit kilometer distances and a radius in the selected unit.
+- Semantic caches use plain string arrays and validate dimensions, lengths,
+  unique IDs, and finite embeddings before loading. Legacy pickle-based caches
+  rebuild once; disabled or failed rebuilds clear the previous tree's index.
 
 - Local geocoding requires unique city/jurisdiction matches; ambiguous provider
   responses remain unresolved. Old city-only cache entries are rechecked while

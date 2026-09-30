@@ -285,8 +285,8 @@ class TestBuildEmbeddings:
                 model_name=semantic.MODEL_NAME,
                 content_version=semantic.CONTENT_VERSION,
                 embeddings=test_embeddings,
-                ids=np.array(["@I1@", "@I2@", "@I3@"], dtype=object),
-                texts=np.array(["t1", "t2", "t3"], dtype=object),
+                ids=np.array(["@I1@", "@I2@", "@I3@"], dtype=str),
+                texts=np.array(["t1", "t2", "t3"], dtype=str),
             )
 
             with patch.dict(os.environ, {"SEMANTIC_SEARCH_ENABLED": "true"}):
@@ -353,3 +353,52 @@ class TestResultsFormat:
             semantic._embedding_ids = orig_ids
             semantic._embedding_texts = orig_texts
             semantic._encoder = orig_encoder
+
+
+@pytest.mark.parametrize("bad_array", ["length", "nan", "dimensions", "pickle", "duplicate_ids"])
+def test_invalid_cache_does_not_publish_partial_state(tmp_path, monkeypatch, bad_array):
+    gedcom = tmp_path / "tree.ged"
+    gedcom.write_text("0 HEAD\n")
+    monkeypatch.setattr(semantic.state, "GEDCOM_FILE", gedcom)
+    monkeypatch.setattr(semantic, "_embeddings", None)
+    monkeypatch.setattr(semantic, "_embedding_ids", [])
+    monkeypatch.setattr(semantic, "_embedding_texts", [])
+    embeddings = np.ones((2, 3), dtype=np.float32)
+    ids = np.array(["@I1@", "@I2@"])
+    texts = np.array(["first", "second"])
+    if bad_array == "length":
+        texts = texts[:1]
+    elif bad_array == "nan":
+        embeddings[0, 0] = np.nan
+    elif bad_array == "dimensions":
+        embeddings = embeddings.flatten()
+    elif bad_array == "pickle":
+        texts = texts.astype(object)
+    else:
+        ids[1] = ids[0]
+    np.savez_compressed(
+        semantic._get_cache_path(),
+        gedcom_hash=semantic._compute_gedcom_hash(),
+        model_name=semantic.MODEL_NAME,
+        content_version=semantic.CONTENT_VERSION,
+        embeddings=embeddings,
+        ids=ids,
+        texts=texts,
+    )
+    assert semantic._load_cache() is False
+    assert semantic._embeddings is None
+    assert semantic._embedding_ids == []
+    assert semantic._embedding_texts == []
+
+
+def test_disabled_rebuild_clears_previous_tree(monkeypatch):
+    monkeypatch.setenv("SEMANTIC_SEARCH_ENABLED", "false")
+    monkeypatch.setattr(semantic, "_embeddings", np.ones((1, 3), dtype=np.float32))
+    monkeypatch.setattr(semantic, "_embedding_ids", ["@OLD@"])
+    monkeypatch.setattr(semantic, "_embedding_texts", ["Old tree"])
+    monkeypatch.setattr(semantic, "_encoder", MagicMock())
+    semantic.build_embeddings()
+    assert semantic._embeddings is None
+    assert semantic._embedding_ids == []
+    assert semantic._embedding_texts == []
+    assert semantic._encoder is None
