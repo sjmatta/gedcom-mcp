@@ -36,6 +36,8 @@ READ_TOOLS = {
 }
 
 WRITE_TOOLS = {
+    "prepare_create_person",
+    "prepare_update_person_name",
     "plan_tree_prune",
     "get_tree_revision",
     "prepare_tree_change",
@@ -120,10 +122,40 @@ def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
             assert {tool.name for tool in tools} >= WRITE_TOOLS
             status = await client.call_tool("get_tree_revision", {})
             assert status.data["revision"] == 0
+            created = await client.call_tool(
+                "prepare_create_person",
+                {
+                    "expected_revision": 0,
+                    "reason": "Preview new person",
+                    "given_name": "Zoë",
+                    "surname": "Example",
+                    "sex": "U",
+                },
+            )
+            assert not created.is_error
+            new_id = created.data["individual_id"]
+            assert "+1 NAME Zoë /Example/" in created.data["diff"]
+            assert (
+                await client.call_tool("get_individual", {"individual_id": new_id})
+            ).data is None
+            applied = await client.call_tool(
+                "apply_tree_change",
+                {"proposal_id": created.data["proposal_id"], "expected_revision": 0},
+            )
+            assert applied.data["revision"] == 1
+            assert (await client.call_tool("get_individual", {"individual_id": new_id})).data
+            undo_creation = await client.call_tool(
+                "prepare_tree_restore",
+                {"expected_revision": 1, "restore_revision": 0, "reason": "Undo creation"},
+            )
+            await client.call_tool(
+                "apply_tree_change",
+                {"proposal_id": undo_creation.data["proposal_id"], "expected_revision": 1},
+            )
             prepared = await client.call_tool(
                 "prepare_tree_change",
                 {
-                    "expected_revision": 0,
+                    "expected_revision": 2,
                     "reason": "MCP transport verification",
                     "operations": [
                         {"op": "add_note", "record_id": "@I1@", "text": "MCP test note"}
@@ -136,10 +168,10 @@ def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
                 "apply_tree_change",
                 {
                     "proposal_id": prepared.data["proposal_id"],
-                    "expected_revision": 0,
+                    "expected_revision": 2,
                 },
             )
-            assert not result.is_error and result.data["revision"] == 1
+            assert not result.is_error and result.data["revision"] == 3
             person = await client.call_tool("get_individual", {"individual_id": "@I1@"})
             assert "MCP test note" in person.data["notes"]
             resource = await client.read_resource("gedcom://individual/@I1@")
@@ -147,7 +179,7 @@ def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
             restored = await client.call_tool(
                 "prepare_tree_restore",
                 {
-                    "expected_revision": 1,
+                    "expected_revision": 3,
                     "restore_revision": 0,
                     "reason": "Undo transport test",
                 },
@@ -156,9 +188,30 @@ def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
                 "apply_tree_change",
                 {
                     "proposal_id": restored.data["proposal_id"],
-                    "expected_revision": 1,
+                    "expected_revision": 3,
                 },
             )
-            assert result.data["revision"] == 2
+            assert result.data["revision"] == 4
+            renamed = await client.call_tool(
+                "prepare_update_person_name",
+                {
+                    "expected_revision": 4,
+                    "reason": "Correct structured name through MCP",
+                    "individual_id": "@I1@",
+                    "old_name": "John /SMITH/",
+                    "name": "Jonathan /Smith/",
+                    "given_name": "Jonathan",
+                    "surname": "Smith",
+                },
+            )
+            assert not renamed.is_error
+            assert "+2 GIVN Jonathan" in renamed.data["diff"]
+            await client.call_tool(
+                "apply_tree_change",
+                {"proposal_id": renamed.data["proposal_id"], "expected_revision": 4},
+            )
+            person = await client.call_tool("get_individual", {"individual_id": "@I1@"})
+            assert person.data["given_name"] == "Jonathan"
+            assert person.data["surname"] == "Smith"
 
     asyncio.run(asyncio.wait_for(exercise_server(), timeout=45))

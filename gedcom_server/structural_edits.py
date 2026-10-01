@@ -5,6 +5,16 @@ import re
 from .tree_audit import TreeIndex, fact_signature
 
 FIELDS = {
+    "add_individual": {"op", "individual_id", "name", "sex", "note"},
+    "update_name": {
+        "op",
+        "individual_id",
+        "name_index",
+        "old_name",
+        "name",
+        "given_name",
+        "surname",
+    },
     "add_family": {"op", "family_id"},
     "add_relationship": {"op", "family_id", "individual_id", "role", "pedigree", "status"},
     "remove_relationship": {"op", "family_id", "individual_id", "role", "force"},
@@ -209,6 +219,60 @@ def structural_edit(doc, operation):
         raise ValueError("force must be boolean")
     if set(operation) - FIELDS[op]:
         raise ValueError("Unsupported structural operation fields")
+    if op == "update_name":
+        person = operation["individual_id"]
+        typed_record(doc, person, "INDI")
+        index = operation.get("name_index", 0)
+        if type(index) is not int or index < 0:
+            raise ValueError("name_index must be a nonnegative integer")
+        pos = doc.locate(person, [{"tag": "NAME", "index": index}])
+        if doc.lines[pos].value != operation.get("old_name"):
+            raise ValueError("old_name does not match the selected NAME")
+        name = doc.value(operation.get("name"))
+        given = doc.value(operation.get("given_name"), required=False)
+        surname = doc.value(operation.get("surname"), required=False)
+        if name.count("/") not in {0, 2} or any("/" in value for value in (given, surname)):
+            raise ValueError("Use optional /surname/ delimiters in name only")
+        if (name.split("/")[1] if "/" in name else "") != surname:
+            raise ValueError("The complete name and surname component must agree")
+        if re.fullmatch(r"@[^@\s]+@", name):
+            raise ValueError("name must be text, not a record pointer")
+        # Preserve NAME evidence and every other subordinate tag, including
+        # prefixes/suffixes, nicknames, TYPE, citations and opaque extensions.
+        rewrite_pointer(doc.lines[pos], name)
+        for tag, value in (("GIVN", given), ("SURN", surname)):
+            fields = [
+                i
+                for i in range(pos + 1, doc.end(pos))
+                if doc.lines[i].level == 2 and doc.lines[i].tag == tag
+            ]
+            if len(fields) > 1:
+                raise ValueError(f"Multiple {tag} fields require separate evidence review")
+            if fields:
+                rewrite_pointer(doc.lines[fields[0]], value)
+            elif value:
+                doc.insert(doc.end(pos), f"2 {tag} {value}{doc.newline}")
+        return [person]
+    if op == "add_individual":
+        person = operation.get("individual_id")
+        if not isinstance(person, str) or not re.fullmatch(r"@[^@\s]+@", person):
+            raise ValueError("individual_id must be a GEDCOM cross-reference")
+        doc.value(person)
+        if person in TreeIndex(doc).records:
+            raise ValueError("Record ID already exists")
+        name = doc.value(operation.get("name"))
+        if name.count("/") not in {0, 2} or re.fullmatch(r"@[^@\s]+@", name):
+            raise ValueError("name must be text with an optional /surname/ pair")
+        text = f"0 {person} INDI{doc.newline}1 NAME {name}{doc.newline}"
+        if "sex" in operation:
+            sex = operation["sex"]
+            if not isinstance(sex, str) or sex not in {"M", "F", "U"}:
+                raise ValueError("SEX must be M, F, or U")
+            text += f"1 SEX {sex}{doc.newline}"
+        if "note" in operation:
+            text += f"1 NOTE {doc.value(operation['note'])}{doc.newline}"
+        doc.insert(len(doc.lines) - 1, text)
+        return [person]
     if op == "add_family":
         family = operation["family_id"]
         if not isinstance(family, str) or not re.fullmatch(r"@[^@\s]+@", family):
