@@ -1,0 +1,944 @@
+{
+  "run_at": "2026-10-01T00:20:55.425716+00:00",
+  "suite_version": 1,
+  "suite_sha256": "3a72c3fe3c56af7e4e19d80ffcb532a5262bbcceb975ae16dcb9a6d73ca8ad79",
+  "corpus_sha256": "3725881fa46e02c20477a5f61b02abae065210cd47fe2e0bc8a579780f056c50",
+  "git_revision": "4600b93ab7b14c24725bea81ff492721269a402d",
+  "semantic_source_sha256": "3a9f87d078304ccd516531020f204199d522b7394eb31a40731310aaf2be8681",
+  "model": "all-MiniLM-L6-v2",
+  "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "content_version": 3,
+  "embedding_shape": [
+    32,
+    384
+  ],
+  "device": "cpu",
+  "max_sequence_length": 256,
+  "environment": {
+    "python": "3.14.7",
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "sentence-transformers": "6.1.0",
+    "torch": "2.14.1",
+    "numpy": "2.5.3"
+  },
+  "record_count": 32,
+  "query_count": 30,
+  "repeats": 3,
+  "build_seconds": 2.42562995798653,
+  "latency_ms": {
+    "p50": 3.2056039781309664,
+    "p95": 3.46566695952788
+  },
+  "overall": {
+    "ndcg@10": 0.7874783405155241,
+    "recall@10": 0.8666666666666667,
+    "mrr@10": 0.7694444444444445,
+    "top1_accuracy": 0.7
+  },
+  "categories": {
+    "occupation": {
+      "query_count": 4,
+      "ndcg@10": 0.8709644046580285,
+      "recall@10": 1.0,
+      "mrr@10": 0.875,
+      "top1_accuracy": 0.75
+    },
+    "place_constraint": {
+      "query_count": 4,
+      "ndcg@10": 0.9233566009043177,
+      "recall@10": 1.0,
+      "mrr@10": 0.875,
+      "top1_accuracy": 0.75
+    },
+    "migration": {
+      "query_count": 4,
+      "ndcg@10": 0.8290341099112201,
+      "recall@10": 1.0,
+      "mrr@10": 0.8125,
+      "top1_accuracy": 0.75
+    },
+    "service": {
+      "query_count": 3,
+      "ndcg@10": 1.0,
+      "recall@10": 1.0,
+      "mrr@10": 1.0,
+      "top1_accuracy": 1.0
+    },
+    "life_event": {
+      "query_count": 3,
+      "ndcg@10": 0.8769765845238192,
+      "recall@10": 1.0,
+      "mrr@10": 0.8333333333333334,
+      "top1_accuracy": 0.6666666666666666
+    },
+    "exact_identity": {
+      "query_count": 4,
+      "ndcg@10": 0.875,
+      "recall@10": 1.0,
+      "mrr@10": 0.8333333333333334,
+      "top1_accuracy": 0.75
+    },
+    "long_note": {
+      "query_count": 4,
+      "ndcg@10": 0.0,
+      "recall@10": 0.0,
+      "mrr@10": 0.0,
+      "top1_accuracy": 0.0
+    },
+    "distractor": {
+      "query_count": 4,
+      "ndcg@10": 1.0,
+      "recall@10": 1.0,
+      "mrr@10": 1.0,
+      "top1_accuracy": 1.0
+    }
+  },
+  "cases": [
+    {
+      "id": "q01",
+      "category": "occupation",
+      "query": "Who earned a living extracting coal underground?",
+      "relevant": [
+        "@I1@",
+        "@I3@",
+        "@I32@"
+      ],
+      "judgment": "OCCU Coal miner; merchant and teacher are excluded.",
+      "ranked_ids": [
+        "@I1@",
+        "@I4@",
+        "@I2@",
+        "@I32@",
+        "@I3@",
+        "@I8@",
+        "@I28@",
+        "@I24@",
+        "@I23@",
+        "@I14@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.8529278650606567,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.4134159795939922
+    },
+    {
+      "id": "q02",
+      "category": "occupation",
+      "query": "Who made bread and pastries for a living?",
+      "relevant": [
+        "@I19@"
+      ],
+      "judgment": "Baker occupation and bakery note.",
+      "ranked_ids": [
+        "@I19@",
+        "@I4@",
+        "@I27@",
+        "@I29@",
+        "@I25@",
+        "@I31@",
+        "@I23@",
+        "@I12@",
+        "@I20@",
+        "@I1@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.4955840092152357
+    },
+    {
+      "id": "q03",
+      "category": "occupation",
+      "query": "Who operated looms in a cotton mill?",
+      "relevant": [
+        "@I23@"
+      ],
+      "judgment": "Weaver note; cloth seller is excluded.",
+      "ranked_ids": [
+        "@I23@",
+        "@I24@",
+        "@I4@",
+        "@I2@",
+        "@I3@",
+        "@I1@",
+        "@I12@",
+        "@I29@",
+        "@I31@",
+        "@I18@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.4155839821323752
+    },
+    {
+      "id": "q04",
+      "category": "occupation",
+      "query": "Who worked sewing clothing?",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Tailor making suits and coats.",
+      "ranked_ids": [
+        "@I23@",
+        "@I20@",
+        "@I24@",
+        "@I4@",
+        "@I3@",
+        "@I1@",
+        "@I2@",
+        "@I19@",
+        "@I11@",
+        "@I28@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.0573750264011323
+    },
+    {
+      "id": "q05",
+      "category": "place_constraint",
+      "query": "Coal miners who worked in Pennsylvania",
+      "relevant": [
+        "@I1@",
+        "@I32@"
+      ],
+      "judgment": "Both have OCCU Coal miner in Pennsylvania; Welsh miner excluded.",
+      "ranked_ids": [
+        "@I4@",
+        "@I32@",
+        "@I1@",
+        "@I2@",
+        "@I3@",
+        "@I23@",
+        "@I28@",
+        "@I24@",
+        "@I8@",
+        "@I19@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.6934264036172708,
+        "recall@10": 1.0,
+        "mrr@10": 0.5,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.0669590341858566
+    },
+    {
+      "id": "q06",
+      "category": "place_constraint",
+      "query": "Farmers in Scotland",
+      "relevant": [
+        "@I12@",
+        "@I31@"
+      ],
+      "judgment": "Scottish farming occupations; Ontario farmer and carpenter excluded.",
+      "ranked_ids": [
+        "@I31@",
+        "@I12@",
+        "@I14@",
+        "@I13@",
+        "@I2@",
+        "@I27@",
+        "@I1@",
+        "@I3@",
+        "@I29@",
+        "@I32@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.1140409992076457
+    },
+    {
+      "id": "q07",
+      "category": "place_constraint",
+      "query": "Who farmed in Canada?",
+      "relevant": [
+        "@I13@"
+      ],
+      "judgment": "Farmer in Perth, Ontario, Canada.",
+      "ranked_ids": [
+        "@I13@",
+        "@I12@",
+        "@I31@",
+        "@I28@",
+        "@I2@",
+        "@I14@",
+        "@I1@",
+        "@I32@",
+        "@I4@",
+        "@I18@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.1798749696463346
+    },
+    {
+      "id": "q08",
+      "category": "place_constraint",
+      "query": "Who was born in Germany and worked as a tailor in Chicago?",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Hamburg birth and Chicago tailoring; same-name baker excluded.",
+      "ranked_ids": [
+        "@I20@",
+        "@I19@",
+        "@I23@",
+        "@I24@",
+        "@I21@",
+        "@I11@",
+        "@I32@",
+        "@I4@",
+        "@I7@",
+        "@I9@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.3369999728165567
+    },
+    {
+      "id": "q09",
+      "category": "migration",
+      "query": "People who emigrated from Ireland",
+      "relevant": [
+        "@I5@",
+        "@I7@",
+        "@I32@"
+      ],
+      "judgment": "Explicit emigration; Irish ancestry or residence alone excluded.",
+      "ranked_ids": [
+        "@I7@",
+        "@I8@",
+        "@I5@",
+        "@I6@",
+        "@I32@",
+        "@I17@",
+        "@I15@",
+        "@I28@",
+        "@I31@",
+        "@I18@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.8854598815714874,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.214915981516242
+    },
+    {
+      "id": "q10",
+      "category": "migration",
+      "query": "Who moved from Ireland to Boston?",
+      "relevant": [
+        "@I5@"
+      ],
+      "judgment": "Emigration note names Boston; Boston-born daughter excluded.",
+      "ranked_ids": [
+        "@I5@",
+        "@I7@",
+        "@I8@",
+        "@I6@",
+        "@I32@",
+        "@I17@",
+        "@I15@",
+        "@I28@",
+        "@I30@",
+        "@I18@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.1782500445842743
+    },
+    {
+      "id": "q11",
+      "category": "migration",
+      "query": "Who left Dublin for New York in 1880?",
+      "relevant": [
+        "@I7@"
+      ],
+      "judgment": "Dublin emigration event dated 1880 and New York note.",
+      "ranked_ids": [
+        "@I7@",
+        "@I5@",
+        "@I8@",
+        "@I32@",
+        "@I6@",
+        "@I15@",
+        "@I17@",
+        "@I11@",
+        "@I20@",
+        "@I30@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2339169993065298
+    },
+    {
+      "id": "q12",
+      "category": "migration",
+      "query": "Who left Ireland before 1870?",
+      "relevant": [
+        "@I32@"
+      ],
+      "judgment": "Emigration in 1868; 1875 and 1880 excluded.",
+      "ranked_ids": [
+        "@I7@",
+        "@I5@",
+        "@I8@",
+        "@I32@",
+        "@I6@",
+        "@I15@",
+        "@I17@",
+        "@I28@",
+        "@I30@",
+        "@I22@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.0477080144919455
+    },
+    {
+      "id": "q13",
+      "category": "service",
+      "query": "Who served in the Union Army during the Civil War?",
+      "relevant": [
+        "@I9@"
+      ],
+      "judgment": "Explicit infantry service; historian excluded.",
+      "ranked_ids": [
+        "@I9@",
+        "@I10@",
+        "@I11@",
+        "@I21@",
+        "@I4@",
+        "@I15@",
+        "@I22@",
+        "@I2@",
+        "@I7@",
+        "@I1@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.3720420324243605
+    },
+    {
+      "id": "q14",
+      "category": "service",
+      "query": "Who was a soldier in the First World War?",
+      "relevant": [
+        "@I11@"
+      ],
+      "judgment": "British Army service; nurse and photographer excluded.",
+      "ranked_ids": [
+        "@I11@",
+        "@I21@",
+        "@I9@",
+        "@I22@",
+        "@I10@",
+        "@I23@",
+        "@I3@",
+        "@I28@",
+        "@I18@",
+        "@I26@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2634170493111014
+    },
+    {
+      "id": "q15",
+      "category": "service",
+      "query": "Who nursed wounded soldiers during World War One?",
+      "relevant": [
+        "@I21@"
+      ],
+      "judgment": "Nurse caring for wounded in field hospital; photographer excluded.",
+      "ranked_ids": [
+        "@I21@",
+        "@I22@",
+        "@I11@",
+        "@I9@",
+        "@I10@",
+        "@I16@",
+        "@I15@",
+        "@I26@",
+        "@I20@",
+        "@I23@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2072499743662775
+    },
+    {
+      "id": "q16",
+      "category": "life_event",
+      "query": "Who died while giving birth?",
+      "relevant": [
+        "@I15@"
+      ],
+      "judgment": "Childbirth death note; midwife died of old age.",
+      "ranked_ids": [
+        "@I16@",
+        "@I15@",
+        "@I21@",
+        "@I8@",
+        "@I22@",
+        "@I17@",
+        "@I6@",
+        "@I12@",
+        "@I14@",
+        "@I31@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.1024999916553497
+    },
+    {
+      "id": "q17",
+      "category": "life_event",
+      "query": "Who survived a ship sinking?",
+      "relevant": [
+        "@I17@"
+      ],
+      "judgment": "Explicit survival of merchant shipwreck; shipbuilder excluded.",
+      "ranked_ids": [
+        "@I17@",
+        "@I18@",
+        "@I15@",
+        "@I16@",
+        "@I8@",
+        "@I26@",
+        "@I6@",
+        "@I5@",
+        "@I22@",
+        "@I4@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.1377089908346534
+    },
+    {
+      "id": "q18",
+      "category": "life_event",
+      "query": "Who lived in Cork all their life?",
+      "relevant": [
+        "@I8@"
+      ],
+      "judgment": "Explicit lifelong Cork residence; Cork emigrant excluded.",
+      "ranked_ids": [
+        "@I8@",
+        "@I5@",
+        "@I7@",
+        "@I32@",
+        "@I17@",
+        "@I15@",
+        "@I6@",
+        "@I28@",
+        "@I18@",
+        "@I1@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.155333048198372
+    },
+    {
+      "id": "q19",
+      "category": "exact_identity",
+      "query": "Thomas Reed",
+      "relevant": [
+        "@I1@"
+      ],
+      "judgment": "Exact name.",
+      "ranked_ids": [
+        "@I9@",
+        "@I28@",
+        "@I1@",
+        "@I10@",
+        "@I18@",
+        "@I2@",
+        "@I30@",
+        "@I22@",
+        "@I11@",
+        "@I15@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 2.97483301255852
+    },
+    {
+      "id": "q20",
+      "category": "exact_identity",
+      "query": "Joseph Miller the baker",
+      "relevant": [
+        "@I19@"
+      ],
+      "judgment": "Two people share the name; occupation disambiguates.",
+      "ranked_ids": [
+        "@I19@",
+        "@I20@",
+        "@I4@",
+        "@I32@",
+        "@I1@",
+        "@I2@",
+        "@I3@",
+        "@I31@",
+        "@I7@",
+        "@I11@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.0362079851329327
+    },
+    {
+      "id": "q21",
+      "category": "exact_identity",
+      "query": "Joseph Miller the tailor",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Two people share the name; occupation disambiguates.",
+      "ranked_ids": [
+        "@I20@",
+        "@I19@",
+        "@I23@",
+        "@I22@",
+        "@I3@",
+        "@I26@",
+        "@I1@",
+        "@I4@",
+        "@I2@",
+        "@I11@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2039579818956554
+    },
+    {
+      "id": "q22",
+      "category": "exact_identity",
+      "query": "Alice Turner born in 1860",
+      "relevant": [
+        "@I15@"
+      ],
+      "judgment": "Name and birth year.",
+      "ranked_ids": [
+        "@I15@",
+        "@I8@",
+        "@I6@",
+        "@I7@",
+        "@I5@",
+        "@I16@",
+        "@I24@",
+        "@I9@",
+        "@I32@",
+        "@I22@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.0509160133078694
+    },
+    {
+      "id": "q23",
+      "category": "long_note",
+      "query": "Who became blind after an accident?",
+      "relevant": [
+        "@I25@"
+      ],
+      "judgment": "Explicit blindness in note after 600-plus words of unrelated detail.",
+      "ranked_ids": [
+        "@I26@",
+        "@I22@",
+        "@I15@",
+        "@I21@",
+        "@I17@",
+        "@I16@",
+        "@I8@",
+        "@I28@",
+        "@I18@",
+        "@I7@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.0,
+        "recall@10": 0.0,
+        "mrr@10": 0.0,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.040792013052851
+    },
+    {
+      "id": "q24",
+      "category": "long_note",
+      "query": "Who was jailed for stealing jewelry?",
+      "relevant": [
+        "@I27@"
+      ],
+      "judgment": "Explicit conviction late in long note; prison guard excluded.",
+      "ranked_ids": [
+        "@I28@",
+        "@I2@",
+        "@I17@",
+        "@I18@",
+        "@I26@",
+        "@I1@",
+        "@I3@",
+        "@I4@",
+        "@I15@",
+        "@I24@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.0,
+        "recall@10": 0.0,
+        "mrr@10": 0.0,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.158500010613352
+    },
+    {
+      "id": "q25",
+      "category": "long_note",
+      "query": "Who won a national chess championship?",
+      "relevant": [
+        "@I29@"
+      ],
+      "judgment": "Explicit victory late in long note; reporter excluded.",
+      "ranked_ids": [
+        "@I30@",
+        "@I5@",
+        "@I8@",
+        "@I28@",
+        "@I7@",
+        "@I11@",
+        "@I6@",
+        "@I18@",
+        "@I10@",
+        "@I32@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.0,
+        "recall@10": 0.0,
+        "mrr@10": 0.0,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.154041012749076
+    },
+    {
+      "id": "q26",
+      "category": "long_note",
+      "query": "Who learned Braille after losing their sight in 1850?",
+      "relevant": [
+        "@I25@"
+      ],
+      "judgment": "Late-note blindness and Braille; sighted librarian excluded.",
+      "ranked_ids": [
+        "@I26@",
+        "@I24@",
+        "@I15@",
+        "@I4@",
+        "@I2@",
+        "@I17@",
+        "@I23@",
+        "@I28@",
+        "@I32@",
+        "@I8@"
+      ],
+      "metrics": {
+        "ndcg@10": 0.0,
+        "recall@10": 0.0,
+        "mrr@10": 0.0,
+        "top1_accuracy": 0.0
+      },
+      "latency_ms_median": 3.2246659975498915
+    },
+    {
+      "id": "q27",
+      "category": "distractor",
+      "query": "Who wrote Civil War history books without serving in the army?",
+      "relevant": [
+        "@I10@"
+      ],
+      "judgment": "Historian note explicitly excludes military service.",
+      "ranked_ids": [
+        "@I10@",
+        "@I9@",
+        "@I11@",
+        "@I21@",
+        "@I26@",
+        "@I22@",
+        "@I4@",
+        "@I30@",
+        "@I15@",
+        "@I2@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2991250045597553
+    },
+    {
+      "id": "q28",
+      "category": "distractor",
+      "query": "Who taught miners' children but never worked underground?",
+      "relevant": [
+        "@I2@"
+      ],
+      "judgment": "Teacher note; miners excluded.",
+      "ranked_ids": [
+        "@I2@",
+        "@I4@",
+        "@I1@",
+        "@I3@",
+        "@I32@",
+        "@I15@",
+        "@I23@",
+        "@I24@",
+        "@I17@",
+        "@I14@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2812089775688946
+    },
+    {
+      "id": "q29",
+      "category": "distractor",
+      "query": "Who sold coal without working in a mine?",
+      "relevant": [
+        "@I4@"
+      ],
+      "judgment": "Merchant note distinguishes office work from mining.",
+      "ranked_ids": [
+        "@I4@",
+        "@I2@",
+        "@I1@",
+        "@I32@",
+        "@I3@",
+        "@I23@",
+        "@I24@",
+        "@I18@",
+        "@I15@",
+        "@I19@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.2904159743338823
+    },
+    {
+      "id": "q30",
+      "category": "distractor",
+      "query": "Who photographed hospital staff rather than treating soldiers?",
+      "relevant": [
+        "@I22@"
+      ],
+      "judgment": "Photographer occupation and note; nurse excluded.",
+      "ranked_ids": [
+        "@I22@",
+        "@I21@",
+        "@I11@",
+        "@I9@",
+        "@I10@",
+        "@I20@",
+        "@I28@",
+        "@I26@",
+        "@I16@",
+        "@I15@"
+      ],
+      "metrics": {
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0,
+        "top1_accuracy": 1.0
+      },
+      "latency_ms_median": 3.225125023163855
+    }
+  ]
+}
