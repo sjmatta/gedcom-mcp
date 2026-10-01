@@ -2,8 +2,8 @@
 
 Connect ChatGPT using OAuth to **https://gedcom-mcp.matta.family/mcp**.
 Sign in through Cloudflare Access as `stephenjmatta@gmail.com`. The portal exposes
-32 genealogy and versioning tools; the separate Claude-powered `query` fallback is hidden so
-ChatGPT can reason using the structured tools without another model API key.
+41 genealogy, evidence-research, audit and versioning tools. ChatGPT reasons
+using the structured tools; the internal `query` agent has been removed.
 No Codex MCP configuration is required or created.
 
 ## Traffic and authentication
@@ -179,8 +179,8 @@ The overlay mounts the imported data read-only and the new private store at
 Update any MCP Portal tool allowlist to expose only the desired write tools to
 trusted operators. Check the authenticated catalog, prepare a test proposal without
 applying it, inspect `get_tree_revision`, and exercise a separate restored instance
-before accepting family-data edits. The default 25-tool read-only catalog is
-unchanged; enabling writes yields 33 tools.
+before accepting family-data edits. The current read-only catalog has 32 tools;
+enabling writes yields 41 tools.
 
 Rivendell's existing NAS and S3 Restic containers both mount the complete
 `/home/sjmatta/.local/share/gedcom-mcp` directory. On 2026-09-30, live inspection
@@ -243,3 +243,37 @@ source, and use the retained rollback image with the base Compose file and
 `--no-build`. Preserve the new revision store and its backups; reverting the
 application must never discard accepted family-data changes. Restore tree data
 only through the separately verified recovery workflow described above.
+
+
+### Structural and evidence release verification (2026-10-01 UTC)
+
+- Deployed merged main `593008c`, including PRs #60 (structural edits), #61
+  (evidence reads) and #62 (semantic retrieval). Their required GitHub CI passed;
+  local validation passed 530 tests, Ruff lint/format, mypy and dependency checks.
+- Built image `gedcom-mcp:593008c`, also tagged `versioned-writes-1`, with image ID
+  `sha256:0ce19072601fe4c850c6ca1c58c01b195fbba8d88f92c32eee5ed896c8716eef`.
+  The final container was healthy, with zero restarts and no OOM kill; observed
+  idle memory was approximately 492 MiB under the existing 2 GiB limit.
+- Prebuilt 86,665 passages from the exact current-tree checksum and pinned BGE
+  model using local MPS. The 125,469,937-byte index transferred with SHA-256
+  `bf95e9e363dce83da30af04fb357772bf83f0cd349dcfea38dfdd815166090c4`.
+  Preserve this prebuild step before starting the serving image; the initial
+  cold-start attempt was stopped and the previous image served during preparation.
+- Authenticated `get_tree_revision` returned revision 0 with semantic search
+  ready and the unchanged baseline checksum. A read-only whole-tree audit found
+  no structural errors. Evidence warnings remain research tasks, not automatic
+  corrections. No live genealogy edits were applied.
+- Cloudflare capability sync returned Ready with 41 tools. Refreshed Family Tree
+  in ChatGPT and verified `audit_tree`, `plan_tree_prune`, and the structural
+  relationship, delete and merge operations in `prepare_tree_change`. ChatGPT
+  shows 44 tools including the three portal-management tools. Start a new chat
+  with Family Tree selected to load these definitions.
+- All other running container IDs were unchanged. Rollback image is
+  `gedcom-mcp:pre-structural-20261001`; source, prior semantic cache, container
+  inventory and original source commit are retained in
+  `/home/sjmatta/.local/share/gedcom-mcp/rollback-structural-20261001`. A consistent
+  predeployment SQLite snapshot in the store's replication directory passed deep
+  verification. Existing independent-backup configuration was preserved.
+- The deployment directory belongs to the homelab repository, not this repository.
+  Installed the verified main archive into only that service directory after
+  preserving its source; do not merge GEDCOM repository history into homelab.
