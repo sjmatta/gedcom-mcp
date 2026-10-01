@@ -1,0 +1,660 @@
+{
+  "version": 1,
+  "description": "Synthetic person-level retrieval judgments. Binary relevance; all and only the relevant corpus people are listed. No private family data.",
+  "records": [
+    {
+      "id": "@I1@",
+      "gedcom": [
+        "1 NAME Thomas /Reed/",
+        "1 BIRT",
+        "2 DATE 1840",
+        "2 PLAC Glasgow, Scotland",
+        "1 OCCU Coal miner",
+        "2 PLAC Scranton, Pennsylvania, USA",
+        "1 NOTE Earned his living extracting coal underground in Pennsylvania."
+      ]
+    },
+    {
+      "id": "@I2@",
+      "gedcom": [
+        "1 NAME William /Reed/",
+        "1 BIRT",
+        "2 DATE 1842",
+        "2 PLAC Glasgow, Scotland",
+        "1 OCCU School teacher",
+        "2 PLAC Scranton, Pennsylvania, USA",
+        "1 NOTE Taught the children of coal miners. He never worked in a mine."
+      ]
+    },
+    {
+      "id": "@I3@",
+      "gedcom": [
+        "1 NAME James /Wilson/",
+        "1 BIRT",
+        "2 DATE 1838",
+        "2 PLAC Cardiff, Wales",
+        "1 OCCU Coal miner",
+        "2 PLAC Cardiff, Wales",
+        "1 NOTE Worked underground in Welsh collieries throughout his life."
+      ]
+    },
+    {
+      "id": "@I4@",
+      "gedcom": [
+        "1 NAME Henry /Baker/",
+        "1 BIRT",
+        "2 DATE 1850",
+        "2 PLAC Pittsburgh, Pennsylvania, USA",
+        "1 OCCU Coal merchant",
+        "1 NOTE Sold coal from an office and never worked underground."
+      ]
+    },
+    {
+      "id": "@I5@",
+      "gedcom": [
+        "1 NAME Mary /Kelly/",
+        "1 BIRT",
+        "2 DATE 1855",
+        "2 PLAC Cork, Ireland",
+        "1 EMIG",
+        "2 DATE 1875",
+        "2 PLAC Cork, Ireland",
+        "2 NOTE Left Ireland and settled in Boston, Massachusetts."
+      ]
+    },
+    {
+      "id": "@I6@",
+      "gedcom": [
+        "1 NAME Anne /Kelly/",
+        "1 BIRT",
+        "2 DATE 1857",
+        "2 PLAC Boston, Massachusetts, USA",
+        "1 NOTE Her parents emigrated from Ireland. Anne was born in Boston and never lived in Ireland."
+      ]
+    },
+    {
+      "id": "@I7@",
+      "gedcom": [
+        "1 NAME Patrick /Murphy/",
+        "1 BIRT",
+        "2 DATE 1853",
+        "2 PLAC Dublin, Ireland",
+        "1 EMIG",
+        "2 DATE 1880",
+        "2 PLAC Dublin, Ireland",
+        "2 NOTE Moved from Ireland to New York to begin a new life."
+      ]
+    },
+    {
+      "id": "@I8@",
+      "gedcom": [
+        "1 NAME Ellen /Walsh/",
+        "1 BIRT",
+        "2 DATE 1859",
+        "2 PLAC Cork, Ireland",
+        "1 NOTE Lived in Cork all her life and did not emigrate."
+      ]
+    },
+    {
+      "id": "@I9@",
+      "gedcom": [
+        "1 NAME Robert /Grant/",
+        "1 BIRT",
+        "2 DATE 1835",
+        "2 PLAC Richmond, Virginia, USA",
+        "1 EVEN",
+        "2 TYPE Military service",
+        "2 DATE 1862",
+        "2 NOTE Served as an infantry soldier in the Union Army during the American Civil War."
+      ]
+    },
+    {
+      "id": "@I10@",
+      "gedcom": [
+        "1 NAME George /Grant/",
+        "1 BIRT",
+        "2 DATE 1837",
+        "2 PLAC Richmond, Virginia, USA",
+        "1 OCCU Historian",
+        "1 NOTE Wrote books about Union Army soldiers in the American Civil War; never served in the military."
+      ]
+    },
+    {
+      "id": "@I11@",
+      "gedcom": [
+        "1 NAME Charles /West/",
+        "1 BIRT",
+        "2 DATE 1895",
+        "2 PLAC York, England",
+        "1 EVEN",
+        "2 TYPE Military service",
+        "2 DATE 1916",
+        "2 NOTE Served in the British Army in the First World War."
+      ]
+    },
+    {
+      "id": "@I12@",
+      "gedcom": [
+        "1 NAME Sarah /Brown/",
+        "1 BIRT",
+        "2 DATE 1820",
+        "2 PLAC Perth, Scotland",
+        "1 OCCU Farmer",
+        "2 PLAC Perth, Scotland",
+        "1 NOTE Raised cattle and cultivated barley on her own farm."
+      ]
+    },
+    {
+      "id": "@I13@",
+      "gedcom": [
+        "1 NAME Margaret /Green/",
+        "1 BIRT",
+        "2 DATE 1825",
+        "2 PLAC Perth, Ontario, Canada",
+        "1 OCCU Farmer",
+        "2 PLAC Perth, Ontario, Canada",
+        "1 NOTE Raised cattle and grew barley in Canada."
+      ]
+    },
+    {
+      "id": "@I14@",
+      "gedcom": [
+        "1 NAME David /Hill/",
+        "1 BIRT",
+        "2 DATE 1822",
+        "2 PLAC Perth, Scotland",
+        "1 OCCU Carpenter",
+        "1 NOTE Built barns for Scottish farmers."
+      ]
+    },
+    {
+      "id": "@I15@",
+      "gedcom": [
+        "1 NAME Alice /Turner/",
+        "1 BIRT",
+        "2 DATE 1860",
+        "2 PLAC Leeds, England",
+        "1 DEAT",
+        "2 DATE 1890",
+        "2 PLAC Leeds, England",
+        "2 NOTE Died from complications while giving birth to her youngest child."
+      ]
+    },
+    {
+      "id": "@I16@",
+      "gedcom": [
+        "1 NAME Lucy /Turner/",
+        "1 BIRT",
+        "2 DATE 1862",
+        "2 PLAC Leeds, England",
+        "1 OCCU Midwife",
+        "1 NOTE Attended many births and cared for women with childbirth complications.",
+        "1 DEAT",
+        "2 DATE 1940",
+        "2 NOTE Died peacefully of old age."
+      ]
+    },
+    {
+      "id": "@I17@",
+      "gedcom": [
+        "1 NAME Peter /Stone/",
+        "1 BIRT",
+        "2 DATE 1800",
+        "2 PLAC Bristol, England",
+        "1 EVEN",
+        "2 TYPE Shipwreck",
+        "2 DATE 1830",
+        "2 NOTE Survived when a storm sank his merchant ship off the coast of Cornwall."
+      ]
+    },
+    {
+      "id": "@I18@",
+      "gedcom": [
+        "1 NAME Samuel /Stone/",
+        "1 BIRT",
+        "2 DATE 1802",
+        "2 PLAC Bristol, England",
+        "1 OCCU Shipbuilder",
+        "1 NOTE Repaired merchant ships damaged by storms."
+      ]
+    },
+    {
+      "id": "@I19@",
+      "gedcom": [
+        "1 NAME Joseph /Miller/",
+        "1 BIRT",
+        "2 DATE 1870",
+        "2 PLAC Hamburg, Germany",
+        "1 OCCU Baker",
+        "2 PLAC Chicago, Illinois, USA",
+        "1 NOTE Made bread and pastries in a Chicago bakery."
+      ]
+    },
+    {
+      "id": "@I20@",
+      "gedcom": [
+        "1 NAME Joseph /Miller/",
+        "1 BIRT",
+        "2 DATE 1872",
+        "2 PLAC Hamburg, Germany",
+        "1 OCCU Tailor",
+        "2 PLAC Chicago, Illinois, USA",
+        "1 NOTE Sewed suits and coats in Chicago."
+      ]
+    },
+    {
+      "id": "@I21@",
+      "gedcom": [
+        "1 NAME Clara /Evans/",
+        "1 BIRT",
+        "2 DATE 1880",
+        "2 PLAC London, England",
+        "1 OCCU Nurse",
+        "1 NOTE Cared for wounded soldiers in a field hospital during the First World War."
+      ]
+    },
+    {
+      "id": "@I22@",
+      "gedcom": [
+        "1 NAME Arthur /Evans/",
+        "1 BIRT",
+        "2 DATE 1882",
+        "2 PLAC London, England",
+        "1 OCCU Photographer",
+        "1 NOTE Photographed nurses and wounded soldiers at a field hospital."
+      ]
+    },
+    {
+      "id": "@I23@",
+      "gedcom": [
+        "1 NAME Louisa /Hart/",
+        "1 BIRT",
+        "2 DATE 1848",
+        "2 PLAC Manchester, England",
+        "1 OCCU Weaver",
+        "1 NOTE Operated looms producing cotton cloth in a textile mill."
+      ]
+    },
+    {
+      "id": "@I24@",
+      "gedcom": [
+        "1 NAME Edith /Hart/",
+        "1 BIRT",
+        "2 DATE 1850",
+        "2 PLAC Manchester, England",
+        "1 OCCU Shopkeeper",
+        "1 NOTE Sold cotton cloth made by textile workers."
+      ]
+    },
+    {
+      "id": "@I25@",
+      "gedcom": [
+        "1 NAME Walter /Fox/",
+        "1 BIRT",
+        "2 DATE 1810",
+        "2 PLAC Kent, England",
+        "1 NOTE The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs.",
+        "1 NOTE Lost his sight completely after an accident in 1850 and learned to read Braille."
+      ]
+    },
+    {
+      "id": "@I26@",
+      "gedcom": [
+        "1 NAME Frederick /Fox/",
+        "1 BIRT",
+        "2 DATE 1812",
+        "2 PLAC Kent, England",
+        "1 OCCU Librarian",
+        "1 NOTE Collected books printed in Braille for blind readers. His own eyesight remained good."
+      ]
+    },
+    {
+      "id": "@I27@",
+      "gedcom": [
+        "1 NAME Beatrice /Lake/",
+        "1 BIRT",
+        "2 DATE 1865",
+        "2 PLAC Dorset, England",
+        "1 NOTE The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs.",
+        "1 NOTE In 1902 she was sentenced to prison for stealing jewelry from a shop."
+      ]
+    },
+    {
+      "id": "@I28@",
+      "gedcom": [
+        "1 NAME Daniel /Lake/",
+        "1 BIRT",
+        "2 DATE 1867",
+        "2 PLAC Dorset, England",
+        "1 OCCU Prison guard",
+        "1 NOTE Supervised inmates convicted of jewelry theft."
+      ]
+    },
+    {
+      "id": "@I29@",
+      "gedcom": [
+        "1 NAME Martha /Page/",
+        "1 BIRT",
+        "2 DATE 1875",
+        "2 PLAC Bath, England",
+        "1 NOTE The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs. The household kept a daily account of meals, weather, visitors, garden chores, and small repairs.",
+        "1 NOTE Won a national chess championship in 1910."
+      ]
+    },
+    {
+      "id": "@I30@",
+      "gedcom": [
+        "1 NAME Edward /Page/",
+        "1 BIRT",
+        "2 DATE 1877",
+        "2 PLAC Bath, England",
+        "1 NOTE Reported on the national chess championship for a newspaper."
+      ]
+    },
+    {
+      "id": "@I31@",
+      "gedcom": [
+        "1 NAME Agnes /Bell/",
+        "1 BIRT",
+        "2 DATE 1845",
+        "2 PLAC Edinburgh, Scotland",
+        "1 OCCU Farmer",
+        "2 PLAC Edinburgh, Scotland",
+        "1 NOTE Cultivated oats and raised sheep on a Scottish farm."
+      ]
+    },
+    {
+      "id": "@I32@",
+      "gedcom": [
+        "1 NAME Michael /Doyle/",
+        "1 BIRT",
+        "2 DATE 1844",
+        "2 PLAC Galway, Ireland",
+        "1 EMIG",
+        "2 DATE 1868",
+        "2 PLAC Galway, Ireland",
+        "2 NOTE Left Ireland and settled in Philadelphia.",
+        "1 OCCU Coal miner",
+        "2 PLAC Pennsylvania, USA"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "q01",
+      "category": "occupation",
+      "query": "Who earned a living extracting coal underground?",
+      "relevant": [
+        "@I1@",
+        "@I3@",
+        "@I32@"
+      ],
+      "judgment": "OCCU Coal miner; merchant and teacher are excluded."
+    },
+    {
+      "id": "q02",
+      "category": "occupation",
+      "query": "Who made bread and pastries for a living?",
+      "relevant": [
+        "@I19@"
+      ],
+      "judgment": "Baker occupation and bakery note."
+    },
+    {
+      "id": "q03",
+      "category": "occupation",
+      "query": "Who operated looms in a cotton mill?",
+      "relevant": [
+        "@I23@"
+      ],
+      "judgment": "Weaver note; cloth seller is excluded."
+    },
+    {
+      "id": "q04",
+      "category": "occupation",
+      "query": "Who worked sewing clothing?",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Tailor making suits and coats."
+    },
+    {
+      "id": "q05",
+      "category": "place_constraint",
+      "query": "Coal miners who worked in Pennsylvania",
+      "relevant": [
+        "@I1@",
+        "@I32@"
+      ],
+      "judgment": "Both have OCCU Coal miner in Pennsylvania; Welsh miner excluded."
+    },
+    {
+      "id": "q06",
+      "category": "place_constraint",
+      "query": "Farmers in Scotland",
+      "relevant": [
+        "@I12@",
+        "@I31@"
+      ],
+      "judgment": "Scottish farming occupations; Ontario farmer and carpenter excluded."
+    },
+    {
+      "id": "q07",
+      "category": "place_constraint",
+      "query": "Who farmed in Canada?",
+      "relevant": [
+        "@I13@"
+      ],
+      "judgment": "Farmer in Perth, Ontario, Canada."
+    },
+    {
+      "id": "q08",
+      "category": "place_constraint",
+      "query": "Who was born in Germany and worked as a tailor in Chicago?",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Hamburg birth and Chicago tailoring; same-name baker excluded."
+    },
+    {
+      "id": "q09",
+      "category": "migration",
+      "query": "People who emigrated from Ireland",
+      "relevant": [
+        "@I5@",
+        "@I7@",
+        "@I32@"
+      ],
+      "judgment": "Explicit emigration; Irish ancestry or residence alone excluded."
+    },
+    {
+      "id": "q10",
+      "category": "migration",
+      "query": "Who moved from Ireland to Boston?",
+      "relevant": [
+        "@I5@"
+      ],
+      "judgment": "Emigration note names Boston; Boston-born daughter excluded."
+    },
+    {
+      "id": "q11",
+      "category": "migration",
+      "query": "Who left Dublin for New York in 1880?",
+      "relevant": [
+        "@I7@"
+      ],
+      "judgment": "Dublin emigration event dated 1880 and New York note."
+    },
+    {
+      "id": "q12",
+      "category": "migration",
+      "query": "Who left Ireland before 1870?",
+      "relevant": [
+        "@I32@"
+      ],
+      "judgment": "Emigration in 1868; 1875 and 1880 excluded."
+    },
+    {
+      "id": "q13",
+      "category": "service",
+      "query": "Who served in the Union Army during the Civil War?",
+      "relevant": [
+        "@I9@"
+      ],
+      "judgment": "Explicit infantry service; historian excluded."
+    },
+    {
+      "id": "q14",
+      "category": "service",
+      "query": "Who was a soldier in the First World War?",
+      "relevant": [
+        "@I11@"
+      ],
+      "judgment": "British Army service; nurse and photographer excluded."
+    },
+    {
+      "id": "q15",
+      "category": "service",
+      "query": "Who nursed wounded soldiers during World War One?",
+      "relevant": [
+        "@I21@"
+      ],
+      "judgment": "Nurse caring for wounded in field hospital; photographer excluded."
+    },
+    {
+      "id": "q16",
+      "category": "life_event",
+      "query": "Who died while giving birth?",
+      "relevant": [
+        "@I15@"
+      ],
+      "judgment": "Childbirth death note; midwife died of old age."
+    },
+    {
+      "id": "q17",
+      "category": "life_event",
+      "query": "Who survived a ship sinking?",
+      "relevant": [
+        "@I17@"
+      ],
+      "judgment": "Explicit survival of merchant shipwreck; shipbuilder excluded."
+    },
+    {
+      "id": "q18",
+      "category": "life_event",
+      "query": "Who lived in Cork all their life?",
+      "relevant": [
+        "@I8@"
+      ],
+      "judgment": "Explicit lifelong Cork residence; Cork emigrant excluded."
+    },
+    {
+      "id": "q19",
+      "category": "exact_identity",
+      "query": "Thomas Reed",
+      "relevant": [
+        "@I1@"
+      ],
+      "judgment": "Exact name."
+    },
+    {
+      "id": "q20",
+      "category": "exact_identity",
+      "query": "Joseph Miller the baker",
+      "relevant": [
+        "@I19@"
+      ],
+      "judgment": "Two people share the name; occupation disambiguates."
+    },
+    {
+      "id": "q21",
+      "category": "exact_identity",
+      "query": "Joseph Miller the tailor",
+      "relevant": [
+        "@I20@"
+      ],
+      "judgment": "Two people share the name; occupation disambiguates."
+    },
+    {
+      "id": "q22",
+      "category": "exact_identity",
+      "query": "Alice Turner born in 1860",
+      "relevant": [
+        "@I15@"
+      ],
+      "judgment": "Name and birth year."
+    },
+    {
+      "id": "q23",
+      "category": "long_note",
+      "query": "Who became blind after an accident?",
+      "relevant": [
+        "@I25@"
+      ],
+      "judgment": "Explicit blindness in note after 600-plus words of unrelated detail."
+    },
+    {
+      "id": "q24",
+      "category": "long_note",
+      "query": "Who was jailed for stealing jewelry?",
+      "relevant": [
+        "@I27@"
+      ],
+      "judgment": "Explicit conviction late in long note; prison guard excluded."
+    },
+    {
+      "id": "q25",
+      "category": "long_note",
+      "query": "Who won a national chess championship?",
+      "relevant": [
+        "@I29@"
+      ],
+      "judgment": "Explicit victory late in long note; reporter excluded."
+    },
+    {
+      "id": "q26",
+      "category": "long_note",
+      "query": "Who learned Braille after losing their sight in 1850?",
+      "relevant": [
+        "@I25@"
+      ],
+      "judgment": "Late-note blindness and Braille; sighted librarian excluded."
+    },
+    {
+      "id": "q27",
+      "category": "distractor",
+      "query": "Who wrote Civil War history books without serving in the army?",
+      "relevant": [
+        "@I10@"
+      ],
+      "judgment": "Historian note explicitly excludes military service."
+    },
+    {
+      "id": "q28",
+      "category": "distractor",
+      "query": "Who taught miners' children but never worked underground?",
+      "relevant": [
+        "@I2@"
+      ],
+      "judgment": "Teacher note; miners excluded."
+    },
+    {
+      "id": "q29",
+      "category": "distractor",
+      "query": "Who sold coal without working in a mine?",
+      "relevant": [
+        "@I4@"
+      ],
+      "judgment": "Merchant note distinguishes office work from mining."
+    },
+    {
+      "id": "q30",
+      "category": "distractor",
+      "query": "Who photographed hospital staff rather than treating soldiers?",
+      "relevant": [
+        "@I22@"
+      ],
+      "judgment": "Photographer occupation and note; nurse excluded."
+    }
+  ]
+}

@@ -1,0 +1,2008 @@
+{
+  "version": 2,
+  "description": "Challenge suite: 40 manually judged scenarios, each with five competing synthetic biographies. Gold labels frozen before retrieval. All required facts must belong to the returned person. No private data. Not a held-out production evaluation.",
+  "records": [
+    {
+      "id": "@I1@",
+      "gedcom": [
+        "1 NAME Alice /Abbott/",
+        "1 NOTE Departed Lisbon in 1884 for Recife. Returned to Lisbon in 1896 and remained there."
+      ]
+    },
+    {
+      "id": "@I2@",
+      "gedcom": [
+        "1 NAME Thomas /Abbott/",
+        "1 NOTE Departed Recife in 1884 for Lisbon. Returned to Recife in 1896 and remained there."
+      ]
+    },
+    {
+      "id": "@I3@",
+      "gedcom": [
+        "1 NAME Beatrice /Abbott/",
+        "1 NOTE Sailed from Lisbon to Recife in 1884 and stayed in Recife until death."
+      ]
+    },
+    {
+      "id": "@I4@",
+      "gedcom": [
+        "1 NAME Henry /Abbott/",
+        "1 NOTE Lived in Lisbon all his life. His brother settled in Recife and later returned."
+      ]
+    },
+    {
+      "id": "@I5@",
+      "gedcom": [
+        "1 NAME Clara /Abbott/",
+        "1 NOTE Traveled from Lisbon to Recife for two weeks in 1896; never changed residence."
+      ]
+    },
+    {
+      "id": "@I6@",
+      "gedcom": [
+        "1 NAME Thomas /Bennett/",
+        "1 NOTE In Lincolnshire, cultivated wheat until 1872, then took a permanent job laying railway track."
+      ]
+    },
+    {
+      "id": "@I7@",
+      "gedcom": [
+        "1 NAME Beatrice /Bennett/",
+        "1 NOTE In Lincolnshire, laid railway track until 1872, then bought a farm and cultivated wheat."
+      ]
+    },
+    {
+      "id": "@I8@",
+      "gedcom": [
+        "1 NAME Henry /Bennett/",
+        "1 NOTE Farmed wheat in Lincolnshire throughout life; his son became a railway worker."
+      ]
+    },
+    {
+      "id": "@I9@",
+      "gedcom": [
+        "1 NAME Clara /Bennett/",
+        "1 NOTE Worked laying railway track in Lincolnshire throughout life and never farmed."
+      ]
+    },
+    {
+      "id": "@I10@",
+      "gedcom": [
+        "1 NAME William /Bennett/",
+        "1 NOTE Farmed wheat and laid railway track simultaneously in Lincolnshire from 1860 to 1880."
+      ]
+    },
+    {
+      "id": "@I11@",
+      "gedcom": [
+        "1 NAME Beatrice /Carter/",
+        "1 NOTE Her husband died in Bergen in 1891. She relocated to Seattle in 1894 as a widow."
+      ]
+    },
+    {
+      "id": "@I12@",
+      "gedcom": [
+        "1 NAME Henry /Carter/",
+        "1 NOTE She relocated from Bergen to Seattle in 1891. Her husband died in Seattle in 1894."
+      ]
+    },
+    {
+      "id": "@I13@",
+      "gedcom": [
+        "1 NAME Clara /Carter/",
+        "1 NOTE Her husband died in Bergen in 1891. She stayed in Bergen and her daughter moved to Seattle."
+      ]
+    },
+    {
+      "id": "@I14@",
+      "gedcom": [
+        "1 NAME William /Carter/",
+        "1 NOTE She moved from Bergen to Seattle with her husband in 1894; both were alive in 1910."
+      ]
+    },
+    {
+      "id": "@I15@",
+      "gedcom": [
+        "1 NAME Agnes /Carter/",
+        "1 NOTE Her spouse died in Oslo in 1891. She moved from Oslo to Seattle in 1894."
+      ]
+    },
+    {
+      "id": "@I16@",
+      "gedcom": [
+        "1 NAME Henry /Dawson/",
+        "1 NOTE Hospitalized with typhoid in Portsmouth in 1855. Discharged fully recovered in 1856. Enlisted in the navy in 1857."
+      ]
+    },
+    {
+      "id": "@I17@",
+      "gedcom": [
+        "1 NAME Clara /Dawson/",
+        "1 NOTE Enlisted in the navy at Portsmouth in 1855. Fell ill with typhoid in 1857 and recovered in 1858."
+      ]
+    },
+    {
+      "id": "@I18@",
+      "gedcom": [
+        "1 NAME William /Dawson/",
+        "1 NOTE Recovered from typhoid in Portsmouth in 1856 but failed the naval enlistment medical examination."
+      ]
+    },
+    {
+      "id": "@I19@",
+      "gedcom": [
+        "1 NAME Agnes /Dawson/",
+        "1 NOTE Enlisted in the navy at Portsmouth in 1857. His brother had recovered from typhoid in 1856."
+      ]
+    },
+    {
+      "id": "@I20@",
+      "gedcom": [
+        "1 NAME Robert /Dawson/",
+        "1 NOTE Was treated for typhoid at Portsmouth in 1856 and died before naval enlistment."
+      ]
+    },
+    {
+      "id": "@I21@",
+      "gedcom": [
+        "1 NAME Clara /Ellis/",
+        "1 NOTE Served a prison sentence in Nantes from 1860 to 1863. After release, opened his first bakery in 1865."
+      ]
+    },
+    {
+      "id": "@I22@",
+      "gedcom": [
+        "1 NAME William /Ellis/",
+        "1 NOTE Opened a bakery in Nantes in 1860. Convicted and imprisoned in 1865."
+      ]
+    },
+    {
+      "id": "@I23@",
+      "gedcom": [
+        "1 NAME Agnes /Ellis/",
+        "1 NOTE Opened a bakery in Nantes in 1865. His father had served a prison sentence there."
+      ]
+    },
+    {
+      "id": "@I24@",
+      "gedcom": [
+        "1 NAME Robert /Ellis/",
+        "1 NOTE Worked baking bread inside the Nantes prison kitchen throughout his sentence."
+      ]
+    },
+    {
+      "id": "@I25@",
+      "gedcom": [
+        "1 NAME Edith /Ellis/",
+        "1 NOTE Served a sentence in Nantes from 1860 to 1863. Applied for a bakery license but it was denied."
+      ]
+    },
+    {
+      "id": "@I26@",
+      "gedcom": [
+        "1 NAME William /Fletcher/",
+        "1 NOTE Born in Yorkshire. Worked underground extracting copper in Michigan. Retired from mining to raise dairy cattle in Wisconsin."
+      ]
+    },
+    {
+      "id": "@I27@",
+      "gedcom": [
+        "1 NAME Agnes /Fletcher/",
+        "1 NOTE Born in Yorkshire. Extracted copper in Michigan and retired to a Wisconsin dairy farm in 1899."
+      ]
+    },
+    {
+      "id": "@I28@",
+      "gedcom": [
+        "1 NAME Robert /Fletcher/",
+        "1 NOTE Born in Yorkshire. Mined copper in Michigan, then raised dairy cattle in Minnesota."
+      ]
+    },
+    {
+      "id": "@I29@",
+      "gedcom": [
+        "1 NAME Edith /Fletcher/",
+        "1 NOTE Born in Lancashire. Mined copper in Michigan, then raised dairy cattle in Wisconsin."
+      ]
+    },
+    {
+      "id": "@I30@",
+      "gedcom": [
+        "1 NAME George /Fletcher/",
+        "1 NOTE Born in Yorkshire. Mined coal in Michigan, then raised dairy cattle in Wisconsin."
+      ]
+    },
+    {
+      "id": "@I31@",
+      "gedcom": [
+        "1 NAME Agnes /Graham/",
+        "1 NOTE She set type and operated a printing press in Rouen. She also owned and operated a lending library there."
+      ]
+    },
+    {
+      "id": "@I32@",
+      "gedcom": [
+        "1 NAME Robert /Graham/",
+        "1 NOTE He set type and operated a printing press in Rouen. He also owned a lending library there."
+      ]
+    },
+    {
+      "id": "@I33@",
+      "gedcom": [
+        "1 NAME Edith /Graham/",
+        "1 NOTE She ran a lending library in Rouen. Her brother was a printer."
+      ]
+    },
+    {
+      "id": "@I34@",
+      "gedcom": [
+        "1 NAME George /Graham/",
+        "1 NOTE She operated a printing press in Rouen but never ran a lending library."
+      ]
+    },
+    {
+      "id": "@I35@",
+      "gedcom": [
+        "1 NAME Alice /Graham/",
+        "1 NOTE She printed books and operated a lending library in Tours, not Rouen."
+      ]
+    },
+    {
+      "id": "@I36@",
+      "gedcom": [
+        "1 NAME Robert /Hughes/",
+        "1 NOTE Survived the 1906 Valparaiso earthquake. In 1907 legally adopted a child whose parents had died."
+      ]
+    },
+    {
+      "id": "@I37@",
+      "gedcom": [
+        "1 NAME Edith /Hughes/",
+        "1 NOTE Died in the 1906 Valparaiso earthquake. His widow subsequently adopted an orphan."
+      ]
+    },
+    {
+      "id": "@I38@",
+      "gedcom": [
+        "1 NAME George /Hughes/",
+        "1 NOTE Survived the 1906 Valparaiso earthquake and donated money to an orphanage but adopted no children."
+      ]
+    },
+    {
+      "id": "@I39@",
+      "gedcom": [
+        "1 NAME Alice /Hughes/",
+        "1 NOTE Adopted an orphan in 1904 and survived the Valparaiso earthquake in 1906."
+      ]
+    },
+    {
+      "id": "@I40@",
+      "gedcom": [
+        "1 NAME Thomas /Hughes/",
+        "1 NOTE Survived an earthquake in Lima and later legally adopted an orphan."
+      ]
+    },
+    {
+      "id": "@I41@",
+      "gedcom": [
+        "1 NAME Edith /Ingram/",
+        "1 NOTE Constructed wooden vessels as a shipwright. Wedding held in Quebec City. Interred in New Orleans, Louisiana."
+      ]
+    },
+    {
+      "id": "@I42@",
+      "gedcom": [
+        "1 NAME George /Ingram/",
+        "1 NOTE Constructed wooden vessels as a shipwright. Wedding in Quebec City. Interred in Quebec City."
+      ]
+    },
+    {
+      "id": "@I43@",
+      "gedcom": [
+        "1 NAME Alice /Ingram/",
+        "1 NOTE Constructed wooden vessels as a shipwright. Wedding in New Orleans, Louisiana. Interred in Quebec City."
+      ]
+    },
+    {
+      "id": "@I44@",
+      "gedcom": [
+        "1 NAME Thomas /Ingram/",
+        "1 NOTE Wedding held in Quebec City. Interred in Louisiana. Worked as a fisherman, not a shipwright."
+      ]
+    },
+    {
+      "id": "@I45@",
+      "gedcom": [
+        "1 NAME Beatrice /Ingram/",
+        "1 NOTE Wedding in Quebec City. Her husband was a shipwright buried in Louisiana; she was buried in Vermont."
+      ]
+    },
+    {
+      "id": "@I46@",
+      "gedcom": [
+        "1 NAME George /Jennings/",
+        "1 NOTE Gave piano and violin lessons in Prague. Was the primary caregiver for her deaf daughter."
+      ]
+    },
+    {
+      "id": "@I47@",
+      "gedcom": [
+        "1 NAME Alice /Jennings/",
+        "1 NOTE Gave piano and violin lessons in Prague. Her daughter had normal hearing."
+      ]
+    },
+    {
+      "id": "@I48@",
+      "gedcom": [
+        "1 NAME Thomas /Jennings/",
+        "1 NOTE Cared for a deaf daughter in Prague. Worked teaching mathematics, not music."
+      ]
+    },
+    {
+      "id": "@I49@",
+      "gedcom": [
+        "1 NAME Beatrice /Jennings/",
+        "1 NOTE Gave music lessons and cared for a deaf daughter in Vienna."
+      ]
+    },
+    {
+      "id": "@I50@",
+      "gedcom": [
+        "1 NAME Henry /Jennings/",
+        "1 NOTE Was a deaf child in Prague. Her mother taught music and cared for her."
+      ]
+    },
+    {
+      "id": "@I51@",
+      "gedcom": [
+        "1 NAME Alice /Knight/",
+        "1 NOTE Performed amputations and treated soldiers as an army surgeon during the Crimean War."
+      ]
+    },
+    {
+      "id": "@I52@",
+      "gedcom": [
+        "1 NAME Thomas /Knight/",
+        "1 NOTE Her father performed amputations as an army surgeon during the Crimean War; she was a schoolteacher."
+      ]
+    },
+    {
+      "id": "@I53@",
+      "gedcom": [
+        "1 NAME Beatrice /Knight/",
+        "1 NOTE Wrote a biography of a surgeon who performed amputations in the Crimean War; never practiced medicine."
+      ]
+    },
+    {
+      "id": "@I54@",
+      "gedcom": [
+        "1 NAME Henry /Knight/",
+        "1 NOTE Was operated on by a surgeon during the Crimean War; served as an infantry private."
+      ]
+    },
+    {
+      "id": "@I55@",
+      "gedcom": [
+        "1 NAME Clara /Knight/",
+        "1 NOTE Collected surgical instruments used in the Crimean War but was born after the war ended."
+      ]
+    },
+    {
+      "id": "@I56@",
+      "gedcom": [
+        "1 NAME Thomas /Lewis/",
+        "1 NOTE Killed when a boiler exploded at the Essen foundry where he worked."
+      ]
+    },
+    {
+      "id": "@I57@",
+      "gedcom": [
+        "1 NAME Beatrice /Lewis/",
+        "1 NOTE His brother was killed in a boiler explosion at an Essen foundry. He died of pneumonia twenty years later."
+      ]
+    },
+    {
+      "id": "@I58@",
+      "gedcom": [
+        "1 NAME Henry /Lewis/",
+        "1 NOTE Investigated the fatal boiler explosion at an Essen foundry; died peacefully at home."
+      ]
+    },
+    {
+      "id": "@I59@",
+      "gedcom": [
+        "1 NAME Clara /Lewis/",
+        "1 NOTE Survived a boiler explosion at an Essen foundry and died in a road accident."
+      ]
+    },
+    {
+      "id": "@I60@",
+      "gedcom": [
+        "1 NAME William /Lewis/",
+        "1 NOTE Worked at an Essen foundry. His father died in an explosion at a mine in Bochum."
+      ]
+    },
+    {
+      "id": "@I61@",
+      "gedcom": [
+        "1 NAME Beatrice /Morgan/",
+        "1 NOTE Led camel caravans across the Sahara, guiding merchants between oasis towns."
+      ]
+    },
+    {
+      "id": "@I62@",
+      "gedcom": [
+        "1 NAME Henry /Morgan/",
+        "1 NOTE His father led camel caravans across the Sahara; he worked as a clerk in Marseille."
+      ]
+    },
+    {
+      "id": "@I63@",
+      "gedcom": [
+        "1 NAME Clara /Morgan/",
+        "1 NOTE Recorded stories told by a guide who crossed the Sahara in camel caravans. Never traveled there."
+      ]
+    },
+    {
+      "id": "@I64@",
+      "gedcom": [
+        "1 NAME William /Morgan/",
+        "1 NOTE Sold supplies to guides of camel caravans crossing the Sahara, staying in a coastal town."
+      ]
+    },
+    {
+      "id": "@I65@",
+      "gedcom": [
+        "1 NAME Agnes /Morgan/",
+        "1 NOTE Was a merchant guided across the Sahara by a hired caravan leader; did not work as a guide."
+      ]
+    },
+    {
+      "id": "@I66@",
+      "gedcom": [
+        "1 NAME Henry /Newton/",
+        "1 NOTE Dragged passengers from a burning Helsinki ferry and received a lifesaving medal for the rescue."
+      ]
+    },
+    {
+      "id": "@I67@",
+      "gedcom": [
+        "1 NAME Clara /Newton/",
+        "1 NOTE Was rescued from a burning Helsinki ferry by a sailor who received a lifesaving medal."
+      ]
+    },
+    {
+      "id": "@I68@",
+      "gedcom": [
+        "1 NAME William /Newton/",
+        "1 NOTE Presented a lifesaving medal to the sailor who rescued passengers from a Helsinki ferry fire."
+      ]
+    },
+    {
+      "id": "@I69@",
+      "gedcom": [
+        "1 NAME Agnes /Newton/",
+        "1 NOTE His wife received a medal for rescuing passengers from a burning Helsinki ferry; he was not aboard."
+      ]
+    },
+    {
+      "id": "@I70@",
+      "gedcom": [
+        "1 NAME Robert /Newton/",
+        "1 NOTE Photographed the medal ceremony honoring the Helsinki ferry rescuers but took no part in the rescue."
+      ]
+    },
+    {
+      "id": "@I71@",
+      "gedcom": [
+        "1 NAME Clara /Owens/",
+        "1 NOTE After both parents died, lived in a Krakow orphanage from age six to fifteen."
+      ]
+    },
+    {
+      "id": "@I72@",
+      "gedcom": [
+        "1 NAME William /Owens/",
+        "1 NOTE Worked as a nurse in a Krakow orphanage as an adult; grew up with both parents."
+      ]
+    },
+    {
+      "id": "@I73@",
+      "gedcom": [
+        "1 NAME Agnes /Owens/",
+        "1 NOTE Her son lived in a Krakow orphanage; she grew up with relatives in Warsaw."
+      ]
+    },
+    {
+      "id": "@I74@",
+      "gedcom": [
+        "1 NAME Robert /Owens/",
+        "1 NOTE Donated to a Krakow orphanage throughout adulthood; grew up with both parents."
+      ]
+    },
+    {
+      "id": "@I75@",
+      "gedcom": [
+        "1 NAME Edith /Owens/",
+        "1 NOTE Wrote a novel about a child living in a Krakow orphanage; childhood was spent in Lublin."
+      ]
+    },
+    {
+      "id": "@I76@",
+      "gedcom": [
+        "1 NAME William /Palmer/",
+        "1 NOTE The Dundee probate record offered her an inheritance. She formally renounced it and received nothing."
+      ]
+    },
+    {
+      "id": "@I77@",
+      "gedcom": [
+        "1 NAME Agnes /Palmer/",
+        "1 NOTE The Dundee probate record shows she considered renouncing the inheritance but ultimately accepted it."
+      ]
+    },
+    {
+      "id": "@I78@",
+      "gedcom": [
+        "1 NAME Robert /Palmer/",
+        "1 NOTE Accepted a Dundee inheritance. Her sister formally renounced her own share."
+      ]
+    },
+    {
+      "id": "@I79@",
+      "gedcom": [
+        "1 NAME Edith /Palmer/",
+        "1 NOTE Received no Dundee inheritance because the will did not name him; he never had a share to decline."
+      ]
+    },
+    {
+      "id": "@I80@",
+      "gedcom": [
+        "1 NAME George /Palmer/",
+        "1 NOTE Challenged the Dundee inheritance in court and was awarded the entire estate."
+      ]
+    },
+    {
+      "id": "@I81@",
+      "gedcom": [
+        "1 NAME Agnes /Quinn/",
+        "1 NOTE Tried for setting a warehouse ablaze in Bremen. The court found him not guilty and acquitted him."
+      ]
+    },
+    {
+      "id": "@I82@",
+      "gedcom": [
+        "1 NAME Robert /Quinn/",
+        "1 NOTE Tried for arson in Bremen and found guilty; sentenced to five years."
+      ]
+    },
+    {
+      "id": "@I83@",
+      "gedcom": [
+        "1 NAME Edith /Quinn/",
+        "1 NOTE Represented a defendant acquitted of arson in Bremen; was never a defendant himself."
+      ]
+    },
+    {
+      "id": "@I84@",
+      "gedcom": [
+        "1 NAME George /Quinn/",
+        "1 NOTE Charged with arson in Bremen but died before trial; there was no verdict."
+      ]
+    },
+    {
+      "id": "@I85@",
+      "gedcom": [
+        "1 NAME Alice /Quinn/",
+        "1 NOTE Acquitted of theft in Bremen but convicted of setting a warehouse ablaze."
+      ]
+    },
+    {
+      "id": "@I86@",
+      "gedcom": [
+        "1 NAME Robert /Russell/",
+        "1 NOTE Engaged in Siena in 1888. The engagement was broken in 1889 and the couple never married."
+      ]
+    },
+    {
+      "id": "@I87@",
+      "gedcom": [
+        "1 NAME Edith /Russell/",
+        "1 NOTE Engaged in Siena in 1888. Wedding postponed in 1889 but held in 1890."
+      ]
+    },
+    {
+      "id": "@I88@",
+      "gedcom": [
+        "1 NAME George /Russell/",
+        "1 NOTE Was never engaged in Siena and never married."
+      ]
+    },
+    {
+      "id": "@I89@",
+      "gedcom": [
+        "1 NAME Alice /Russell/",
+        "1 NOTE Married in Siena in 1888. The marriage ended in divorce in 1889."
+      ]
+    },
+    {
+      "id": "@I90@",
+      "gedcom": [
+        "1 NAME Thomas /Russell/",
+        "1 NOTE Her daughter broke an engagement in Siena; she herself married her fiance."
+      ]
+    },
+    {
+      "id": "@I91@",
+      "gedcom": [
+        "1 NAME Edith /Sutton/",
+        "1 NOTE Survived a severe fever as a child in Utrecht. A later examination confirmed hearing remained normal."
+      ]
+    },
+    {
+      "id": "@I92@",
+      "gedcom": [
+        "1 NAME George /Sutton/",
+        "1 NOTE A severe childhood fever in Utrecht caused permanent deafness."
+      ]
+    },
+    {
+      "id": "@I93@",
+      "gedcom": [
+        "1 NAME Alice /Sutton/",
+        "1 NOTE Grew up in Utrecht with normal hearing but never had a childhood fever."
+      ]
+    },
+    {
+      "id": "@I94@",
+      "gedcom": [
+        "1 NAME Thomas /Sutton/",
+        "1 NOTE Her child survived fever in Utrecht with normal hearing; she was deaf from birth."
+      ]
+    },
+    {
+      "id": "@I95@",
+      "gedcom": [
+        "1 NAME Beatrice /Sutton/",
+        "1 NOTE Survived childhood fever in Utrecht. Partial hearing loss was documented afterward."
+      ]
+    },
+    {
+      "id": "@I96@",
+      "gedcom": [
+        "1 NAME George /Tucker/",
+        "1 NOTE Applied for permission to emigrate to Tasmania in 1852. Withdrew the application and lived out his life in Devon."
+      ]
+    },
+    {
+      "id": "@I97@",
+      "gedcom": [
+        "1 NAME Alice /Tucker/",
+        "1 NOTE Applied to emigrate to Tasmania in 1852 and arrived in Hobart the next year."
+      ]
+    },
+    {
+      "id": "@I98@",
+      "gedcom": [
+        "1 NAME Thomas /Tucker/",
+        "1 NOTE Born and lived in Tasmania throughout life; never made an emigration application."
+      ]
+    },
+    {
+      "id": "@I99@",
+      "gedcom": [
+        "1 NAME Beatrice /Tucker/",
+        "1 NOTE Her brother withdrew an application to settle in Tasmania; she arrived in Hobart in 1853."
+      ]
+    },
+    {
+      "id": "@I100@",
+      "gedcom": [
+        "1 NAME Henry /Tucker/",
+        "1 NOTE Considered Tasmania but never applied. Eventually moved from Devon to Adelaide."
+      ]
+    },
+    {
+      "id": "@I101@",
+      "gedcom": [
+        "1 NAME Alice /Underwood/",
+        "1 NOTE Worked as a cooper in Cognac, fashioning oak casks for local distillers."
+      ]
+    },
+    {
+      "id": "@I102@",
+      "gedcom": [
+        "1 NAME Thomas /Underwood/",
+        "1 NOTE Worked as a wine merchant in Cognac, selling goods shipped in wooden barrels."
+      ]
+    },
+    {
+      "id": "@I103@",
+      "gedcom": [
+        "1 NAME Beatrice /Underwood/",
+        "1 NOTE Repaired carts in Cognac as a wheelwright; purchased barrels from a cooper."
+      ]
+    },
+    {
+      "id": "@I104@",
+      "gedcom": [
+        "1 NAME Henry /Underwood/",
+        "1 NOTE Worked as a cooper crafting oak casks in Bordeaux, never in Cognac."
+      ]
+    },
+    {
+      "id": "@I105@",
+      "gedcom": [
+        "1 NAME Clara /Underwood/",
+        "1 NOTE His father was a cooper in Cognac. He was a teacher in Cognac."
+      ]
+    },
+    {
+      "id": "@I106@",
+      "gedcom": [
+        "1 NAME Thomas /Vincent/",
+        "1 NOTE Employed as a postman in Inverness, walking a daily delivery round to households."
+      ]
+    },
+    {
+      "id": "@I107@",
+      "gedcom": [
+        "1 NAME Beatrice /Vincent/",
+        "1 NOTE Wrote letters from Inverness and posted them at the local post office."
+      ]
+    },
+    {
+      "id": "@I108@",
+      "gedcom": [
+        "1 NAME Henry /Vincent/",
+        "1 NOTE Worked at an Inverness post office selling stamps at the counter; never made delivery rounds."
+      ]
+    },
+    {
+      "id": "@I109@",
+      "gedcom": [
+        "1 NAME Clara /Vincent/",
+        "1 NOTE Delivered milk to houses in Inverness, not letters."
+      ]
+    },
+    {
+      "id": "@I110@",
+      "gedcom": [
+        "1 NAME William /Vincent/",
+        "1 NOTE Her spouse was a postman in Inverness; she taught school."
+      ]
+    },
+    {
+      "id": "@I111@",
+      "gedcom": [
+        "1 NAME Beatrice /Walker/",
+        "1 NOTE Worked as a cobbler in Toledo, resoling worn boots and stitching leather uppers."
+      ]
+    },
+    {
+      "id": "@I112@",
+      "gedcom": [
+        "1 NAME Henry /Walker/",
+        "1 NOTE Owned a Toledo shop selling new shoes; never mended footwear."
+      ]
+    },
+    {
+      "id": "@I113@",
+      "gedcom": [
+        "1 NAME Clara /Walker/",
+        "1 NOTE Worked as a cobbler in Salamanca, never lived in Toledo."
+      ]
+    },
+    {
+      "id": "@I114@",
+      "gedcom": [
+        "1 NAME William /Walker/",
+        "1 NOTE Mended saddles in Toledo as a harness maker; did not repair footwear."
+      ]
+    },
+    {
+      "id": "@I115@",
+      "gedcom": [
+        "1 NAME Agnes /Walker/",
+        "1 NOTE His mother was a cobbler in Toledo; he worked as a mason."
+      ]
+    },
+    {
+      "id": "@I116@",
+      "gedcom": [
+        "1 NAME Henry /Young/",
+        "1 NOTE Practiced as a midwife in Limerick and was paid for attending confinements."
+      ]
+    },
+    {
+      "id": "@I117@",
+      "gedcom": [
+        "1 NAME Clara /Young/",
+        "1 NOTE Gave birth to seven babies in Limerick but never practiced as a midwife."
+      ]
+    },
+    {
+      "id": "@I118@",
+      "gedcom": [
+        "1 NAME William /Young/",
+        "1 NOTE Employed as a nurse caring for elderly men in Limerick; did not attend deliveries."
+      ]
+    },
+    {
+      "id": "@I119@",
+      "gedcom": [
+        "1 NAME Agnes /Young/",
+        "1 NOTE Practiced as a midwife in Waterford, never worked in Limerick."
+      ]
+    },
+    {
+      "id": "@I120@",
+      "gedcom": [
+        "1 NAME Robert /Young/",
+        "1 NOTE Her aunt practiced as a midwife in Limerick; she worked as a seamstress."
+      ]
+    },
+    {
+      "id": "@I121@",
+      "gedcom": [
+        "1 NAME Clara /Adams/",
+        "1 NOTE Employed as the Whitby lighthouse keeper, tending the lamp and polishing its lenses each evening."
+      ]
+    },
+    {
+      "id": "@I122@",
+      "gedcom": [
+        "1 NAME William /Adams/",
+        "1 NOTE A sailor whose vessel was guided by the Whitby lighthouse; never tended its lamp."
+      ]
+    },
+    {
+      "id": "@I123@",
+      "gedcom": [
+        "1 NAME Agnes /Adams/",
+        "1 NOTE Painted pictures of the Whitby lighthouse and ships passing nearby."
+      ]
+    },
+    {
+      "id": "@I124@",
+      "gedcom": [
+        "1 NAME Robert /Adams/",
+        "1 NOTE A lighthouse keeper at Dover; never worked at Whitby."
+      ]
+    },
+    {
+      "id": "@I125@",
+      "gedcom": [
+        "1 NAME Edith /Adams/",
+        "1 NOTE His father tended the Whitby lighthouse lamp; he repaired fishing nets."
+      ]
+    },
+    {
+      "id": "@I126@",
+      "gedcom": [
+        "1 NAME William /Brooks/",
+        "1 NOTE Born 10 May 1847 in Lancaster. Married 10 June 1870 in Lancaster."
+      ]
+    },
+    {
+      "id": "@I127@",
+      "gedcom": [
+        "1 NAME Agnes /Brooks/",
+        "1 NOTE Born 10 May 1847 in Lancaster. Married 10 June 1871 in Lancaster."
+      ]
+    },
+    {
+      "id": "@I128@",
+      "gedcom": [
+        "1 NAME Robert /Brooks/",
+        "1 NOTE Born 10 May 1846 in Lancaster. Married 10 June 1870 in Lancaster."
+      ]
+    },
+    {
+      "id": "@I129@",
+      "gedcom": [
+        "1 NAME Edith /Brooks/",
+        "1 NOTE Born 10 May 1847 in Lancaster. Married 10 April 1870, before the birthday."
+      ]
+    },
+    {
+      "id": "@I130@",
+      "gedcom": [
+        "1 NAME George /Brooks/",
+        "1 NOTE Born 10 May 1847 in Lancaster. His sister married at age 23; he never married."
+      ]
+    },
+    {
+      "id": "@I131@",
+      "gedcom": [
+        "1 NAME Agnes /Clarke/",
+        "1 NOTE Settled in Trieste on 1 January 1870 and remained there without interruption through 1895."
+      ]
+    },
+    {
+      "id": "@I132@",
+      "gedcom": [
+        "1 NAME Robert /Clarke/",
+        "1 NOTE Settled in Trieste in 1885 and remained there through 1899."
+      ]
+    },
+    {
+      "id": "@I133@",
+      "gedcom": [
+        "1 NAME Edith /Clarke/",
+        "1 NOTE Lived in Trieste from 1870 to 1880, moved away, then returned from 1890 to 1899."
+      ]
+    },
+    {
+      "id": "@I134@",
+      "gedcom": [
+        "1 NAME George /Clarke/",
+        "1 NOTE Settled in Trieste in 1890 and remained there through 1920."
+      ]
+    },
+    {
+      "id": "@I135@",
+      "gedcom": [
+        "1 NAME Alice /Clarke/",
+        "1 NOTE His father lived in Trieste from 1870 to 1895; he himself lived in Milan."
+      ]
+    },
+    {
+      "id": "@I136@",
+      "gedcom": [
+        "1 NAME Robert /Dixon/",
+        "1 NOTE Born 1 February 1852. Died of cholera in Naples on 1 March 1893."
+      ]
+    },
+    {
+      "id": "@I137@",
+      "gedcom": [
+        "1 NAME Edith /Dixon/",
+        "1 NOTE Born 1 February 1853. Died of cholera in Naples on 1 March 1893."
+      ]
+    },
+    {
+      "id": "@I138@",
+      "gedcom": [
+        "1 NAME George /Dixon/",
+        "1 NOTE Born 1 February 1852. Died of cholera in Naples on 1 January 1893."
+      ]
+    },
+    {
+      "id": "@I139@",
+      "gedcom": [
+        "1 NAME Alice /Dixon/",
+        "1 NOTE Born 1 February 1852. Died in Naples on 1 March 1893 from tuberculosis, not cholera."
+      ]
+    },
+    {
+      "id": "@I140@",
+      "gedcom": [
+        "1 NAME Thomas /Dixon/",
+        "1 NOTE Born 1 February 1852. Died of cholera in Palermo on 1 March 1893."
+      ]
+    },
+    {
+      "id": "@I141@",
+      "gedcom": [
+        "1 NAME Edith /Edwards/",
+        "1 NOTE Had three children: born in Adelaide in 1872, 1875, and 1878. No other children."
+      ]
+    },
+    {
+      "id": "@I142@",
+      "gedcom": [
+        "1 NAME George /Edwards/",
+        "1 NOTE Had four children, all born in Adelaide in 1872, 1875, 1878, and 1879."
+      ]
+    },
+    {
+      "id": "@I143@",
+      "gedcom": [
+        "1 NAME Alice /Edwards/",
+        "1 NOTE Had three children, born in Adelaide in 1872, 1875, and 1881."
+      ]
+    },
+    {
+      "id": "@I144@",
+      "gedcom": [
+        "1 NAME Thomas /Edwards/",
+        "1 NOTE Had three children: two born in Adelaide in 1872 and 1875, one born in Perth in 1878."
+      ]
+    },
+    {
+      "id": "@I145@",
+      "gedcom": [
+        "1 NAME Beatrice /Edwards/",
+        "1 NOTE Had two children, both born in Adelaide before 1880; also raised a niece."
+      ]
+    },
+    {
+      "id": "@I146@",
+      "gedcom": [
+        "1 NAME George /Fisher/",
+        "1 NOTE Born in 1830. First spouse died in Dijon in 1860. Remarried; second spouse died in Dijon in 1875."
+      ]
+    },
+    {
+      "id": "@I147@",
+      "gedcom": [
+        "1 NAME Alice /Fisher/",
+        "1 NOTE Born in 1830. First spouse died in Dijon in 1860. Second spouse died in Dijon in 1885."
+      ]
+    },
+    {
+      "id": "@I148@",
+      "gedcom": [
+        "1 NAME Thomas /Fisher/",
+        "1 NOTE Born in 1830. One spouse died in Dijon in 1860. Second marriage ended in divorce in 1875."
+      ]
+    },
+    {
+      "id": "@I149@",
+      "gedcom": [
+        "1 NAME Beatrice /Fisher/",
+        "1 NOTE Born in 1830. First spouse died in Dijon in 1860. Second spouse died in Lyon in 1875."
+      ]
+    },
+    {
+      "id": "@I150@",
+      "gedcom": [
+        "1 NAME Henry /Fisher/",
+        "1 NOTE Born in 1830. Her mother was widowed twice in Dijon; she herself never married."
+      ]
+    },
+    {
+      "id": "@I151@",
+      "gedcom": [
+        "1 NAME Samuel /Harper/",
+        "1 NOTE Born in Chester in 1828. Worked measuring land boundaries as a surveyor."
+      ]
+    },
+    {
+      "id": "@I152@",
+      "gedcom": [
+        "1 NAME Samuel /Harper/",
+        "1 NOTE Born in York in 1828. Worked measuring land boundaries as a surveyor."
+      ]
+    },
+    {
+      "id": "@I153@",
+      "gedcom": [
+        "1 NAME Samuel /Harper/",
+        "1 NOTE Born in Chester in 1828. Worked as a joiner, not a surveyor."
+      ]
+    },
+    {
+      "id": "@I154@",
+      "gedcom": [
+        "1 NAME Samuel /Harper/",
+        "1 NOTE Born in York in 1828. Worked as a joiner."
+      ]
+    },
+    {
+      "id": "@I155@",
+      "gedcom": [
+        "1 NAME Jane /Harper/",
+        "1 NOTE Born in Chester in 1828. Her father Samuel Harper was a surveyor; she was a housekeeper."
+      ]
+    },
+    {
+      "id": "@I156@",
+      "gedcom": [
+        "1 NAME Eleanor /Mason/",
+        "1 NOTE Known to friends as Nell. Married in Exeter in 1886."
+      ]
+    },
+    {
+      "id": "@I157@",
+      "gedcom": [
+        "1 NAME Eleanor /Mason/",
+        "1 NOTE Known to friends as Nell. Married in Exeter in 1887."
+      ]
+    },
+    {
+      "id": "@I158@",
+      "gedcom": [
+        "1 NAME Eleanor /Mason/",
+        "1 NOTE Known to friends as Nell. Married in Oxford in 1886."
+      ]
+    },
+    {
+      "id": "@I159@",
+      "gedcom": [
+        "1 NAME Eleanor /Mason/",
+        "1 NOTE Known to friends as Ellie, never Nell. Married in Exeter in 1886."
+      ]
+    },
+    {
+      "id": "@I160@",
+      "gedcom": [
+        "1 NAME Mary /Mason/",
+        "1 NOTE Her sister Eleanor, called Nell, married in Exeter in 1886. She herself never married."
+      ]
+    },
+    {
+      "id": "@I161@",
+      "gedcom": [
+        "1 NAME Jean /Moreau/",
+        "1 NOTE Prepared legal deeds and wills as a notary in Arles."
+      ]
+    },
+    {
+      "id": "@I162@",
+      "gedcom": [
+        "1 NAME Jean /Moreau/",
+        "1 NOTE Ground grain as a miller in Arles."
+      ]
+    },
+    {
+      "id": "@I163@",
+      "gedcom": [
+        "1 NAME Jean /Moreau/",
+        "1 NOTE Prepared legal deeds and wills as a notary in Avignon."
+      ]
+    },
+    {
+      "id": "@I164@",
+      "gedcom": [
+        "1 NAME Jean /Moreau/",
+        "1 NOTE Ground grain as a miller in Avignon."
+      ]
+    },
+    {
+      "id": "@I165@",
+      "gedcom": [
+        "1 NAME Louis /Moreau/",
+        "1 NOTE His father Jean Moreau was a notary in Arles. He himself was a miller in Arles."
+      ]
+    },
+    {
+      "id": "@I166@",
+      "gedcom": [
+        "1 NAME Maria /Silva/",
+        "1 NOTE Born Maria Costa. Used Maria Silva after marriage. Relocated to Porto in 1892."
+      ]
+    },
+    {
+      "id": "@I167@",
+      "gedcom": [
+        "1 NAME Maria /Silva/",
+        "1 NOTE Born Maria Pereira. Used Maria Silva after marriage. Relocated to Porto in 1892."
+      ]
+    },
+    {
+      "id": "@I168@",
+      "gedcom": [
+        "1 NAME Maria /Silva/",
+        "1 NOTE Born Maria Costa. Used Maria Silva after marriage. Relocated to Porto in 1893."
+      ]
+    },
+    {
+      "id": "@I169@",
+      "gedcom": [
+        "1 NAME Maria /Silva/",
+        "1 NOTE Born Maria Costa. Used Maria Silva after marriage. Relocated to Braga in 1892."
+      ]
+    },
+    {
+      "id": "@I170@",
+      "gedcom": [
+        "1 NAME Ana /Silva/",
+        "1 NOTE Her mother Maria Costa married into the Silva family and moved to Porto in 1892. She herself moved to Braga."
+      ]
+    },
+    {
+      "id": "@I171@",
+      "gedcom": [
+        "1 NAME Patrick /OBrien/",
+        "1 NOTE A Belfast shipyard accident severed his left hand in 1889."
+      ]
+    },
+    {
+      "id": "@I172@",
+      "gedcom": [
+        "1 NAME Patrick /OBrien/",
+        "1 NOTE A Belfast shipyard accident injured his left hand but it healed without amputation."
+      ]
+    },
+    {
+      "id": "@I173@",
+      "gedcom": [
+        "1 NAME Patrick /OBrien/",
+        "1 NOTE Lost his left hand in a Dublin shipyard accident in 1889."
+      ]
+    },
+    {
+      "id": "@I174@",
+      "gedcom": [
+        "1 NAME Patrick /OBrien/",
+        "1 NOTE Lost his left foot in a Belfast shipyard accident in 1889."
+      ]
+    },
+    {
+      "id": "@I175@",
+      "gedcom": [
+        "1 NAME Sean /OBrien/",
+        "1 NOTE His brother Patrick lost a hand in a Belfast shipyard. He was a shipyard accountant and uninjured."
+      ]
+    },
+    {
+      "id": "@I176@",
+      "gedcom": [
+        "1 NAME William /Lane/",
+        "1 NOTE The surviving household papers describe a childhood spent in a small town near the river. The family rented rooms above a shop, shared an enclosed garden with neighbors, and kept poultry. School attendance was irregular because the journey became difficult in winter. Later recollections mention market days, the arrival of a traveling fair, and a particularly cold season. An account book records the purchase of flour, candles, wool, and timber for repairs to the kitchen. A cousin visited for several months and helped mend a fence. Letters discuss the cost of lodging and the state of the roads. The household changed its rented rooms twice, taking a few pieces of furniture and a box of books. Several pages list small debts that were eventually repaid. Neighbors recalled a quiet person who enjoyed walking. A surviving photograph shows the garden after the trees were pruned. The reverse names two visitors but provides no date. Other papers concern an argument over a shared well, repairs to the roof, and a subscription to a local newspaper. At harvest time the family helped nearby households gather fruit. In winter they stayed indoors and repaired clothing. The last pages describe a new stove, a delivery of coal, and the replacement of a broken window. Most of the correspondence concerns routine domestic arrangements rather than public events. In Odessa, hid political fugitives in a concealed cellar and supplied food until they escaped."
+      ]
+    },
+    {
+      "id": "@I177@",
+      "gedcom": [
+        "1 NAME Agnes /Lane/",
+        "1 NOTE In Odessa, searched cellars for political fugitives as a police officer; never sheltered them."
+      ]
+    },
+    {
+      "id": "@I178@",
+      "gedcom": [
+        "1 NAME Robert /Lane/",
+        "1 NOTE In Odessa, published an account of political fugitives secretly sheltered in a cellar by someone else."
+      ]
+    },
+    {
+      "id": "@I179@",
+      "gedcom": [
+        "1 NAME Edith /Lane/",
+        "1 NOTE In Odessa, was a political fugitive hidden in a neighbor's cellar; did not shelter others."
+      ]
+    },
+    {
+      "id": "@I180@",
+      "gedcom": [
+        "1 NAME George /Lane/",
+        "1 NOTE His cousin secretly sheltered political fugitives in Odessa. He lived elsewhere and took no part."
+      ]
+    },
+    {
+      "id": "@I181@",
+      "gedcom": [
+        "1 NAME Agnes /Moore/",
+        "1 NOTE The surviving household papers describe a childhood spent in a small town near the river. The family rented rooms above a shop, shared an enclosed garden with neighbors, and kept poultry. School attendance was irregular because the journey became difficult in winter. Later recollections mention market days, the arrival of a traveling fair, and a particularly cold season. An account book records the purchase of flour, candles, wool, and timber for repairs to the kitchen. A cousin visited for several months and helped mend a fence. Letters discuss the cost of lodging and the state of the roads. The household changed its rented rooms twice, taking a few pieces of furniture and a box of books. Several pages list small debts that were eventually repaid. Neighbors recalled a quiet person who enjoyed walking. A surviving photograph shows the garden after the trees were pruned. The reverse names two visitors but provides no date. Other papers concern an argument over a shared well, repairs to the roof, and a subscription to a local newspaper. At harvest time the family helped nearby households gather fruit. In winter they stayed indoors and repaired clothing. The last pages describe a new stove, a delivery of coal, and the replacement of a broken window. Most of the correspondence concerns routine domestic arrangements rather than public events. In Grenoble, donated every penny of personal savings to establish a school charging no tuition."
+      ]
+    },
+    {
+      "id": "@I182@",
+      "gedcom": [
+        "1 NAME Robert /Moore/",
+        "1 NOTE In Grenoble, donated a small fraction of savings to a free school and kept most of the money."
+      ]
+    },
+    {
+      "id": "@I183@",
+      "gedcom": [
+        "1 NAME Edith /Moore/",
+        "1 NOTE In Grenoble, established a school charging tuition and made no donation."
+      ]
+    },
+    {
+      "id": "@I184@",
+      "gedcom": [
+        "1 NAME George /Moore/",
+        "1 NOTE In Grenoble, attended a free school founded by another person's entire savings."
+      ]
+    },
+    {
+      "id": "@I185@",
+      "gedcom": [
+        "1 NAME Alice /Moore/",
+        "1 NOTE Her father donated his entire savings to establish a free school in Grenoble; she inherited nothing."
+      ]
+    },
+    {
+      "id": "@I186@",
+      "gedcom": [
+        "1 NAME Robert /Nash/",
+        "1 NOTE The surviving household papers describe a childhood spent in a small town near the river. The family rented rooms above a shop, shared an enclosed garden with neighbors, and kept poultry. School attendance was irregular because the journey became difficult in winter. Later recollections mention market days, the arrival of a traveling fair, and a particularly cold season. An account book records the purchase of flour, candles, wool, and timber for repairs to the kitchen. A cousin visited for several months and helped mend a fence. Letters discuss the cost of lodging and the state of the roads. The household changed its rented rooms twice, taking a few pieces of furniture and a box of books. Several pages list small debts that were eventually repaid. Neighbors recalled a quiet person who enjoyed walking. A surviving photograph shows the garden after the trees were pruned. The reverse names two visitors but provides no date. Other papers concern an argument over a shared well, repairs to the roof, and a subscription to a local newspaper. At harvest time the family helped nearby households gather fruit. In winter they stayed indoors and repaired clothing. The last pages describe a new stove, a delivery of coal, and the replacement of a broken window. Most of the correspondence concerns routine domestic arrangements rather than public events. Held captive for several years. After release, settled in Kyoto and apprenticed to a potter, learning to fire ceramics."
+      ]
+    },
+    {
+      "id": "@I187@",
+      "gedcom": [
+        "1 NAME Edith /Nash/",
+        "1 NOTE Trained as a potter in Kyoto before being captured; did not practice after release."
+      ]
+    },
+    {
+      "id": "@I188@",
+      "gedcom": [
+        "1 NAME George /Nash/",
+        "1 NOTE Held captive for years and released in Kyoto, but never trained as a potter."
+      ]
+    },
+    {
+      "id": "@I189@",
+      "gedcom": [
+        "1 NAME Alice /Nash/",
+        "1 NOTE Worked as a potter in Kyoto throughout life and was never held captive."
+      ]
+    },
+    {
+      "id": "@I190@",
+      "gedcom": [
+        "1 NAME Thomas /Nash/",
+        "1 NOTE His daughter trained as a potter in Kyoto after captivity; he had been a merchant."
+      ]
+    },
+    {
+      "id": "@I191@",
+      "gedcom": [
+        "1 NAME Edith /Oliver/",
+        "1 NOTE The surviving household papers describe a childhood spent in a small town near the river. The family rented rooms above a shop, shared an enclosed garden with neighbors, and kept poultry. School attendance was irregular because the journey became difficult in winter. Later recollections mention market days, the arrival of a traveling fair, and a particularly cold season. An account book records the purchase of flour, candles, wool, and timber for repairs to the kitchen. A cousin visited for several months and helped mend a fence. Letters discuss the cost of lodging and the state of the roads. The household changed its rented rooms twice, taking a few pieces of furniture and a box of books. Several pages list small debts that were eventually repaid. Neighbors recalled a quiet person who enjoyed walking. A surviving photograph shows the garden after the trees were pruned. The reverse names two visitors but provides no date. Other papers concern an argument over a shared well, repairs to the roof, and a subscription to a local newspaper. At harvest time the family helped nearby households gather fruit. In winter they stayed indoors and repaired clothing. The last pages describe a new stove, a delivery of coal, and the replacement of a broken window. Most of the correspondence concerns routine domestic arrangements rather than public events. In Riga, operated a hidden press after dark to produce prohibited newspapers for an underground political group."
+      ]
+    },
+    {
+      "id": "@I192@",
+      "gedcom": [
+        "1 NAME George /Oliver/",
+        "1 NOTE In Riga, confiscated banned newspapers secretly printed at night; was a police inspector."
+      ]
+    },
+    {
+      "id": "@I193@",
+      "gedcom": [
+        "1 NAME Alice /Oliver/",
+        "1 NOTE In Riga, printed legal newspapers during the day and never printed prohibited material."
+      ]
+    },
+    {
+      "id": "@I194@",
+      "gedcom": [
+        "1 NAME Thomas /Oliver/",
+        "1 NOTE In Riga, read secretly printed banned newspapers but did not operate a press."
+      ]
+    },
+    {
+      "id": "@I195@",
+      "gedcom": [
+        "1 NAME Beatrice /Oliver/",
+        "1 NOTE Her spouse secretly printed banned newspapers at night in Riga; she taught music and did not participate."
+      ]
+    },
+    {
+      "id": "@I196@",
+      "gedcom": [
+        "1 NAME George /Parker/",
+        "1 NOTE The surviving household papers describe a childhood spent in a small town near the river. The family rented rooms above a shop, shared an enclosed garden with neighbors, and kept poultry. School attendance was irregular because the journey became difficult in winter. Later recollections mention market days, the arrival of a traveling fair, and a particularly cold season. An account book records the purchase of flour, candles, wool, and timber for repairs to the kitchen. A cousin visited for several months and helped mend a fence. Letters discuss the cost of lodging and the state of the roads. The household changed its rented rooms twice, taking a few pieces of furniture and a box of books. Several pages list small debts that were eventually repaid. Neighbors recalled a quiet person who enjoyed walking. A surviving photograph shows the garden after the trees were pruned. The reverse names two visitors but provides no date. Other papers concern an argument over a shared well, repairs to the roof, and a subscription to a local newspaper. At harvest time the family helped nearby households gather fruit. In winter they stayed indoors and repaired clothing. The last pages describe a new stove, a delivery of coal, and the replacement of a broken window. Most of the correspondence concerns routine domestic arrangements rather than public events. In Hobart, sold the family house and used the proceeds to pay the hospital for his sister's operation."
+      ]
+    },
+    {
+      "id": "@I197@",
+      "gedcom": [
+        "1 NAME Alice /Parker/",
+        "1 NOTE In Hobart, sold a house to pay for his own surgery, not his sister's."
+      ]
+    },
+    {
+      "id": "@I198@",
+      "gedcom": [
+        "1 NAME Thomas /Parker/",
+        "1 NOTE In Hobart, paid for a sister's surgery from wages and did not sell a house."
+      ]
+    },
+    {
+      "id": "@I199@",
+      "gedcom": [
+        "1 NAME Beatrice /Parker/",
+        "1 NOTE In Hobart, sold a house but refused to contribute to his sister's surgery."
+      ]
+    },
+    {
+      "id": "@I200@",
+      "gedcom": [
+        "1 NAME Henry /Parker/",
+        "1 NOTE Her brother sold his house in Hobart to pay for her surgery; she was the patient, not the donor."
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "h01",
+      "category": "temporal_order",
+      "query": "Who moved from Lisbon to Recife and later returned to Lisbon?",
+      "relevant": [
+        "@I1@"
+      ],
+      "judgment": "Only the first person changes residence in the requested order and returns.",
+      "hard_negative_ids": [
+        "@I2@",
+        "@I3@",
+        "@I4@",
+        "@I5@"
+      ]
+    },
+    {
+      "id": "h02",
+      "category": "temporal_order",
+      "query": "Who became a railway worker after leaving farming in Lincolnshire?",
+      "relevant": [
+        "@I6@"
+      ],
+      "judgment": "Farming must precede railway employment, not follow or overlap it.",
+      "hard_negative_ids": [
+        "@I7@",
+        "@I8@",
+        "@I9@",
+        "@I10@"
+      ]
+    },
+    {
+      "id": "h03",
+      "category": "temporal_order",
+      "query": "Who lost their spouse before relocating from Bergen to Seattle?",
+      "relevant": [
+        "@I11@"
+      ],
+      "judgment": "Correct origin, bereavement, and order are all required.",
+      "hard_negative_ids": [
+        "@I12@",
+        "@I13@",
+        "@I14@",
+        "@I15@"
+      ]
+    },
+    {
+      "id": "h04",
+      "category": "temporal_order",
+      "query": "Who recovered from typhoid before joining the navy at Portsmouth?",
+      "relevant": [
+        "@I16@"
+      ],
+      "judgment": "Illness, recovery, and successful enlistment must occur for the same person in order.",
+      "hard_negative_ids": [
+        "@I17@",
+        "@I18@",
+        "@I19@",
+        "@I20@"
+      ]
+    },
+    {
+      "id": "h05",
+      "category": "temporal_order",
+      "query": "Who was imprisoned in Nantes and only afterward opened a bakery?",
+      "relevant": [
+        "@I21@"
+      ],
+      "judgment": "A bakery must actually open after the person is released.",
+      "hard_negative_ids": [
+        "@I22@",
+        "@I23@",
+        "@I24@",
+        "@I25@"
+      ]
+    },
+    {
+      "id": "h06",
+      "category": "conjunction",
+      "query": "Who was born in Yorkshire, mined copper in Michigan, and later kept a Wisconsin dairy farm?",
+      "relevant": [
+        "@I26@",
+        "@I27@"
+      ],
+      "judgment": "All three conditions; copper rather than coal, Yorkshire rather than Lancashire, Wisconsin rather than Minnesota.",
+      "hard_negative_ids": [
+        "@I28@",
+        "@I29@",
+        "@I30@"
+      ]
+    },
+    {
+      "id": "h07",
+      "category": "conjunction",
+      "query": "Who was a female printer in Rouen who also ran a lending library?",
+      "relevant": [
+        "@I31@"
+      ],
+      "judgment": "The same woman must perform both occupations in Rouen.",
+      "hard_negative_ids": [
+        "@I32@",
+        "@I33@",
+        "@I34@",
+        "@I35@"
+      ]
+    },
+    {
+      "id": "h08",
+      "category": "conjunction",
+      "query": "Who survived the Valparaiso earthquake and subsequently adopted an orphan?",
+      "relevant": [
+        "@I36@"
+      ],
+      "judgment": "Survival at Valparaiso followed by actual adoption; donations, earlier adoption, and relatives do not qualify.",
+      "hard_negative_ids": [
+        "@I37@",
+        "@I38@",
+        "@I39@",
+        "@I40@"
+      ]
+    },
+    {
+      "id": "h09",
+      "category": "conjunction",
+      "query": "Who married in Quebec but was buried in Louisiana after working as a shipwright?",
+      "relevant": [
+        "@I41@"
+      ],
+      "judgment": "Occupation, marriage location, and own burial location must all match.",
+      "hard_negative_ids": [
+        "@I42@",
+        "@I43@",
+        "@I44@",
+        "@I45@"
+      ]
+    },
+    {
+      "id": "h10",
+      "category": "conjunction",
+      "query": "Who taught music in Prague while caring for a deaf child?",
+      "relevant": [
+        "@I46@"
+      ],
+      "judgment": "Subject must be the music teacher and caregiver, rather than the child.",
+      "hard_negative_ids": [
+        "@I47@",
+        "@I48@",
+        "@I49@",
+        "@I50@"
+      ]
+    },
+    {
+      "id": "h11",
+      "category": "subject_attribution",
+      "query": "Who personally served as a surgeon in the Crimean War?",
+      "relevant": [
+        "@I51@"
+      ],
+      "judgment": "Medical service must belong to the person, not a relative, biography subject, or treating doctor.",
+      "hard_negative_ids": [
+        "@I52@",
+        "@I53@",
+        "@I54@",
+        "@I55@"
+      ]
+    },
+    {
+      "id": "h12",
+      "category": "subject_attribution",
+      "query": "Whose own death was caused by a foundry explosion in Essen?",
+      "relevant": [
+        "@I56@"
+      ],
+      "judgment": "Own death, fatal explosion, and Essen foundry must match.",
+      "hard_negative_ids": [
+        "@I57@",
+        "@I58@",
+        "@I59@",
+        "@I60@"
+      ]
+    },
+    {
+      "id": "h13",
+      "category": "subject_attribution",
+      "query": "Who crossed the Sahara as a caravan guide?",
+      "relevant": [
+        "@I61@"
+      ],
+      "judgment": "Actual guide, rather than customer, family member, supplier, or storyteller.",
+      "hard_negative_ids": [
+        "@I62@",
+        "@I63@",
+        "@I64@",
+        "@I65@"
+      ]
+    },
+    {
+      "id": "h14",
+      "category": "subject_attribution",
+      "query": "Who received a medal for rescuing passengers from a ferry fire in Helsinki?",
+      "relevant": [
+        "@I66@"
+      ],
+      "judgment": "Rescuer and medal recipient must be the same subject.",
+      "hard_negative_ids": [
+        "@I67@",
+        "@I68@",
+        "@I69@",
+        "@I70@"
+      ]
+    },
+    {
+      "id": "h15",
+      "category": "subject_attribution",
+      "query": "Who personally spent childhood in a Krakow orphanage?",
+      "relevant": [
+        "@I71@"
+      ],
+      "judgment": "Own childhood residence, not adult employment, donation, or fictional character.",
+      "hard_negative_ids": [
+        "@I72@",
+        "@I73@",
+        "@I74@",
+        "@I75@"
+      ]
+    },
+    {
+      "id": "h16",
+      "category": "negation",
+      "query": "Who declined an inheritance in Dundee rather than accepting it?",
+      "relevant": [
+        "@I76@"
+      ],
+      "judgment": "An offered inheritance explicitly renounced, rather than absent, considered, or accepted.",
+      "hard_negative_ids": [
+        "@I77@",
+        "@I78@",
+        "@I79@",
+        "@I80@"
+      ]
+    },
+    {
+      "id": "h17",
+      "category": "negation",
+      "query": "Who was acquitted of arson in Bremen?",
+      "relevant": [
+        "@I81@"
+      ],
+      "judgment": "Own not-guilty verdict on arson, not another charge or another person.",
+      "hard_negative_ids": [
+        "@I82@",
+        "@I83@",
+        "@I84@",
+        "@I85@"
+      ]
+    },
+    {
+      "id": "h18",
+      "category": "negation",
+      "query": "Who in Siena had an engagement that ended without a wedding?",
+      "relevant": [
+        "@I86@"
+      ],
+      "judgment": "Requires an actual engagement, followed by no marriage to that partner.",
+      "hard_negative_ids": [
+        "@I87@",
+        "@I88@",
+        "@I89@",
+        "@I90@"
+      ]
+    },
+    {
+      "id": "h19",
+      "category": "negation",
+      "query": "Who in Utrecht did not lose their hearing despite a childhood fever?",
+      "relevant": [
+        "@I91@"
+      ],
+      "judgment": "Fever must happen to subject and hearing must remain normal.",
+      "hard_negative_ids": [
+        "@I92@",
+        "@I93@",
+        "@I94@",
+        "@I95@"
+      ]
+    },
+    {
+      "id": "h20",
+      "category": "negation",
+      "query": "Who applied to settle in Tasmania but never actually moved there?",
+      "relevant": [
+        "@I96@"
+      ],
+      "judgment": "Actual application, no subsequent move; intentions alone do not qualify.",
+      "hard_negative_ids": [
+        "@I97@",
+        "@I98@",
+        "@I99@",
+        "@I100@"
+      ]
+    },
+    {
+      "id": "h21",
+      "category": "lexical_alias",
+      "query": "Who earned money making wooden barrels in Cognac?",
+      "relevant": [
+        "@I101@"
+      ],
+      "judgment": "Cooper is the occupation paraphrase; merchants, wheelwrights, other places, and relatives excluded.",
+      "hard_negative_ids": [
+        "@I102@",
+        "@I103@",
+        "@I104@",
+        "@I105@"
+      ]
+    },
+    {
+      "id": "h22",
+      "category": "lexical_alias",
+      "query": "Who was paid to carry letters door to door in Inverness?",
+      "relevant": [
+        "@I106@"
+      ],
+      "judgment": "Postman delivery occupation, not letter-writing, counter work, milk delivery, or spouse.",
+      "hard_negative_ids": [
+        "@I107@",
+        "@I108@",
+        "@I109@",
+        "@I110@"
+      ]
+    },
+    {
+      "id": "h23",
+      "category": "lexical_alias",
+      "query": "Who earned a living repairing footwear in Toledo?",
+      "relevant": [
+        "@I111@"
+      ],
+      "judgment": "Cobbler paraphrase plus correct location and own occupation.",
+      "hard_negative_ids": [
+        "@I112@",
+        "@I113@",
+        "@I114@",
+        "@I115@"
+      ]
+    },
+    {
+      "id": "h24",
+      "category": "lexical_alias",
+      "query": "Who helped women deliver babies professionally in Limerick?",
+      "relevant": [
+        "@I116@"
+      ],
+      "judgment": "Midwife and confinement terminology paraphrase; own profession in correct city.",
+      "hard_negative_ids": [
+        "@I117@",
+        "@I118@",
+        "@I119@",
+        "@I120@"
+      ]
+    },
+    {
+      "id": "h25",
+      "category": "lexical_alias",
+      "query": "Who maintained the light that warned ships away from rocks at Whitby?",
+      "relevant": [
+        "@I121@"
+      ],
+      "judgment": "Lighthouse-keeper role paraphrase, location and own activity.",
+      "hard_negative_ids": [
+        "@I122@",
+        "@I123@",
+        "@I124@",
+        "@I125@"
+      ]
+    },
+    {
+      "id": "h26",
+      "category": "date_numeric",
+      "query": "Who was born in 1847 and married at age 23 in Lancaster?",
+      "relevant": [
+        "@I126@"
+      ],
+      "judgment": "1870 wedding after May birthday gives age 23; nearby dates do not.",
+      "hard_negative_ids": [
+        "@I127@",
+        "@I128@",
+        "@I129@",
+        "@I130@"
+      ]
+    },
+    {
+      "id": "h27",
+      "category": "date_numeric",
+      "query": "Who lived in Trieste continuously for at least twenty years before 1900?",
+      "relevant": [
+        "@I131@"
+      ],
+      "judgment": "At least twenty uninterrupted years completed before 1900.",
+      "hard_negative_ids": [
+        "@I132@",
+        "@I133@",
+        "@I134@",
+        "@I135@"
+      ]
+    },
+    {
+      "id": "h28",
+      "category": "date_numeric",
+      "query": "Who died aged 41 during the 1893 cholera outbreak in Naples?",
+      "relevant": [
+        "@I136@"
+      ],
+      "judgment": "Correct age, outbreak year, cause, and Naples location.",
+      "hard_negative_ids": [
+        "@I137@",
+        "@I138@",
+        "@I139@",
+        "@I140@"
+      ]
+    },
+    {
+      "id": "h29",
+      "category": "date_numeric",
+      "query": "Who had exactly three children, all born in Adelaide before 1880?",
+      "relevant": [
+        "@I141@"
+      ],
+      "judgment": "Exact count and every child matching both place and date.",
+      "hard_negative_ids": [
+        "@I142@",
+        "@I143@",
+        "@I144@",
+        "@I145@"
+      ]
+    },
+    {
+      "id": "h30",
+      "category": "date_numeric",
+      "query": "Who was widowed twice in Dijon before turning fifty?",
+      "relevant": [
+        "@I146@"
+      ],
+      "judgment": "Two spouse deaths in Dijon before 1880, not divorce, later death, or relative.",
+      "hard_negative_ids": [
+        "@I147@",
+        "@I148@",
+        "@I149@",
+        "@I150@"
+      ]
+    },
+    {
+      "id": "h31",
+      "category": "ambiguous_identity",
+      "query": "Find the Samuel Harper born in Chester who worked as a surveyor, not his namesake from York.",
+      "relevant": [
+        "@I151@"
+      ],
+      "judgment": "Same-name disambiguation by own birthplace and occupation.",
+      "hard_negative_ids": [
+        "@I152@",
+        "@I153@",
+        "@I154@",
+        "@I155@"
+      ]
+    },
+    {
+      "id": "h32",
+      "category": "ambiguous_identity",
+      "query": "Find Eleanor Mason, also called Nell, whose wedding was in Exeter in 1886.",
+      "relevant": [
+        "@I156@"
+      ],
+      "judgment": "Exact alias, place, year, and subject.",
+      "hard_negative_ids": [
+        "@I157@",
+        "@I158@",
+        "@I159@",
+        "@I160@"
+      ]
+    },
+    {
+      "id": "h33",
+      "category": "ambiguous_identity",
+      "query": "Which Jean Moreau was a notary in Arles rather than a miller?",
+      "relevant": [
+        "@I161@"
+      ],
+      "judgment": "Own occupation and city disambiguate identical names.",
+      "hard_negative_ids": [
+        "@I162@",
+        "@I163@",
+        "@I164@",
+        "@I165@"
+      ]
+    },
+    {
+      "id": "h34",
+      "category": "ambiguous_identity",
+      "query": "Find Maria Silva whose maiden surname was Costa and who moved to Porto in 1892.",
+      "relevant": [
+        "@I166@"
+      ],
+      "judgment": "Maiden name plus destination and year.",
+      "hard_negative_ids": [
+        "@I167@",
+        "@I168@",
+        "@I169@",
+        "@I170@"
+      ]
+    },
+    {
+      "id": "h35",
+      "category": "ambiguous_identity",
+      "query": "Which Patrick OBrien lost a hand working in a Belfast shipyard?",
+      "relevant": [
+        "@I171@"
+      ],
+      "judgment": "Same-name injury, body part, and location disambiguation.",
+      "hard_negative_ids": [
+        "@I172@",
+        "@I173@",
+        "@I174@",
+        "@I175@"
+      ]
+    },
+    {
+      "id": "h36",
+      "category": "late_evidence",
+      "query": "Who in Odessa secretly sheltered political fugitives in their cellar?",
+      "relevant": [
+        "@I176@"
+      ],
+      "judgment": "Only the target actually shelters fugitives; its evidence is beyond the model window.",
+      "hard_negative_ids": [
+        "@I177@",
+        "@I178@",
+        "@I179@",
+        "@I180@"
+      ]
+    },
+    {
+      "id": "h37",
+      "category": "late_evidence",
+      "query": "Who in Grenoble donated their entire savings to establish a free school?",
+      "relevant": [
+        "@I181@"
+      ],
+      "judgment": "Own entire savings and founding a tuition-free school.",
+      "hard_negative_ids": [
+        "@I182@",
+        "@I183@",
+        "@I184@",
+        "@I185@"
+      ]
+    },
+    {
+      "id": "h38",
+      "category": "late_evidence",
+      "query": "Who in Kyoto trained as a potter after being released from captivity?",
+      "relevant": [
+        "@I186@"
+      ],
+      "judgment": "Captivity then release then pottery training, with own Kyoto evidence late in the text.",
+      "hard_negative_ids": [
+        "@I187@",
+        "@I188@",
+        "@I189@",
+        "@I190@"
+      ]
+    },
+    {
+      "id": "h39",
+      "category": "late_evidence",
+      "query": "Who in Riga secretly printed banned newspapers at night?",
+      "relevant": [
+        "@I191@"
+      ],
+      "judgment": "Own clandestine printing activity, not reader, confiscator, or spouse.",
+      "hard_negative_ids": [
+        "@I192@",
+        "@I193@",
+        "@I194@",
+        "@I195@"
+      ]
+    },
+    {
+      "id": "h40",
+      "category": "late_evidence",
+      "query": "Who in Hobart sold their house to pay for a sister's surgery?",
+      "relevant": [
+        "@I196@"
+      ],
+      "judgment": "House sale must finance own sister's surgery; target evidence is late.",
+      "hard_negative_ids": [
+        "@I197@",
+        "@I198@",
+        "@I199@",
+        "@I200@"
+      ]
+    }
+  ]
+}
