@@ -10,6 +10,24 @@ from gedcom_server import semantic
 from gedcom_server.state import individuals
 
 
+@pytest.fixture(autouse=True)
+def isolated_retrieval_state(monkeypatch):
+    monkeypatch.setenv("SEMANTIC_RERANK_ENABLED", "false")
+    for name in (
+        "_encoder",
+        "_embeddings",
+        "_embedding_ids",
+        "_embedding_texts",
+        "_embedding_evidence",
+        "_lexical",
+        "_reranker",
+        "_previous_index",
+    ):
+        monkeypatch.setattr(semantic, name, getattr(semantic, name))
+    monkeypatch.setattr(semantic, "_embedding_evidence", [])
+    monkeypatch.setattr(semantic, "_lexical", None)
+
+
 class TestIsEnabled:
     """Tests for is_enabled() function."""
 
@@ -144,7 +162,7 @@ class TestSemanticSearch:
             patch.object(semantic, "_embedding_texts", ["text"] * 10),
             patch.object(semantic, "_encoder") as mock_encoder,
         ):
-            mock_encoder.encode.return_value = np.zeros((1, 384))
+            mock_encoder.encode_query.return_value = np.zeros((1, 384))
             # Test max > 100 gets clamped
             result = semantic._semantic_search("test", max_results=200)
             # Should work without error (clamped internally)
@@ -283,6 +301,7 @@ class TestBuildEmbeddings:
                 cache_path,
                 gedcom_hash=semantic._compute_gedcom_hash(),
                 model_name=semantic.MODEL_NAME,
+                model_revision=semantic.MODEL_REVISION or "",
                 content_version=semantic.CONTENT_VERSION,
                 embeddings=test_embeddings,
                 ids=np.array(["@I1@", "@I2@", "@I3@"], dtype=str),
@@ -330,7 +349,7 @@ class TestResultsFormat:
 
             # Mock encoder
             mock_enc = MagicMock()
-            mock_enc.encode.return_value = np.random.rand(1, 384).astype(np.float32)
+            mock_enc.encode_query.return_value = np.random.rand(1, 384).astype(np.float32)
             semantic._encoder = mock_enc
 
             with patch.dict(os.environ, {"SEMANTIC_SEARCH_ENABLED": "true"}):
@@ -355,7 +374,7 @@ class TestResultsFormat:
             semantic._encoder = orig_encoder
 
 
-@pytest.mark.parametrize("bad_array", ["length", "nan", "dimensions", "pickle", "duplicate_ids"])
+@pytest.mark.parametrize("bad_array", ["length", "nan", "dimensions", "pickle", "empty_ids"])
 def test_invalid_cache_does_not_publish_partial_state(tmp_path, monkeypatch, bad_array):
     gedcom = tmp_path / "tree.ged"
     gedcom.write_text("0 HEAD\n")
@@ -375,11 +394,12 @@ def test_invalid_cache_does_not_publish_partial_state(tmp_path, monkeypatch, bad
     elif bad_array == "pickle":
         texts = texts.astype(object)
     else:
-        ids[1] = ids[0]
+        ids[1] = ""
     np.savez_compressed(
         semantic._get_cache_path(),
         gedcom_hash=semantic._compute_gedcom_hash(),
         model_name=semantic.MODEL_NAME,
+        model_revision=semantic.MODEL_REVISION or "",
         content_version=semantic.CONTENT_VERSION,
         embeddings=embeddings,
         ids=ids,
