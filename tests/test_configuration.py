@@ -15,29 +15,8 @@ class TestConfiguration:
         assert state.GEDCOM_FILE.name == "sample.ged"
 
     def test_home_person_auto_detected(self):
-        """HOME_PERSON_ID should be auto-detected when not set in env."""
-        # Since we didn't set GEDCOM_HOME_PERSON_ID, it should be auto-detected
-        assert state.HOME_PERSON_ID is not None
-        assert state.HOME_PERSON_ID in state.individuals
-
-
-class TestHomePerson:
-    """Tests for home person detection."""
-
-    def test_home_person_is_most_connected(self):
-        """Auto-detected home person should be the most connected individual."""
-        home = state.individuals.get(state.HOME_PERSON_ID)
-        assert home is not None
-
-        # The home person should have family connections
-        # In our sample data, Emily (I5) or Robert (I3) should be detected
-        # since they have both parents and spouse/children connections
-
-    def test_detect_home_person_returns_valid_id(self):
-        """_detect_home_person should return a valid individual ID."""
-        detected = state._detect_home_person()
-        assert detected is not None
-        assert detected in state.individuals
+        """Robert has parents, a spouse, and two children: the most connections."""
+        assert state.HOME_PERSON_ID == state._detect_home_person() == "@I3@"
 
 
 class TestResolveGedcomPath:
@@ -66,18 +45,6 @@ class TestResolveGedcomPath:
 
         assert result == gedcom.resolve()
         assert result.exists()
-
-    def test_tilde_expansion(self, monkeypatch, tmp_path):
-        """Should expand ~ in path."""
-        # Create a temp gedcom file
-        gedcom = tmp_path / "test.ged"
-        gedcom.write_text("0 HEAD\n0 TRLR\n")
-
-        # Patch expanduser to return our temp path
-        monkeypatch.setenv("GEDCOM_FILE", str(gedcom))
-        result = state._resolve_gedcom_path()
-
-        assert result.is_absolute()
 
 
 class TestSampleData:

@@ -2,7 +2,13 @@
 
 import pytest
 
-from gedcom_server.core import _get_relationship_matrix, _get_surname_group
+from gedcom_server.core import (
+    _get_individual,
+    _get_individuals_batch,
+    _get_relationship_matrix,
+    _get_surname_group,
+    _get_surname_origins,
+)
 from gedcom_server.events import _get_events_batch
 from gedcom_server.narrative import _get_biographies_batch
 from gedcom_server.state import families, individuals, surname_index
@@ -11,12 +17,6 @@ from gedcom_server.state import families, individuals, surname_index
 class TestGetEventsBatch:
     """Tests for _get_events_batch."""
 
-    def test_returns_events_for_valid_ids(self, sample_individual_id):
-        """Should return events for valid individual IDs."""
-        result = _get_events_batch([sample_individual_id])
-        assert sample_individual_id in result
-        assert isinstance(result[sample_individual_id], list)
-
     def test_returns_empty_list_for_invalid_id(self):
         """Should return empty list for IDs not found."""
         result = _get_events_batch(["@INVALID@"])
@@ -24,25 +24,15 @@ class TestGetEventsBatch:
         assert result["@INVALID@"] == []
 
     def test_handles_multiple_ids(self):
-        """Should handle multiple IDs in one call."""
-        ids = list(individuals.keys())[:3]
-        result = _get_events_batch(ids)
-        assert len(result) == 3
-        for indi_id in ids:
-            assert indi_id in result
+        result = _get_events_batch(["I1", "@I3@"])
+        assert set(result) == {"@I1@", "@I3@"}
+        assert [event["type"] for event in result["@I1@"]] == ["BIRT", "DEAT"]
+        assert [event["type"] for event in result["@I3@"]] == ["BIRT", "OCCU"]
 
     def test_handles_empty_list(self):
         """Should handle empty input list."""
         result = _get_events_batch([])
         assert result == {}
-
-    def test_normalizes_ids(self):
-        """Should normalize IDs with or without @ symbols."""
-        indi_id = next(iter(individuals.keys()))
-        stripped_id = indi_id.strip("@")
-        result = _get_events_batch([stripped_id])
-        # Result should use normalized form
-        assert f"@{stripped_id}@" in result
 
 
 class TestGetBiographiesBatch:
@@ -205,3 +195,44 @@ class TestGetRelationshipMatrix:
             assert "id1" in rel
             assert "id2" in rel
             assert "relationship" in rel
+
+
+class TestGetSurnameOrigins:
+    """Tests for the get_surname_origins function."""
+
+    def test_surname_origins_has_required_keys(self):
+        surname = next(iter(surname_index.keys()))
+        result = _get_surname_origins(surname)
+        assert "surname" in result
+        assert "count" in result
+        assert "individuals" in result
+        assert "primary_origin" in result
+        assert "place_timeline" in result
+        assert "statistics" in result
+
+    def test_surname_origins_statistics_keys(self):
+        surname = next(iter(surname_index.keys()))
+        result = _get_surname_origins(surname)
+        stats = result["statistics"]
+        assert "earliest_birth" in stats
+        assert "latest_birth" in stats
+        assert "span_years" in stats
+        assert "common_places" in stats
+
+    def test_surname_origins_nonexistent(self):
+        result = _get_surname_origins("ZZZZNONEXISTENT")
+        assert result["count"] == 0
+        assert result["individuals"] == []
+
+
+def test_individuals_batch_normalizes_ids_and_preserves_missing_results():
+    result = _get_individuals_batch(["I1", "@I3@", "NONEXISTENT999"])
+    assert result == {
+        "@I1@": _get_individual("I1"),
+        "@I3@": _get_individual("I3"),
+        "@NONEXISTENT999@": None,
+    }
+
+
+def test_individuals_batch_empty_input():
+    assert _get_individuals_batch([]) == {}

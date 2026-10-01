@@ -191,11 +191,6 @@ class TestFamilyModel:
         assert d["marriage_date"] == "1 JAN 1920"
         assert d["marriage_place"] == "Boston"
 
-    def test_children_ids_is_list(self):
-        """Should have children_ids as a list."""
-        fam = Family(id="@F1@")
-        assert isinstance(fam.children_ids, list)
-
     def test_default_values(self):
         """Should have sensible defaults."""
         fam = Family(id="@F1@")

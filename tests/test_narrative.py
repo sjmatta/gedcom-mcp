@@ -7,7 +7,7 @@ from gedcom_server.narrative import (
     _get_repositories,
     _search_narrative,
 )
-from gedcom_server.state import HOME_PERSON_ID, individuals, repositories
+from gedcom_server.state import HOME_PERSON_ID
 
 
 class TestRepositoryDataclass:
@@ -51,41 +51,9 @@ class TestIndividualNotes:
         assert "notes" in d
         assert d["notes"] == ["Note 1", "Note 2"]
 
-    def test_some_individuals_have_notes(self):
-        """Some individuals in the tree should have notes."""
-        individuals_with_notes = sum(1 for indi in individuals.values() if indi.notes)
-        # The plan says there are 1,811 individual notes
-        assert individuals_with_notes > 0
-
-
-class TestRepositoriesLoaded:
-    """Tests that verify repositories loaded correctly."""
-
-    def test_repositories_loaded(self):
-        """Should load repository records if present."""
-        # Repositories may not be present in all GEDCOM files
-        assert isinstance(repositories, dict)
-
-    def test_repository_has_name(self):
-        """Repositories should have names."""
-        for repo in repositories.values():
-            # At least some should have names
-            if repo.name:
-                break
-        else:
-            # This is okay if no repos have names, but at least check the dict exists
-            pass
-
 
 class TestGetBiography:
     """Tests for the get_biography function."""
-
-    def test_get_biography_returns_dict(self):
-        """Should return a dictionary for valid individual."""
-        # Use home person
-        result = _get_biography(HOME_PERSON_ID)
-        assert result is not None
-        assert isinstance(result, dict)
 
     def test_get_biography_for_nonexistent(self):
         """Should return None for nonexistent individual."""
@@ -122,95 +90,48 @@ class TestGetBiography:
         assert "place" in result["death"]
 
     def test_biography_family_are_names(self):
-        """Parents, spouses, and children should be names, not IDs."""
-        # Find an individual with family
-        for indi in individuals.values():
-            if indi.family_as_child:
-                result = _get_biography(indi.id)
-                if result and result["parents"]:
-                    # Parents should be strings (names), not dicts or IDs
-                    for parent in result["parents"]:
-                        assert isinstance(parent, str)
-                        assert not parent.startswith("@"), "Should be name, not ID"
-                    break
+        bio = _get_biography("I3")
+        assert bio["parents"] == ["John SMITH", "Mary JONES"]
+        assert [spouse["name"] for spouse in bio["spouses"]] == ["Sarah Ann WILLIAMS"]
+        assert bio["children"] == ["Emily Rose SMITH", "Michael James SMITH"]
 
     def test_biography_events_have_citations(self):
-        """Events in biography should include citations."""
-        # Find an individual with events that have citations
-        for indi in individuals.values():
-            for event in indi.events:
-                if event.citations:
-                    result = _get_biography(indi.id)
-                    assert result is not None
-                    # Find the matching event
-                    for bio_event in result["events"]:
-                        if bio_event.get("citations"):
-                            cite = bio_event["citations"][0]
-                            assert "source" in cite
-                            return
+        bio = _get_biography("I1")
+        birth = next(event for event in bio["events"] if event["type"] == "BIRT")
+        assert birth["citations"] == [{"source": "Massachusetts Vital Records", "page": "Page 42"}]
         # Okay if no citations found
 
     def test_biography_includes_individual_notes(self):
-        """Biography should include individual-level notes."""
-        # Find an individual with notes
-        for indi in individuals.values():
-            if indi.notes:
-                result = _get_biography(indi.id)
-                assert result is not None
-                assert result["notes"] == indi.notes
-                return
+        assert _get_biography("I3")["notes"] == [
+            "Robert was a dedicated family man who loved hiking and photography."
+        ]
         # Okay if no notes found
 
 
 class TestSearchNarrative:
     """Tests for the search_narrative function."""
 
-    def test_search_returns_dict(self):
-        """Should return a dict with query and results."""
-        result = _search_narrative("test")
-        assert isinstance(result, dict)
-        assert "query" in result
-        assert "results" in result
-        assert "result_count" in result
-
     def test_search_respects_max_results(self):
         """Should respect max_results parameter."""
         result = _search_narrative("a", max_results=5)
         assert len(result["results"]) <= 5
 
-    def test_search_result_structure(self):
-        """Search results should have expected structure."""
-        # Search for something likely to match
-        result = _search_narrative("born", max_results=1)
-        if result["results"]:
-            item = result["results"][0]
-            assert "individual_id" in item
-            assert "individual_name" in item
-            assert "source" in item
-            assert "snippet" in item
-            assert "full_text" in item
-
     def test_search_finds_individual_notes(self):
-        """Should find matches in individual notes."""
-        # Find a note to search for
-        for indi in individuals.values():
-            if indi.notes:
-                # Get a word from the note
-                words = indi.notes[0].split()
-                if words:
-                    word = words[0]
-                    if len(word) > 3:  # Skip short words
-                        result = _search_narrative(word)
-                        # Should find at least this note
-                        assert result["result_count"] >= 0  # May have no matches if word is common
-                        return
+        result = _search_narrative("hiking")
+        assert result["query"] == "hiking"
+        assert result["result_count"] == len(result["results"]) == 1
+        note = result["results"][0]
+        assert note["individual_id"] == "@I3@"
+        assert note["individual_name"] == "Robert John SMITH"
+        assert note["source"] == "note"
+        assert "**hiking**" in note["snippet"]
+        assert "hiking and photography" in note["full_text"]
 
     def test_search_case_insensitive(self):
-        """Search should be case-insensitive."""
-        upper = _search_narrative("OBITUARY")
-        lower = _search_narrative("obituary")
-        # Should find same results
-        assert upper["result_count"] == lower["result_count"]
+        upper = _search_narrative("HIKING")
+        lower = _search_narrative("hiking")
+        assert upper["result_count"] == lower["result_count"] == 1
+        assert upper["results"] == lower["results"]
 
 
 class TestCreateSnippet:
@@ -240,17 +161,9 @@ class TestCreateSnippet:
 class TestGetRepositories:
     """Tests for the get_repositories function."""
 
-    def test_returns_list(self):
-        """Should return a list."""
-        result = _get_repositories()
-        assert isinstance(result, list)
-
-    def test_repository_structure(self):
-        """Repositories should have expected structure."""
-        result = _get_repositories()
-        if result:
-            repo = result[0]
-            assert "id" in repo
-            assert "name" in repo
-            assert "address" in repo
-            assert "url" in repo
+    def test_repository_structure(self, monkeypatch):
+        repo = Repository(
+            id="@R1@", name="Archives", address="123 Main St", url="https://example.com"
+        )
+        monkeypatch.setattr("gedcom_server.state.repositories", {repo.id: repo})
+        assert _get_repositories() == [repo.to_dict()]
