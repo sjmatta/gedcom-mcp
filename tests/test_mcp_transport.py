@@ -25,7 +25,6 @@ READ_TOOLS = {
     "get_relationship",
     "detect_pedigree_collapse",
     "traverse",
-    "query",
     "semantic_search",
     "search_nearby",
     "get_timeline",
@@ -67,6 +66,7 @@ def test_stdio_tools_and_resources():
             tools = await client.list_tools()
             names = {tool.name for tool in tools}
             assert names >= READ_TOOLS
+            assert "query" not in names
             assert names.isdisjoint(WRITE_TOOLS)
             result = await client.call_tool("get_statistics", {})
             assert not result.is_error

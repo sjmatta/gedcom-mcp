@@ -151,25 +151,6 @@ gedcom-server --gedcom-file /path/to/tree.ged
 3. Restart server to retry failed locations
 4. Cached locations won't be re-requested
 
-## Query Tool Issues
-
-### Query tool fails with "Missing API key"
-
-**Problem:** Natural language `query` tool returns error about API key.
-
-**Solution:** Set Anthropic API key:
-```bash
-export ANTHROPIC_API_KEY=sk-ant-api03-...
-gedcom-server --gedcom-file /path/to/tree.ged
-```
-
-**Note:** Only the `query` tool requires an API key. All other tools work without it.
-
-**Alternative:** Use specific tools directly instead of the query tool:
-- `get_biography` instead of "tell me about person X"
-- `get_ancestors` instead of "show me ancestors"
-- `get_relationship` instead of "how are X and Y related"
-
 ## Performance Issues
 
 ### Slow startup time

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Internal genealogy agent and the `query` MCP tool. Clients use the structured
+  genealogy tools directly; the server no longer depends on Strands or Anthropic.
+
 ### Added
 
 - `get_relationship_to_me`: one shortest path to the configured home person,

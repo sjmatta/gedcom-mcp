@@ -23,7 +23,6 @@ from .core import (
 from .events import _get_military_service, _get_timeline
 from .narrative import _get_biography
 from .places import _get_place_cluster
-from .query import _query
 from .relationships import Lineage, _get_parent_families, _get_relationship_to_me
 from .semantic import _semantic_search
 from .spatial import _search_nearby
@@ -356,43 +355,6 @@ def register_tools(mcp):
             traverse("@I123@", "siblings", 1)  # Just siblings
         """
         return _traverse(individual_id, direction, depth)
-
-    # ============== NON-AGENT CLIENTS (1) ==============
-
-    @tool
-    @traced_tool
-    def query(question: str) -> str:
-        """
-        Answer a natural language question about the family tree.
-
-        IMPORTANT: This tool is a FALLBACK for MCP clients that lack subagent
-        capabilities. If your client supports spawning subagents/subtasks,
-        use those instead - they will be more capable and have access to
-        your full toolset. This tool runs a simple internal reasoning loop
-        that is less powerful than a proper subagent.
-
-        Use this tool ONLY when:
-        - Your MCP client does not support subagents
-        - You need to investigate genealogy data without filling context
-          with intermediate tool calls
-
-        For simple lookups or when you need structured data, use the
-        individual tools (get_biography, get_ancestors, etc.) instead.
-
-        Examples:
-            "Who are Stephen's maternal grandparents?"
-            "Trace my ancestry back 4 generations and summarize"
-            "How are @I123@ and @I456@ related?"
-            "What do we know about everyone named Smith?"
-            "Create a narrative of my family history"
-
-        Args:
-            question: Natural language question about the genealogy data
-
-        Returns:
-            Prose answer to the question
-        """
-        return _query(question)
 
     # ============== SEMANTIC SEARCH (1) ==============
 

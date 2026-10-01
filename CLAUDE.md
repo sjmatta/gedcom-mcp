@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**GEDCOM MCP Server** — a Python FastMCP server that exposes a genealogy database (a parsed GEDCOM file) to AI assistants over the Model Context Protocol. It loads a `.ged` file once at startup, builds in-memory indexes, and layers structured search, fuzzy/phonetic place matching, GIS proximity/region search, vector semantic search, and a Strands Agent fallback on top of the raw genealogy graph.
+**GEDCOM MCP Server** — a Python FastMCP server that exposes a genealogy database (a parsed GEDCOM file) to AI assistants over the Model Context Protocol. It loads a `.ged` file once at startup, builds in-memory indexes, and layers structured search, fuzzy/phonetic place matching, GIS proximity/region search, and vector semantic search on top of the raw genealogy graph.
 
-The server publishes **25 MCP tools** and **6 MCP resources**. Requires Python `>=3.14`; CI tests on 3.14 only, matching the Docker image. Typical scale target: 20K+ individuals.
+The server publishes **24 MCP tools** and **6 MCP resources**. Requires Python `>=3.14`; CI tests on 3.14 only, matching the Docker image. Typical scale target: 20K+ individuals.
 
 ## Layered Architecture
 
@@ -15,13 +15,8 @@ The server is best understood as several layers stacked on top of the parsed GED
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ MCP surface (FastMCP)                                           │
-│  - mcp_tools.py: 25 @tool registrations                         │
+│  - mcp_tools.py: 24 @tool registrations                         │
 │  - mcp_resources.py: 6 @mcp.resource() endpoints                │
-└─────────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────────┐
-│ Reasoning layer                                                 │
-│  - query.py: Strands Agent (Claude) with curated tool subset    │
-│    (fallback for MCP clients without subagents)                 │
 └─────────────────────────────────────────────────────────────────┘
 ┌──────────────────────┬──────────────────────┬───────────────────┐
 │ Vector layer         │ GIS layer            │ Domain logic      │
@@ -131,15 +126,11 @@ Opt-in (`SEMANTIC_SEARCH_ENABLED=true`, default off). Uses `sentence-transformer
 
 **Lazy encoder** — query-time encoder is loaded lazily after restart so cold queries still work.
 
-### Layer 6 — Reasoning (`query.py`)
-
-A Strands Agent (Claude `claude-sonnet-4-20250514` by default, overridable via `GEDCOM_QUERY_MODEL` / `GEDCOM_QUERY_MAX_TOKENS`) wired up with a curated subset of the genealogy tools (no recursion into `query` itself). Exposed as the `query` MCP tool. Treated as a **fallback** for MCP clients that lack subagent capabilities — clients that can spawn subagents should use the structured tools directly.
-
-### Layer 7 — MCP surface (`mcp_tools.py`, `mcp_resources.py`)
+### Layer 6 — MCP surface (`mcp_tools.py`, `mcp_resources.py`)
 
 Tools live in `mcp_tools.py` purely as thin `@tool` wrappers around private `_*()` implementations in domain modules. `@tool` passes the whole docstring as the description: FastMCP 3+ otherwise keeps only the first paragraph of a docstring with an `Args` section, silently dropping Returns/Examples/usage notes (guarded by `test_tool_descriptions_keep_full_docstring`). Resources are URI-templated read-only views.
 
-Tool inventory (25 total, grouped by category in source order):
+Tool inventory (24 total, grouped by category in source order):
 
 | Category | Tools |
 | --- | --- |
@@ -149,7 +140,6 @@ Tool inventory (25 total, grouped by category in source order):
 | Search (1) | `search_individuals` |
 | Relationship (4) | `get_relationship`, `detect_pedigree_collapse`, `get_relationship_to_me`, `get_parent_families` |
 | Primitives (1) | `traverse` |
-| Non-agent fallback (1) | `query` |
 | Semantic (1) | `semantic_search` |
 | GIS (1) | `search_nearby` |
 | Timeline & events (2) | `get_timeline`, `get_military_service` |
@@ -161,7 +151,7 @@ Resources (6): `gedcom://individual/{id}`, `gedcom://family/{id}`, `gedcom://sou
 
 ### Cross-cutting — Telemetry (`telemetry.py`)
 
-Optional Arize Cloud or local Phoenix integration via OpenTelemetry. Set both `ARIZE_SPACE_ID` and `ARIZE_API_KEY` to select Arize Cloud; otherwise tracing uses Phoenix. Each MCP tool is wrapped by `traced_tool` to record tool spans. Enable with `PHOENIX_ENABLED=true`; defaults to a local Phoenix collector at `http://localhost:6006` (override with `PHOENIX_COLLECTOR_ENDPOINT`, or legacy `PHOENIX_ENDPOINT`) and `PHOENIX_PROJECT_NAME=gedcom-server`. A `StrandsToOpenInferenceProcessor` rewrites Strands span names into OpenInference kinds (`LLM` / `TOOL` / `AGENT` / `CHAIN`) so traces render correctly in Phoenix. **Tracing must be initialized before the FastMCP server is constructed** — `__init__.py` calls `initialize_tracing()` at module top, before `FastMCP(...)`.
+Optional Arize Cloud or local Phoenix integration via OpenTelemetry. Set both `ARIZE_SPACE_ID` and `ARIZE_API_KEY` to select Arize Cloud; otherwise tracing uses Phoenix. Each MCP tool is wrapped by `traced_tool` to record tool spans. Enable with `PHOENIX_ENABLED=true`; defaults to a local Phoenix collector at `http://localhost:6006` (override with `PHOENIX_COLLECTOR_ENDPOINT`, or legacy `PHOENIX_ENDPOINT`) and `PHOENIX_PROJECT_NAME=gedcom-server`. Tool spans include the OpenInference `TOOL` kind so traces render correctly in Phoenix. **Tracing must be initialized before the FastMCP server is constructed** — `__init__.py` calls `initialize_tracing()` at module top, before `FastMCP(...)`.
 
 ## Startup Flow
 
@@ -188,16 +178,12 @@ gedcom-server
 | --- | --- | --- |
 | `GEDCOM_FILE` | (required) | Path to .ged file |
 | `GEDCOM_HOME_PERSON_ID` | auto-detect | Tree owner |
-| `ANTHROPIC_API_KEY` | — | Required for `query` tool |
-| `GEDCOM_QUERY_MODEL` | `claude-sonnet-4-20250514` | Strands Agent model |
-| `GEDCOM_QUERY_MAX_TOKENS` | `4096` | Strands Agent token cap |
 | `SEMANTIC_SEARCH_ENABLED` | `false` | Build/use vector embeddings |
 | `GIS_SEARCH_ENABLED` | `true` | Geocode + GIS search |
 | `PHOENIX_ENABLED` | `false` | OpenTelemetry tracing on |
 | `PHOENIX_COLLECTOR_ENDPOINT` | `http://localhost:6006` | Phoenix collector; legacy `PHOENIX_ENDPOINT` also accepted |
 | `ARIZE_SPACE_ID`, `ARIZE_API_KEY` | — | Select Arize Cloud when both are set |
 | `PHOENIX_PROJECT_NAME` | `gedcom-server` | Project name in Phoenix UI |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | inherits `PHOENIX_ENDPOINT` | Strands SDK export target |
 
 ## Caches & On-disk Artifacts
 
@@ -251,7 +237,6 @@ Tests live in `tests/`, fixtures in `conftest.py`, sample data in `tests/fixture
 | `test_edge_cases.py`, `test_relationships.py`, `test_helpers.py` | Edge cases / utilities |
 | `test_semantic.py`, `test_spatial.py` | Vector / GIS layers |
 | `test_telemetry.py`, `test_configuration.py` | Cross-cutting |
-| `test_query.py` | Strands Agent natural-language tool |
 | `test_associates.py` | FAN Club analysis |
 | `test_mcp_resources.py` | MCP resource endpoints |
 | `test_new_features.py` | Integration tests for recent features |
@@ -261,7 +246,7 @@ Tests live in `tests/`, fixtures in `conftest.py`, sample data in `tests/fixture
 
 ## Design Patterns and Conventions
 
-- **Public/private split** — every domain module defines `_*()` functions; MCP wrappers in `mcp_tools.py` are zero-logic adapters. Easy to call internals from `query.py` Strands tools without going through MCP.
+- **Public/private split** — every domain module defines `_*()` functions; MCP wrappers in `mcp_tools.py` are zero-logic adapters.
 - **Single-pass load, read-only thereafter** — no locks, no reload; restart the server to pick up `.ged` changes.
 - **Place identity** — `get_place_id` = first 12 chars of MD5 of normalized place string (lowercase, abbreviation expansion, whitespace collapse). Both indexes and the geocache key on this.
 - **ID normalization** — every public function accepts `I123` or `@I123@`; `_normalize_lookup_id` round-trips through the canonical `@I123@` form.
