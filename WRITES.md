@@ -46,6 +46,9 @@ trusted operators by the deployment's authentication policy.
 
 1. Read `get_tree_revision`.
 2. Call `prepare_tree_change` with that revision, a reason, and operations.
+   For a new person, `prepare_create_person` accepts given name and/or surname,
+   optional sex (`M`, `F`, `U`) and a note, and returns a generated individual ID.
+   Search for existing people first; creation does not deduplicate or infer facts.
 3. Review the affected records, diff, and counts. If `diff_truncated` is true,
    use `get_tree_change_diff` and follow `next_offset` to review the full diff.
 4. Obtain authorization for the prepared change, then call `apply_tree_change`.
@@ -84,7 +87,13 @@ Paths select exact sibling occurrences, for example:
 
 Corrections support NAME, SEX, and event DATE/PLAC fields. Fields with child tags
 are refused to avoid contradictory values, including NAME with GIVN/SURN.
-Person creation is not yet supported. Structural changes use explicit operations
+For structured name corrections use `prepare_update_person_name`, or batch
+`update_name`, with the exact old NAME, complete new NAME, and explicit given-name
+and surname components. It updates GIVN/SURN without removing name citations,
+other subordinate fields, or alternate NAME occurrences. Read `get_record` first;
+`name_index` selects the zero-based NAME occurrence. Blank components mean unknown.
+Include retained prefixes/suffixes in the complete new NAME where appropriate.
+Person creation uses the same reviewed proposal workflow. Structural changes use explicit operations
 described below; direct value replacement never changes relationship pointers.
 Notes and sources preserve research context; edits do not establish historical
 truth merely because they have a citation. Preserve uncertainty in the value,
@@ -101,6 +110,8 @@ reviewers can see every override and the stated basis for identity consolidation
 
 | `op` | Required fields | Optional fields |
 | --- | --- | --- |
+| `add_individual` | `individual_id` (new `@ID@`), `name` | `sex`, `note` |
+| `update_name` | `individual_id`, `old_name`, `name`, `given_name`, `surname` | `name_index` (default 0) |
 | `add_family` | `family_id` (new `@ID@`) | â€” |
 | `add_relationship` | `family_id`, `individual_id`, `role` | `pedigree`, `status` |
 | `remove_relationship` | `family_id`, `individual_id`, `role` | `force` |
@@ -116,6 +127,14 @@ inferring sex or gender. Edits update both the family membership and the personâ
 Child links may specify `pedigree` (`birth`, `adopted`, `foster`, `sealing`) and
 `status` (`challenged`, `disproven`, `proven`). These record claims, not biological
 proof. Other families and opaque GEDCOM structures remain unchanged.
+
+`add_individual` accepts a single-line name such as `Jane /Smith/` (or a name
+without a surname delimiter). Its ID must be unused across all record types.
+Place creation before `add_relationship`, `add_event`, or `add_note` operations
+that reference the new ID to add a person with family links and sourced facts
+atomically. Dates and places use the existing source-required `add_event` operation.
+`prepare_create_person` is a convenient standalone creation proposal; it does not
+connect relatives or invent birth/death information. All text limits still apply.
 
 Merging redirects **all exact pointer values**, including nested and extension
 pointers, from source to target. Distinct names, events, citations, notes and

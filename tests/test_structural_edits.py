@@ -73,6 +73,171 @@ def test_relationship_replacement_is_reciprocal_and_preserves_other_families(tre
     assert tree.document(2) == original
 
 
+def test_create_person_with_family_and_sourced_event_is_atomic(tree):
+    original = tree.document(0)
+    proposal = tree.prepare(
+        0,
+        "Add reviewed person and evidence",
+        [
+            operation("add_individual", individual_id="@INEW@", name="Zoë /Example/", sex="U"),
+            operation("add_relationship", family_id="@F1@", individual_id="@INEW@", role="CHIL"),
+            operation(
+                "add_event", record_id="@INEW@", tag="BIRT", source_id="@S1@", date="ABT 1900"
+            ),
+        ],
+    )
+    assert tree.revision == 0 and tree.document(0) == original
+    assert "@INEW@" not in state.individuals
+    result = tree.apply(proposal["proposal_id"], 0)
+    assert result["revision"] == 1
+    assert "@INEW@" in state.individuals
+    assert "@INEW@" in state.families["@F1@"].children_ids
+    assert b"1 FAMC @F1@" in tree.document(1)
+    assert b"2 DATE ABT 1900" in tree.document(1)
+    assert tree.original.read_bytes() == original
+    assert tree.apply(proposal["proposal_id"], 0)["already_applied"]
+    undo = tree.prepare(1, "Restore before creation", [], 0)
+    tree.apply(undo["proposal_id"], 1)
+    assert tree.document(2) == original
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"individual_id": "@I1@", "name": "Duplicate"},
+        {"individual_id": "@F1@", "name": "Wrong record collision"},
+        {"individual_id": "missing-delimiters", "name": "Invalid ID"},
+        {"individual_id": "@I\x00@", "name": "Invalid ID"},
+        {"name": "Missing ID"},
+        {"individual_id": "@NEW@", "name": ""},
+        {"individual_id": "@NEW@", "name": "Injected\n0 @X@ INDI"},
+        {"individual_id": "@NEW@", "name": "Jane /Broken"},
+        {"individual_id": "@NEW@", "name": "@I1@"},
+        {"individual_id": "@NEW@", "name": "é" * 101},
+        {"individual_id": "@NEW@", "name": "Jane", "sex": "X"},
+        {"individual_id": "@NEW@", "name": "Jane", "sex": []},
+        {"individual_id": "@NEW@", "name": "Jane", "note": "Bad\nNote"},
+        {"individual_id": "@NEW@", "name": "Jane", "birth_date": "1900"},
+    ],
+)
+def test_create_person_refuses_invalid_inputs(fields):
+    with pytest.raises(ValueError):
+        edit(SAMPLE.read_bytes(), operation("add_individual", **fields))
+
+
+@pytest.mark.parametrize("newline,bom", [(b"\n", b""), (b"\r\n", b"\xef\xbb\xbf")])
+def test_create_person_preserves_existing_bytes(newline, bom):
+    raw = bom + SAMPLE.read_bytes().replace(b"\n", newline)
+    result = edit(raw, operation("add_individual", individual_id="@NEW@", name="Mononym"))
+    block = b"0 @NEW@ INDI" + newline + b"1 NAME Mononym" + newline
+    assert result.replace(block, b"", 1) == raw
+
+
+def test_failed_creation_batch_leaves_store_unchanged(tree):
+    original = tree.document(0)
+    with pytest.raises(ValueError):
+        tree.prepare(
+            0,
+            "Invalid link",
+            [
+                operation("add_individual", individual_id="@NEW@", name="Jane"),
+                operation(
+                    "add_relationship", individual_id="@NEW@", family_id="@missing@", role="CHIL"
+                ),
+            ],
+        )
+    assert tree.revision == 0 and tree.document(0) == original
+    assert "@NEW@" not in state.individuals
+
+
+def test_update_name_preserves_evidence_alternates_and_current_reads(tree):
+    original = tree.document(0)
+    proposal = tree.prepare(
+        0,
+        "Correct spelling",
+        [
+            operation(
+                "update_name",
+                individual_id="@I1@",
+                old_name="John /SMITH/",
+                name="Jonathan /Smith/",
+                given_name="Jonathan",
+                surname="Smith",
+            )
+        ],
+    )
+    assert state.individuals["@I1@"].given_name == "John"
+    tree.apply(proposal["proposal_id"], 0)
+    assert state.individuals["@I1@"].given_name == "Jonathan"
+    assert state.individuals["@I1@"].surname == "Smith"
+    assert tree.document(1) == original.replace(b"John /SMITH/", b"Jonathan /Smith/", 1).replace(
+        b"2 GIVN John\n2 SURN SMITH", b"2 GIVN Jonathan\n2 SURN Smith", 1
+    )
+
+
+def test_update_name_keeps_nested_name_evidence_and_other_name_occurrences():
+    raw = data(
+        "0 @I@ INDI\n1 NAME Old /Surname/\n2 GIVN Old\n3 _PROOF keep\n2 SURN Surname\n"
+        "2 NICK Nick\n2 SOUR @S@\n3 PAGE 12\n2 _CUSTOM opaque\n"
+        "1 NAME Alternate /Surname/\n2 TYPE aka\n0 @S@ SOUR\n1 TITL Record\n"
+    )
+    result = edit(
+        raw,
+        operation(
+            "update_name",
+            individual_id="@I@",
+            old_name="Old /Surname/",
+            name="New /Corrected/",
+            given_name="New",
+            surname="Corrected",
+        ),
+    )
+    assert result == raw.replace(b"Old /Surname/", b"New /Corrected/", 1).replace(
+        b"2 GIVN Old", b"2 GIVN New", 1
+    ).replace(b"2 SURN Surname", b"2 SURN Corrected", 1)
+    # An alternate name can be corrected independently, adding missing structured fields.
+    alternate = edit(
+        raw,
+        operation(
+            "update_name",
+            individual_id="@I@",
+            name_index=1,
+            old_name="Alternate /Surname/",
+            name="Alias /Surname/",
+            given_name="Alias",
+            surname="Surname",
+        ),
+    )
+    assert b"1 NAME Old /Surname/" in alternate
+    assert b"1 NAME Alias /Surname/\n2 TYPE aka\n2 GIVN Alias\n2 SURN Surname" in alternate
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"old_name": "Stale /SMITH/"},
+        {"name_index": -1},
+        {"name_index": True},
+        {"name_index": 1},
+        {"name": "Bad\nname"},
+        {"surname": "Mismatch"},
+        {"given_name": "Bad/name"},
+        {"individual_id": "@F1@"},
+    ],
+)
+def test_update_name_refuses_stale_or_invalid_inputs(overrides):
+    fields = {
+        "individual_id": "@I1@",
+        "old_name": "John /SMITH/",
+        "name": "Jane /Smith/",
+        "given_name": "Jane",
+        "surname": "Smith",
+    }
+    fields.update(overrides)
+    with pytest.raises(ValueError):
+        edit(SAMPLE.read_bytes(), operation("update_name", **fields))
+
+
 def test_relationship_changes_refuse_cycles_and_invalid_partner_roles():
     raw = SAMPLE.read_bytes()
     with pytest.raises(ValueError, match="integrity"):
