@@ -2,7 +2,7 @@
 
 Connect ChatGPT using OAuth to **https://gedcom-mcp.matta.family/mcp**.
 Sign in through Cloudflare Access as `stephenjmatta@gmail.com`. The portal exposes
-24 genealogy tools; the separate Claude-powered `query` fallback is hidden so
+32 genealogy and versioning tools; the separate Claude-powered `query` fallback is hidden so
 ChatGPT can reason using the structured tools without another model API key.
 No Codex MCP configuration is required or created.
 
@@ -33,19 +33,20 @@ Nominatim; geocoding coverage is partial and reported with search results.
   `GEDCOM_HOME_PERSON_ID` for the selected GEDCOM record. This server-wide setting
   is shared by all clients; restart the service after changing it.
 - Access issuer/audience: `/home/sjmatta/.config/gedcom-mcp/cf-access.json` (600)
-- Container: `gedcom-mcp`, image `gedcom-mcp:chatgpt-2`
+- Revision store and current caches: `/home/sjmatta/.local/share/gedcom-mcp/store` (700)
+- Container: `gedcom-mcp`, image `gedcom-mcp:versioned-writes-1`
 
 The isolated Compose project uses a non-root UID, read-only root filesystem,
 dropped capabilities, loopback-only published port, 2 GiB memory and 1.5 CPU limits.
 Linux dependencies use the explicit PyTorch CPU index rather than CUDA packages.
 The existing `docker-compose.yml` in the repository is the old optional Phoenix
-stack; **use `deploy/compose.yaml` for this service**.
+stack; **use `deploy/compose.yaml` with `deploy/compose.writes.yaml` for this service**.
 
 ```sh
 ssh -p 2222 sjmatta@rivendell
 cd /home/sjmatta/docker/services/gedcom-mcp
-docker compose -f deploy/compose.yaml ps
-docker compose -f deploy/compose.yaml logs --tail 50
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml ps
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml logs --tail 50
 curl --fail http://127.0.0.1:8768/healthz
 # Expected 401, never genealogy data:
 curl -i http://127.0.0.1:8768/mcp
@@ -54,8 +55,8 @@ curl -i http://127.0.0.1:8768/mcp
 Update source, then build and recreate only this service:
 
 ```sh
-docker compose -f deploy/compose.yaml build
-docker compose -f deploy/compose.yaml up -d --no-build
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml build
+docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml up -d --no-build
 ```
 
 Back up the private data before replacing a tree. Restart to load the replacement;
@@ -162,7 +163,7 @@ home-person configuration and Cloudflare authentication settings are unchanged.
 ## Opt-in write deployment and independent backups
 
 The implementation and recovery contract are in [WRITES.md](../WRITES.md).
-Production remains read-only until this overlay is deployed:
+Production uses this overlay as of September 30, 2026 (Eastern time):
 
 ```sh
 install -d -m 700 /home/sjmatta/.local/share/gedcom-mcp/store
@@ -211,5 +212,33 @@ run the deep verifier, restore to a new directory, and change the service mounts
 only after verifying the restored tree. Never restore a raw live SQLite file from
 a generic filesystem snapshot when a verified GEDCOM snapshot is available.
 
-The overlay and scheduled job are prepared here; this section does not assert
-that they have been activated or that the new revision store exists in production.
+### Live write release verification (2026-10-01 UTC)
+
+- Release: `e3887db`, image `gedcom-mcp:versioned-writes-1`, image ID
+  `sha256:63760e6b56b66262d4e269a3ee7bf118132f1babdddc4adecd11f50b34d6fa22`.
+- 579 tests, Ruff/format, mypy, dependency checks, and required GitHub CI passed.
+  The real-tree pilot uncovered a fixed-width semantic-cache memory problem;
+  UTF-8 text with validated offsets now keeps storage proportional to actual text.
+- Isolated real-tree write, immediate read, restore, semantic refresh, and offline
+  recovery passed under the 2 GiB memory limit. The production tree remains at
+  revision 0, with 20,132 people and 6,273 families and its original checksum.
+- Live container healthy; authenticated statistics, semantic search, and GIS
+  returned results. Origin and portal reject unauthenticated MCP with 401, backend
+  with 403, and OAuth discovery returns 200.
+- Cloudflare catalog ready: 33 server tools, 32 exposed under the existing owner
+  policy. The `query` override remains disabled. Refresh the Family Tree connection
+  and start a new conversation to discover the additional tools.
+- Daily scoped backup cron installed at 08:30 UTC. Immediate S3 snapshot
+  `b6c6ba85` and NAS snapshot `39943e26` both read back byte-for-byte successfully.
+  The independently replicated snapshot passed deep verification, restored into
+  a separate store, and reloaded with the expected counts; preparation did not
+  advance its revision.
+- Other pre-existing container IDs unchanged. Rollback image
+  `gedcom-mcp:pre-writes-20260930`; source/data/container/cron snapshot in
+  `/home/sjmatta/.local/share/gedcom-mcp/rollback-writes-20260930`.
+
+To return to the previous read-only service, stop only GEDCOM, restore its saved
+source, and use the retained rollback image with the base Compose file and
+`--no-build`. Preserve the new revision store and its backups; reverting the
+application must never discard accepted family-data changes. Restore tree data
+only through the separately verified recovery workflow described above.
