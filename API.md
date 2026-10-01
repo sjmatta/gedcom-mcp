@@ -352,7 +352,9 @@ Search for individuals by name (partial match on given name or surname).
 
 Search for individuals using natural language semantic matching.
 
-Finds people based on meaning, not keywords. Works best for conceptual queries that traditional text search would miss.
+Combines semantic passage retrieval, keyword matching, and local reranking. Accepts ordinary questions. The calling assistant may try paraphrases, preserving names, dates, negation, relationships, and the original query; the server performs no automatic LLM rewrite.
+
+Results are candidates. Inspect their evidence and use event, biography, source, or relationship tools to verify exact constraints. See [semantic-search configuration and deployment guidance](SEMANTIC_SEARCH.md).
 
 **Requires:** `SEMANTIC_SEARCH_ENABLED=true` environment variable
 
@@ -361,7 +363,9 @@ Finds people based on meaning, not keywords. Works best for conceptual queries t
 - `max_results` (int): Max results to return (default 20, max 100)
 
 **Returns:**
-- Dictionary with query, result_count, and results list containing individual_id, name, birth_date, death_date, relevance_score, and snippet
+- Dictionary with `query`, `result_count`, `search_mode`, `score_type`, and `results`.
+- Results contain `individual_id`, `name`, `birth_date`, `death_date`, `relevance_score`, `snippet`, and `evidence` with passage text and applicable event, note, family, chunk, and source references.
+- Scores are uncalibrated ranking signals. Reranker logits can be negative or exceed one; existing cosine thresholds must be removed or reconsidered. A reranker failure returns hybrid results with an explicit `warning`.
 
 **Examples:**
 ```python
