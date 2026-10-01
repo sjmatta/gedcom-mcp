@@ -103,7 +103,12 @@ def test_military_results_explain_explicit_and_inferred_evidence(lineage):
         Event(type="EVEN", notes=["His brother served in the Army"]),
         Event(type="OCCU", description="Hardware merchant"),
     ]
-    events = _get_military_service()["individuals"][0]["military_events"]
+    result = _get_military_service()
+    assert {"result_count", "individuals", "time_periods", "service_locations"} <= result.keys()
+    person = result["individuals"][0]
+    assert person["id"] == "@I0@"
+    assert "name" in person
+    events = person["military_events"]
     assert [event["military_evidence"]["basis"] for event in events] == [
         "explicit_tag",
         "possible_reference",

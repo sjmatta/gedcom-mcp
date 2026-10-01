@@ -51,10 +51,6 @@ class TestSourceDataclass:
 class TestSourcesLoaded:
     """Tests that verify sources loaded correctly."""
 
-    def test_sources_loaded(self):
-        """Should load sources from GEDCOM file."""
-        assert len(sources) > 0
-
     def test_sources_have_ids(self):
         """All sources should have IDs."""
         for source in sources.values():
@@ -65,15 +61,10 @@ class TestSourcesLoaded:
 class TestGetSources:
     """Tests for the get_sources function."""
 
-    def test_get_sources_returns_list(self):
-        """Should return a list."""
-        result = _get_sources()
-        assert isinstance(result, list)
-
     def test_get_sources_respects_max_results(self):
-        """Should respect max_results parameter."""
-        result = _get_sources(max_results=5)
-        assert len(result) <= 5
+        result = _get_sources(max_results=1)
+        assert len(result) == 1
+        assert result[0]["id"] == "@S1@"
 
     def test_get_sources_result_has_fields(self):
         """Results should have summary fields."""
@@ -109,15 +100,8 @@ class TestGetSource:
 class TestSearchSources:
     """Tests for the search_sources function."""
 
-    def test_search_returns_list(self):
-        """Should return a list."""
-        result = _search_sources("a")
-        assert isinstance(result, list)
-
     def test_search_respects_max_results(self):
-        """Should respect max_results parameter."""
-        result = _search_sources("a", max_results=3)
-        assert len(result) <= 3
+        assert len(_search_sources("Records", max_results=1)) == 1
 
     def test_search_is_case_insensitive(self):
         """Search should be case-insensitive."""

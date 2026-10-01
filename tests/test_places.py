@@ -1,6 +1,6 @@
 """Tests for place-related functionality including fuzzy search and geocoding."""
 
-from gedcom_server.constants import HISTORICAL_MAPPINGS, HISTORICAL_NAMES
+from gedcom_server.constants import HISTORICAL_MAPPINGS
 from gedcom_server.helpers import get_place_id, normalize_place_string, parse_place_components
 from gedcom_server.models import Place
 from gedcom_server.places import (
@@ -132,10 +132,6 @@ class TestNormalization:
 class TestHistoricalMappings:
     """Tests for historical place name mappings."""
 
-    def test_historical_names_defined(self):
-        """Should have historical name mappings."""
-        assert len(HISTORICAL_NAMES) > 0
-
     def test_historical_mappings_bidirectional(self):
         """Should have bidirectional mappings."""
         # Check that modern names map back to historical
@@ -151,23 +147,12 @@ class TestHistoricalMappings:
 class TestFuzzyMatchPlaces:
     """Tests for fuzzy place matching."""
 
-    def test_fuzzy_match_returns_list(self):
-        """Should return a list of tuples."""
-        # Use a place that exists in the tree
-        if places:
-            sample_place = next(iter(places.values())).original
-            first_word = sample_place.split(",")[0][:5]  # First 5 chars
-            result = _fuzzy_match_places(first_word, threshold=30)
-            assert isinstance(result, list)
-
     def test_fuzzy_match_returns_scores(self):
-        """Results should include scores."""
-        if places:
-            sample_place = next(iter(places.values())).original
-            result = _fuzzy_match_places(sample_place, threshold=30)
-            if result:
-                assert len(result[0]) == 2
-                assert isinstance(result[0][1], float)
+        place = "New York, New York, USA"
+        result = _fuzzy_match_places(place, threshold=95)
+        assert result
+        assert all(95 <= score <= 100 for _, score in result)
+        assert any(matched_place == place and score == 100 for matched_place, score in result)
 
     def test_fuzzy_match_respects_threshold(self):
         """Should only return matches above threshold."""
@@ -188,11 +173,6 @@ class TestPhoneticMatchPlaces:
 
 class TestFuzzySearchPlace:
     """Tests for the fuzzy_search_place tool."""
-
-    def test_returns_list(self):
-        """Should return a list."""
-        result = _fuzzy_search_place("a", threshold=30)
-        assert isinstance(result, list)
 
     def test_respects_max_results(self):
         """Should respect max_results parameter."""
@@ -218,11 +198,6 @@ class TestFuzzySearchPlace:
 class TestSearchSimilarPlaces:
     """Tests for the search_similar_places tool."""
 
-    def test_returns_list(self):
-        """Should return a list."""
-        result = _search_similar_places("New York")
-        assert isinstance(result, list)
-
     def test_respects_max_results(self):
         """Should respect max_results parameter."""
         result = _search_similar_places("a", max_results=3)
@@ -239,29 +214,13 @@ class TestSearchSimilarPlaces:
 class TestGetPlaceVariants:
     """Tests for the get_place_variants tool."""
 
-    def test_returns_list(self):
-        """Should return a list."""
-        result = _get_place_variants("New York")
-        assert isinstance(result, list)
-
     def test_variants_have_match_type(self):
-        """Variants should include match type."""
-        # Use a place that exists in the tree
-        if places:
-            sample_place = next(iter(places.values())).original
-            result = _get_place_variants(sample_place)
-            if result:
-                assert "place" in result[0]
-                assert "match_type" in result[0]
+        result = _get_place_variants("New York, New York, USA")
+        assert {"place": "New York, New York, USA", "match_type": "normalized"} in result
 
 
 class TestGetAllPlaces:
     """Tests for the get_all_places tool."""
-
-    def test_returns_list(self):
-        """Should return a list."""
-        result = _get_all_places()
-        assert isinstance(result, list)
 
     def test_respects_max_results(self):
         """Should respect max_results parameter."""
@@ -297,18 +256,16 @@ class TestGetPlace:
 class TestGeocodePlace:
     """Tests for the geocode_place tool."""
 
-    def test_returns_dict_or_none(self):
-        """Should return dict or None."""
-        result = _geocode_place("New York City")
-        assert result is None or isinstance(result, dict)
-
-    def test_result_has_coordinates(self):
-        """If successful, result should have coordinates."""
-        result = _geocode_place("New York City")
-        if result:
-            assert "latitude" in result
-            assert "longitude" in result
-            assert "source" in result
+    def test_result_has_coordinates(self, monkeypatch):
+        monkeypatch.setattr(
+            "gedcom_server.places.geocode_place_coords", lambda _: (40.7128, -74.0060)
+        )
+        assert _geocode_place("Test City") == {
+            "place": "Test City",
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "source": "geonamescache",
+        }
 
 
 class TestSearchNearby:
@@ -325,15 +282,13 @@ class TestSearchNearby:
         # For a nonexistent place, should return empty list
         assert len(result) == 0
 
-    def test_respects_max_results(self):
-        """Should respect max_results parameter."""
-        # Skip full geocoding by using small max_results
-        result = _search_nearby("London", max_results=2, radius_km=10)
-        assert len(result) <= 2
-
-    def test_results_have_distance(self):
-        """Results should include distance information."""
-        # This test only runs if we get results
-        result = _search_nearby("London", radius_km=100, max_results=5)
-        if result:
-            assert "distance_km" in result[0]
+    def test_results_have_distance(self, monkeypatch):
+        place = places[get_place_id("New York, New York, USA")]
+        monkeypatch.setattr(place, "latitude", 40.7128)
+        monkeypatch.setattr(place, "longitude", -74.0060)
+        monkeypatch.setattr(
+            "gedcom_server.places.geocode_place_coords", lambda _: (40.7128, -74.0060)
+        )
+        result = _search_nearby("New York", radius_km=10, max_results=2)
+        assert len(result) == 2
+        assert all(person["distance_km"] == 0 for person in result)

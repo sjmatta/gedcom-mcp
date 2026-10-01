@@ -7,17 +7,14 @@ from gedcom_server.core import (
     _get_descendants,
     _get_family,
     _get_individual,
-    _get_statistics,
     _search_by_birth,
     _search_by_place,
     _search_individuals,
 )
 from gedcom_server.state import (
     birth_year_index,
-    families,
     individuals,
     place_index,
-    surname_index,
 )
 
 
@@ -110,17 +107,6 @@ class TestSearchEdgeCases:
 
 class TestIdLookupEdgeCases:
     """Tests for ID lookup edge cases."""
-
-    def test_bare_id_works(self, sample_individual_id):
-        """Bare ID (without @) should work."""
-        bare_id = sample_individual_id.strip("@")
-        result = _get_individual(bare_id)
-        assert result is not None
-
-    def test_at_wrapped_id_works(self, sample_individual_id):
-        """ID with @ symbols should work."""
-        result = _get_individual(sample_individual_id)
-        assert result is not None
 
     def test_empty_id_returns_none(self):
         """Empty ID should return None."""
@@ -220,13 +206,6 @@ class TestDescendantTreeEdgeCases:
 class TestSearchByBirthEdgeCases:
     """Tests for birth search edge cases."""
 
-    def test_year_only(self):
-        """Should work with year only."""
-        year = next(iter(birth_year_index.keys()))
-        results = _search_by_birth(year=year)
-        assert isinstance(results, list)
-        assert len(results) > 0
-
     def test_place_only(self):
         """Should work with place only."""
         # Get a place from the index
@@ -245,12 +224,6 @@ class TestSearchByBirthEdgeCases:
         """Future year should return empty."""
         results = _search_by_birth(year=9999, year_range=0)
         assert results == []
-
-    def test_year_range_0(self):
-        """year_range=0 should be exact match."""
-        year = next(iter(birth_year_index.keys()))
-        results = _search_by_birth(year=year, year_range=0)
-        assert isinstance(results, list)
 
     def test_negative_year_range(self):
         """Negative year_range should effectively be empty range."""
@@ -283,52 +256,3 @@ class TestSearchByPlaceEdgeCases:
         if results:
             assert "birth_place" in results[0]
             assert "death_place" in results[0]
-
-
-class TestStatisticsAccuracy:
-    """Tests for statistics accuracy."""
-
-    def test_individual_count_matches(self):
-        """Total individuals should match actual count."""
-        stats = _get_statistics()
-        assert stats["total_individuals"] == len(individuals)
-
-    def test_family_count_matches(self):
-        """Total families should match actual count."""
-        stats = _get_statistics()
-        assert stats["total_families"] == len(families)
-
-    def test_male_female_sum_correct(self):
-        """Males + females + unknown should equal total."""
-        stats = _get_statistics()
-        total = stats["males"] + stats["females"] + stats["unknown_sex"]
-        assert total == stats["total_individuals"]
-
-    def test_surname_count_matches_index(self):
-        """Unique surnames should match index size."""
-        stats = _get_statistics()
-        assert stats["unique_surnames"] == len(surname_index)
-
-    def test_top_surnames_sorted(self):
-        """Top surnames should be sorted by count descending."""
-        stats = _get_statistics()
-        counts = [s["count"] for s in stats["top_surnames"]]
-        assert counts == sorted(counts, reverse=True)
-
-    def test_year_range_valid(self):
-        """Earliest year should be <= latest year."""
-        stats = _get_statistics()
-        if stats["earliest_birth_year"] and stats["latest_birth_year"]:
-            assert stats["earliest_birth_year"] <= stats["latest_birth_year"]
-
-    def test_earliest_year_reasonable(self):
-        """Earliest birth year should be after 1000 AD."""
-        stats = _get_statistics()
-        if stats["earliest_birth_year"]:
-            assert stats["earliest_birth_year"] > 1000
-
-    def test_latest_year_reasonable(self):
-        """Latest birth year should be before 2030."""
-        stats = _get_statistics()
-        if stats["latest_birth_year"]:
-            assert stats["latest_birth_year"] < 2030

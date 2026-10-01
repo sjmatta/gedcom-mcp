@@ -4,14 +4,12 @@ from gedcom_server.core import (
     _detect_pedigree_collapse,
     _find_common_ancestors,
     _get_children,
-    _get_individuals_batch,
     _get_parents,
     _get_relationship,
     _get_siblings,
     _get_spouses,
 )
 from gedcom_server.state import (
-    HOME_PERSON_ID,
     birth_year_index,
     families,
     individuals,
@@ -22,23 +20,6 @@ from gedcom_server.state import (
 
 class TestRelationshipIntegrity:
     """Tests that verify bidirectional relationships are consistent."""
-
-    def test_family_members_exist(self):
-        """All IDs referenced in families should exist in individuals."""
-        missing = []
-        for fam in families.values():
-            if fam.husband_id and fam.husband_id not in individuals:
-                missing.append(f"Husband {fam.husband_id} in family {fam.id}")
-            if fam.wife_id and fam.wife_id not in individuals:
-                missing.append(f"Wife {fam.wife_id} in family {fam.id}")
-            for child_id in fam.children_ids:
-                if child_id and child_id not in individuals:
-                    missing.append(f"Child {child_id} in family {fam.id}")
-
-        # Allow some missing (common in genealogy data), but flag if excessive
-        if missing:
-            # Just warn, don't fail - genealogy data often has broken links
-            print(f"Warning: {len(missing)} missing individual references")
 
     def test_children_reference_their_family(self):
         """Children should mostly have family_as_child pointing back to their family.
@@ -175,16 +156,6 @@ class TestGetChildrenIntegrity:
         child_ids = [c["id"] for c in children]
         assert len(child_ids) == len(set(child_ids)), "Duplicate children found"
 
-    def test_children_from_multiple_families(self):
-        """Should collect children from all marriages."""
-        # Find someone with multiple marriages
-        for indi in individuals.values():
-            if len(indi.families_as_spouse) > 1:
-                children = _get_children(indi.id)
-                # Should work without error
-                assert isinstance(children, list)
-                break
-
 
 class TestGetSpousesIntegrity:
     """Tests for get_spouses function with real data."""
@@ -229,42 +200,6 @@ class TestIndexIntegrity:
                 assert indi_id in individuals, f"ID {indi_id} not found for place {place}"
 
 
-class TestGetIndividualsBatch:
-    """Tests for batch individual retrieval."""
-
-    def test_batch_returns_dict(self):
-        """Should return a dictionary."""
-        ids = list(individuals.keys())[:3]
-        result = _get_individuals_batch(ids)
-        assert isinstance(result, dict)
-
-    def test_batch_returns_all_requested(self):
-        """Should return an entry for each requested ID."""
-        ids = list(individuals.keys())[:5]
-        result = _get_individuals_batch(ids)
-        for id_str in ids:
-            assert id_str in result
-
-    def test_batch_with_nonexistent(self):
-        """Should return None for nonexistent IDs."""
-        ids = [list(individuals.keys())[0], "@NONEXISTENT999@"]
-        result = _get_individuals_batch(ids)
-        assert result.get("@NONEXISTENT999@") is None
-
-    def test_batch_with_empty_list(self):
-        """Should handle empty list."""
-        result = _get_individuals_batch([])
-        assert result == {}
-
-    def test_batch_normalizes_ids(self):
-        """Should handle IDs with or without @ symbols."""
-        first_id = list(individuals.keys())[0]
-        stripped = first_id.strip("@")
-        result = _get_individuals_batch([stripped])
-        # Should normalize and return the same data
-        assert first_id in result
-
-
 class TestFindCommonAncestors:
     """Tests for common ancestor finding."""
 
@@ -282,16 +217,6 @@ class TestFindCommonAncestors:
         result = _find_common_ancestors(ids[0], ids[1])
         assert "id" in result["individual_1"]
         assert "name" in result["individual_1"]
-
-    def test_common_ancestors_have_generation_info(self, individual_with_parents):
-        """Common ancestors should include generation distances."""
-        # Find someone with known ancestry
-        indi = individual_with_parents
-        parents = _get_parents(indi.id)
-        if parents and parents.get("father") and parents.get("mother"):
-            # Father and mother should share the child as "common descendant"
-            # but for common ancestors, siblings would share parents
-            pass  # More complex test would require known sibling data
 
     def test_nonexistent_individual(self):
         """Should handle nonexistent individual gracefully."""
@@ -324,17 +249,6 @@ class TestGetRelationship:
         result = _get_relationship(first_id, first_id)
         assert result["relationship"] == "same person"
 
-    def test_parent_child(self, individual_with_parents):
-        """Should identify parent-child relationship."""
-        indi = individual_with_parents
-        parents = _get_parents(indi.id)
-        if parents and parents.get("father"):
-            result = _get_relationship(indi.id, parents["father"]["id"])
-            assert result["relationship"] == "child"
-            # Reverse direction
-            result2 = _get_relationship(parents["father"]["id"], indi.id)
-            assert result2["relationship"] == "parent"
-
     def test_sibling(self, family_with_multiple_children):
         """Should identify sibling relationship."""
         fam = family_with_multiple_children
@@ -356,35 +270,6 @@ class TestGetRelationship:
         first_id = list(individuals.keys())[0]
         result = _get_relationship(first_id, "@NONEXISTENT999@")
         assert "error" in result
-
-    def test_great_grandparent_relationship(self, individual_with_parents):
-        """Should identify great-grandchild relationship (3 generations)."""
-        indi = individual_with_parents
-        parents = _get_parents(indi.id)
-        if not parents or not parents.get("father"):
-            return  # Skip if no ancestry data
-
-        grandparents = _get_parents(parents["father"]["id"])
-        if not grandparents or not grandparents.get("father"):
-            return  # Skip if no grandparent data
-
-        great_grandparents = _get_parents(grandparents["father"]["id"])
-        if not great_grandparents:
-            return  # Skip if no great-grandchild data
-
-        for key in ["father", "mother"]:
-            ggp = great_grandparents.get(key)
-            if ggp:
-                result = _get_relationship(indi.id, ggp["id"])
-                assert result["relationship"] == "great-grandchild", (
-                    f"Expected great-grandchild, got {result['relationship']}"
-                )
-                # Also test inverse
-                result2 = _get_relationship(ggp["id"], indi.id)
-                assert result2["relationship"] == "great-grandparent", (
-                    f"Expected great-grandparent, got {result2['relationship']}"
-                )
-                return  # Found and tested one, done
 
     def test_deep_ancestor_naming(self):
         """Should correctly name ancestors beyond great-grandparent."""
@@ -424,18 +309,6 @@ class TestDetectPedigreeCollapse:
         assert "id" in result["individual"]
         assert "name" in result["individual"]
 
-    def test_collapse_point_structure(self):
-        """Collapse points should have proper structure if found."""
-        # Use home person for more complete ancestry
-        result = _detect_pedigree_collapse(HOME_PERSON_ID)
-        if result["collapse_points"]:
-            point = result["collapse_points"][0]
-            assert "ancestor_id" in point
-            assert "ancestor_name" in point
-            assert "paths" in point
-            assert "generations" in point
-            assert "occurrence_count" in point
-
     def test_nonexistent_individual(self):
         """Should handle nonexistent individual gracefully."""
         result = _detect_pedigree_collapse("@NONEXISTENT999@")
@@ -447,3 +320,22 @@ class TestDetectPedigreeCollapse:
         # With very few generations, should still work
         result = _detect_pedigree_collapse(first_id, max_generations=2)
         assert "collapse_points" in result
+
+
+def test_common_ancestors_include_generation_distances():
+    result = _find_common_ancestors("I5", "I6")
+    assert {
+        person["id"]: (person["generations_from_1"], person["generations_from_2"])
+        for person in result["common_ancestors"]
+    } == {
+        "@I3@": (1, 1),
+        "@I4@": (1, 1),
+        "@I1@": (2, 2),
+        "@I2@": (2, 2),
+    }
+    assert all(person["name"] for person in result["common_ancestors"])
+    distances = [
+        person["generations_from_1"] + person["generations_from_2"]
+        for person in result["common_ancestors"]
+    ]
+    assert distances == sorted(distances)

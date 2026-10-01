@@ -7,6 +7,45 @@ from pathlib import Path
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
+READ_TOOLS = {
+    "get_parent_families",
+    "get_relationship_to_me",
+    "get_home_person",
+    "get_statistics",
+    "get_individual",
+    "get_biography",
+    "get_family",
+    "get_parents",
+    "get_children",
+    "get_spouses",
+    "get_siblings",
+    "get_ancestors",
+    "get_descendants",
+    "search_individuals",
+    "get_relationship",
+    "detect_pedigree_collapse",
+    "traverse",
+    "query",
+    "semantic_search",
+    "search_nearby",
+    "get_timeline",
+    "get_military_service",
+    "get_place_cluster",
+    "get_surname_origins",
+    "find_associates",
+}
+
+WRITE_TOOLS = {
+    "get_tree_revision",
+    "prepare_tree_change",
+    "get_tree_change_diff",
+    "apply_tree_change",
+    "get_tree_history",
+    "prepare_tree_restore",
+    "backup_tree",
+    "export_tree_revision",
+}
+
 
 def test_stdio_tools_and_resources():
     async def exercise_server():
@@ -20,19 +59,23 @@ def test_stdio_tools_and_resources():
                 "GIS_SEARCH_ENABLED": "false",
                 "SEMANTIC_SEARCH_ENABLED": "false",
                 "GEDCOM_HOME_PERSON_ID": "",
+                "GEDCOM_WRITES_ENABLED": "false",
             },
             keep_alive=False,
         )
         async with Client(transport, timeout=20) as client:
             tools = await client.list_tools()
-            assert len(tools) == 25
-            assert "get_statistics" in {tool.name for tool in tools}
+            names = {tool.name for tool in tools}
+            assert names >= READ_TOOLS
+            assert names.isdisjoint(WRITE_TOOLS)
             result = await client.call_tool("get_statistics", {})
             assert not result.is_error
             assert result.data["total_individuals"] > 0
             resources = await client.list_resources()
             assert "gedcom://stats" in {str(resource.uri) for resource in resources}
             assert await client.read_resource("gedcom://stats")
+            surnames = await client.read_resource("gedcom://surnames")
+            assert surnames[0].text.splitlines() == ["smith: 4", "jones: 1", "williams: 1"]
 
     asyncio.run(asyncio.wait_for(exercise_server(), timeout=30))
 
@@ -48,7 +91,7 @@ def test_tool_descriptions_keep_full_docstring():
     from gedcom_server import mcp
 
     tools = asyncio.run(mcp.list_tools())
-    assert len(tools) == 25
+    assert tools
     for tool in tools:
         assert tool.description == inspect.getdoc(tool.fn), tool.name
 
@@ -72,7 +115,7 @@ def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
         )
         async with Client(transport, timeout=20) as client:
             tools = await client.list_tools()
-            assert len(tools) == 33
+            assert {tool.name for tool in tools} >= WRITE_TOOLS
             status = await client.call_tool("get_tree_revision", {})
             assert status.data["revision"] == 0
             prepared = await client.call_tool(
