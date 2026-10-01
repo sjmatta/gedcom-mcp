@@ -508,3 +508,11 @@ def test_structural_preparation_failure_never_advances_revision_or_changes_index
     assert tree.revision == 0 and tree.document(0) == original
     assert "@I6@" in state.individuals
     assert tree.db.execute("SELECT COUNT(*) FROM proposals").fetchone()[0] == 0
+
+
+def test_deletion_diff_does_not_report_unchanged_trailer_as_removed_and_added():
+    raw = SAMPLE.read_bytes()
+    after = edit(raw, operation("delete_individual", individual_id="@I6@"))
+    diff = "\n".join(LosslessEditor().diff(raw, after, None))
+    assert "-0 @I6@ INDI" in diff
+    assert "-0 TRLR" not in diff and "+0 TRLR" not in diff

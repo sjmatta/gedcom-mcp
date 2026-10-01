@@ -255,11 +255,18 @@ class LosslessEditor:
         text = data.decode("utf-8-sig")
         starts = [match.start() for match in re.finditer(r"(?m)^0 ", text)]
         blocks = {}
+        anonymous_counts: dict[str, int] = {}
         for index, start in enumerate(starts):
             end = starts[index + 1] if index + 1 < len(starts) else len(text)
             block = text[start:end]
             match = re.match(r"0 (@[^@\s]+@) ", block)
-            key = match.group(1) if match else f"anonymous-{index}"
+            if match:
+                key = match.group(1)
+            else:
+                tag = block.split()[1]
+                occurrence = anonymous_counts.get(tag, 0)
+                anonymous_counts[tag] = occurrence + 1
+                key = f"anonymous-{tag}-{occurrence}"
             blocks[key] = block
         return blocks
 
