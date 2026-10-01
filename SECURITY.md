@@ -56,7 +56,6 @@ Please include the following information in your report:
 - The GEDCOM MCP Server runs **locally on your machine** - data never leaves your system
 - No data is sent to external servers except:
   - Optional geocoding via Nominatim (only place names, not personal info)
-  - Optional query tool via Anthropic API (if you use it)
   - Optional semantic search model download (one-time, from Hugging Face)
 
 **Recommendations:**
@@ -69,7 +68,7 @@ Please include the following information in your report:
 
 The server requires API keys only for optional features:
 
-**Anthropic API Key** (for `query` tool only):
+**Observability API keys** (for optional Arize Cloud tracing):
 - Store in environment variables, never in code
 - Use `.env` files for local development (git-ignored by default)
 - Rotate keys regularly
@@ -98,7 +97,6 @@ configured audit actor is an operator label, not a verified user identity.
 
 **External connections** (optional, can be disabled):
 - Nominatim API for geocoding (rate-limited to 1 req/sec)
-- Anthropic API for query tool (only if used)
 - Hugging Face for semantic search model download (one-time)
 
 ### Dependencies

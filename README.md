@@ -4,7 +4,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-- **25 MCP Tools** for comprehensive genealogy research:
+- **24 MCP Tools** for comprehensive genealogy research:
 
   **Core Tools:**
   - `get_home_person` - Get the tree owner's record
@@ -41,9 +41,6 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
   **Place & Surname Analysis:**
   - `get_place_cluster` - Get all people connected to a location
   - `get_surname_origins` - Analyze surname distribution and geographic origins
-
-  **Natural Language:**
-  - `query` - Natural language questions (fallback for non-agent MCP clients)
 
 - **6 MCP Resources**:
   - `gedcom://individual/{id}` - Individual record by ID

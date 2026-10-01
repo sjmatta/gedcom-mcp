@@ -1,6 +1,6 @@
 # API Reference
 
-Complete reference for all 25 MCP tools and 6 resources provided by the GEDCOM MCP Server.
+Complete reference for all 24 MCP tools and 6 resources provided by the GEDCOM MCP Server.
 
 ## Table of Contents
 
@@ -11,7 +11,6 @@ Complete reference for all 25 MCP tools and 6 resources provided by the GEDCOM M
 - [Relationship Tools (3)](#relationship-tools) (plus `get_relationship_to_me` and `get_parent_families`, see [Family provenance](#family-provenance-and-bounded-graph-queries))
 - [Timeline & Events (2)](#timeline--events)
 - [Place & Surname Analysis (2)](#place--surname-analysis)
-- [Natural Language (1)](#natural-language)
 - [MCP Resources (6)](#mcp-resources)
 
 ---
@@ -602,39 +601,6 @@ Useful for understanding where a family line originated and how it migrated acro
   - primary_origin: Place with earliest births (likely origin)
   - place_timeline: Place → [years] showing spread over time
   - statistics: earliest/latest birth, span, common places
-
----
-
-## Natural Language
-
-### query(question: str)
-
-Answer a natural language question about the family tree.
-
-**IMPORTANT:** This tool is a FALLBACK for MCP clients that lack subagent capabilities. If your client supports spawning subagents/subtasks, use those instead - they will be more capable and have access to your full toolset. This tool runs a simple internal reasoning loop that is less powerful than a proper subagent.
-
-**Use this tool ONLY when:**
-- Your MCP client does not support subagents
-- You need to investigate genealogy data without filling context with intermediate tool calls
-
-For simple lookups or when you need structured data, use the individual tools (`get_biography`, `get_ancestors`, etc.) instead.
-
-**Requires:** `ANTHROPIC_API_KEY` environment variable
-
-**Parameters:**
-- `question` (str): Natural language question about the genealogy data
-
-**Returns:**
-- Prose answer to the question
-
-**Examples:**
-```python
-query("Who are Stephen's maternal grandparents?")
-query("Trace my ancestry back 4 generations and summarize")
-query("How are @I123@ and @I456@ related?")
-query("What do we know about everyone named Smith?")
-query("Create a narrative of my family history")
-```
 
 ---
 

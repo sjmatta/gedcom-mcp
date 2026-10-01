@@ -8,7 +8,7 @@ requires-python = ">=3.14"
 authors = [
     {name = "Stephen Matta", email = "stephen.matta@gmail.com"}
 ]
-keywords = ["genealogy", "gedcom", "mcp", "family-tree", "anthropic", "claude", "genealogy-research"]
+keywords = ["genealogy", "gedcom", "mcp", "family-tree", "genealogy-research"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -30,7 +30,6 @@ dependencies = [
     "geonamescache>=3.0.2",
     "haversine>=2.9.0",
     "requests>=2.34.2",
-    "strands-agents[anthropic]>=1.57.1",
     "python-dotenv>=1.2.3",
     # Tracing / Observability
     "arize-phoenix-otel>=0.17.2",

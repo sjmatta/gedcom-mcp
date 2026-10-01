@@ -142,95 +142,6 @@ class TestGetProjectName:
             assert get_project_name() == "my-genealogy-app"
 
 
-class TestStrandsToOpenInferenceProcessor:
-    """Tests for StrandsToOpenInferenceProcessor span processor."""
-
-    def test_chat_span_mapped_to_llm(self):
-        """Chat spans should be mapped to LLM kind."""
-        from gedcom_server.telemetry import (
-            OPENINFERENCE_SPAN_KIND,
-            StrandsToOpenInferenceProcessor,
-        )
-
-        processor = StrandsToOpenInferenceProcessor()
-        mock_span = MagicMock()
-        mock_span.name = "chat"
-
-        processor.on_start(mock_span)
-
-        mock_span.set_attribute.assert_called_with(OPENINFERENCE_SPAN_KIND, "LLM")
-
-    def test_execute_tool_span_mapped_to_tool(self):
-        """execute_tool spans should be mapped to TOOL kind."""
-        from gedcom_server.telemetry import (
-            OPENINFERENCE_SPAN_KIND,
-            StrandsToOpenInferenceProcessor,
-        )
-
-        processor = StrandsToOpenInferenceProcessor()
-        mock_span = MagicMock()
-        mock_span.name = "execute_tool_get_biography"
-
-        processor.on_start(mock_span)
-
-        mock_span.set_attribute.assert_called_with(OPENINFERENCE_SPAN_KIND, "TOOL")
-
-    def test_invoke_agent_span_mapped_to_agent(self):
-        """invoke_agent spans should be mapped to AGENT kind."""
-        from gedcom_server.telemetry import (
-            OPENINFERENCE_SPAN_KIND,
-            StrandsToOpenInferenceProcessor,
-        )
-
-        processor = StrandsToOpenInferenceProcessor()
-        mock_span = MagicMock()
-        mock_span.name = "invoke_agent_main"
-
-        processor.on_start(mock_span)
-
-        mock_span.set_attribute.assert_called_with(OPENINFERENCE_SPAN_KIND, "AGENT")
-
-    def test_unknown_span_mapped_to_chain(self):
-        """Unknown spans should be mapped to CHAIN kind."""
-        from gedcom_server.telemetry import (
-            OPENINFERENCE_SPAN_KIND,
-            StrandsToOpenInferenceProcessor,
-        )
-
-        processor = StrandsToOpenInferenceProcessor()
-        mock_span = MagicMock()
-        mock_span.name = "some_other_operation"
-
-        processor.on_start(mock_span)
-
-        mock_span.set_attribute.assert_called_with(OPENINFERENCE_SPAN_KIND, "CHAIN")
-
-    def test_on_end_is_noop(self):
-        """on_end should not raise any errors."""
-        from gedcom_server.telemetry import StrandsToOpenInferenceProcessor
-
-        processor = StrandsToOpenInferenceProcessor()
-        mock_span = MagicMock()
-
-        # Should not raise
-        processor.on_end(mock_span)
-
-    def test_force_flush_returns_true(self):
-        """force_flush should return True."""
-        from gedcom_server.telemetry import StrandsToOpenInferenceProcessor
-
-        processor = StrandsToOpenInferenceProcessor()
-        assert processor.force_flush() is True
-
-    def test_shutdown_is_noop(self):
-        """shutdown should not raise any errors."""
-        from gedcom_server.telemetry import StrandsToOpenInferenceProcessor
-
-        processor = StrandsToOpenInferenceProcessor()
-        # Should not raise
-        processor.shutdown()
-
-
 class TestInitializeTracing:
     """Tests for initialize_tracing function."""
 
@@ -294,29 +205,9 @@ class TestInitializeTracing:
 
         telemetry_module._tracer_provider = None
 
-    @patch("dotenv.load_dotenv")
-    @patch("phoenix.otel.register")
-    def test_sets_otel_endpoint_if_not_set(self, mock_register, _mock_dotenv):
-        """Should set OTEL_EXPORTER_OTLP_ENDPOINT if not already set."""
-        import gedcom_server.telemetry as telemetry_module
-
-        telemetry_module._tracer_provider = None
-        mock_register.return_value = MagicMock()
-
-        env = {
-            "PHOENIX_ENABLED": "true",
-            "PHOENIX_COLLECTOR_ENDPOINT": "http://custom:9999",
-        }
-
-        with patch.dict(os.environ, env, clear=True):
-            telemetry_module.initialize_tracing()
-            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == "http://custom:9999"
-
-        telemetry_module._tracer_provider = None
-
 
 def test_traced_tool_preserves_tool_kind_and_records_errors(monkeypatch):
-    """Real spans retain TOOL classification and exception status through the processor."""
+    """Real tool spans record TOOL classification and exception status."""
     import pytest
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -326,7 +217,6 @@ def test_traced_tool_preserves_tool_kind_and_records_errors(monkeypatch):
 
     provider = TracerProvider()
     exporter = InMemorySpanExporter()
-    provider.add_span_processor(telemetry.StrandsToOpenInferenceProcessor())
     provider.add_span_processor(SimpleSpanProcessor(exporter))
     monkeypatch.setattr(telemetry, "get_tracer", lambda: provider.get_tracer("test"))
 
