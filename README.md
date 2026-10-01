@@ -237,7 +237,10 @@ including the OAuth portal URL, service operations, credential rotation, and rol
 ## Versioned writes (opt-in)
 
 The original GEDCOM remains an immutable baseline. Optional write tools support
-reviewed notes, citations, sourced events, selected corrections, revision history,
-whole-tree undo, lossless exports, and verified backups. Unchanged records are
+reviewed notes, citations, sourced events, selected corrections, reciprocal
+relationship edits, evidence-preserving person merges, explicit deletion/pruning,
+revision history, whole-tree undo, lossless exports, and verified backups. A
+whole-tree audit and conservative pruning planner expose review blockers and
+selected `force=true` overrides before any change is applied. Unchanged records are
 shared between revisions to keep storage growth small. See [WRITES.md](WRITES.md)
 for configuration, limitations, recovery, and the replaceable editor interface.

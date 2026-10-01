@@ -8,6 +8,7 @@ from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
 READ_TOOLS = {
+    "audit_tree",
     "get_parent_families",
     "get_relationship_to_me",
     "get_home_person",
@@ -35,6 +36,7 @@ READ_TOOLS = {
 }
 
 WRITE_TOOLS = {
+    "plan_tree_prune",
     "get_tree_revision",
     "prepare_tree_change",
     "get_tree_change_diff",

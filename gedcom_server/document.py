@@ -1,7 +1,7 @@
 """Lossless UTF-8 GEDCOM editing; query dataclasses are never serialized.
 
 Existing lines (including unknown tags and line endings) are retained verbatim.
-The first write release deliberately excludes people merges and relationship edits.
+Structural edits preserve evidence and update reciprocal links atomically.
 """
 
 import difflib
@@ -116,9 +116,14 @@ class Document:
         return text
 
     def edit(self, operations: list[dict]) -> list[str]:
+        from .structural_edits import FIELDS, structural_edit
+        from .tree_audit import error_signatures
+
         if not operations or len(operations) > 50:
             raise ValueError("Provide between 1 and 50 operations")
         affected = []
+        structural = any(operation.get("op") in FIELDS for operation in operations)
+        original_errors = error_signatures(self) if structural else None
         allowed = {
             "add_source": {"op", "title", "author", "publication"},
             "add_note": {"op", "record_id", "text"},
@@ -137,6 +142,9 @@ class Document:
         }
         for operation in operations:
             op = operation.get("op")
+            if op in FIELDS:
+                affected.extend(structural_edit(self, operation))
+                continue
             if op not in allowed or set(operation) - allowed[op]:
                 raise ValueError("Unsupported operation or fields")
             if op == "add_source":
@@ -201,6 +209,12 @@ class Document:
             affected.append(record_id)
         # Validate our output independently of the editing logic.
         Document(self.bytes())
+        if original_errors is not None:
+            introduced = error_signatures(self) - original_errors
+            if introduced:
+                raise ValueError(
+                    f"Structural edit introduces integrity errors: {list(introduced)[:10]}"
+                )
         return list(dict.fromkeys(affected))
 
 
@@ -213,7 +227,15 @@ class LosslessEditor:
     def apply(self, data: bytes, operations: list[dict]) -> EditResult:
         document = Document(data)
         affected = document.edit(operations)
-        return EditResult(document.bytes(), tuple(affected))
+        review = {
+            "force_operation_indexes": [i for i, op in enumerate(operations) if op.get("force")],
+            "merge_identity_evidence": [
+                {key: op[key] for key in ("source_id", "target_id", "identity_evidence")}
+                for op in operations
+                if op["op"] == "merge_individuals"
+            ],
+        }
+        return EditResult(document.bytes(), tuple(affected), review)
 
     def records(self, data: bytes) -> list[bytes]:
         document = Document(data)
@@ -243,7 +265,8 @@ class LosslessEditor:
 
     def diff(self, before: bytes, after: bytes, affected: list[str] | None) -> list[str]:
         old_blocks, new_blocks = self._blocks(before), self._blocks(after)
-        keys = list(dict.fromkeys([*old_blocks, *new_blocks])) if affected is None else affected
+        # Include every changed block, even header pointers rewritten by forced deletion.
+        keys = list(dict.fromkeys([*old_blocks, *new_blocks]))
         difference: list[str] = []
         for key in keys:
             old, new = old_blocks.get(key, ""), new_blocks.get(key, "")

@@ -1,7 +1,8 @@
 # Versioned tree writes
 
-Writes are opt-in. The existing read-only startup and its 25-tool catalog remain
-available unchanged. Enabling writes adds eight revision/review/backup tools.
+Writes are opt-in. Read-only startup remains available; its catalog now includes
+the whole-tree audit. Enabling writes adds revision/review/backup tools and a read-only pruning planner.
+`audit_tree` is available with or without writes enabled.
 This release supports Linux and macOS with UTF-8 GEDCOM imports.
 
 ## Baseline and current tree
@@ -83,10 +84,116 @@ Paths select exact sibling occurrences, for example:
 
 Corrections support NAME, SEX, and event DATE/PLAC fields. Fields with child tags
 are refused to avoid contradictory values, including NAME with GIVN/SURN.
-This release excludes person creation, deletion, merges, and relationship changes.
+Person creation is not yet supported. Structural changes use explicit operations
+described below; direct value replacement never changes relationship pointers.
 Notes and sources preserve research context; edits do not establish historical
 truth merely because they have a citation. Preserve uncertainty in the value,
 source, note and reason rather than replacing it with an unsupported assertion.
+
+## Structural edits and reviewed overrides
+
+All structural operations use the same `prepare_tree_change` → complete diff
+review → authorized `apply_tree_change` sequence. Preparation changes no query
+results. Apply retains the existing stale-revision, verified-backup, atomic commit,
+read-publication, search refresh and whole-tree restore guarantees. The proposal
+includes `review.force_operation_indexes` and `review.merge_identity_evidence` so
+reviewers can see every override and the stated basis for identity consolidation.
+
+| `op` | Required fields | Optional fields |
+| --- | --- | --- |
+| `add_family` | `family_id` (new `@ID@`) | — |
+| `add_relationship` | `family_id`, `individual_id`, `role` | `pedigree`, `status` |
+| `remove_relationship` | `family_id`, `individual_id`, `role` | `force` |
+| `delete_individual` | `individual_id` | `force` |
+| `delete_individuals` | `individual_ids` (1–50,000 unique IDs) | `force` |
+| `delete_family` | `family_id` | `force` |
+| `delete_families` | `family_ids` (1–50,000 unique IDs) | `force` |
+| `merge_individuals` | `source_id`, `target_id`, `identity_evidence` | `force` |
+
+Roles are `HUSB`, `WIFE`, or `CHIL`, used as GEDCOM relationship slots without
+inferring sex or gender. Edits update both the family membership and the person’s
+`FAMS`/`FAMC`. Replace a relationship by removing and adding it in the same batch.
+Child links may specify `pedigree` (`birth`, `adopted`, `foster`, `sealing`) and
+`status` (`challenged`, `disproven`, `proven`). These record claims, not biological
+proof. Other families and opaque GEDCOM structures remain unchanged.
+
+Merging redirects **all exact pointer values**, including nested and extension
+pointers, from source to target. Distinct names, events, citations, notes and
+identifiers are retained; byte-identical structures can coalesce. The target’s
+existing structures remain first. Names/dates alone do not confirm identity:
+`identity_evidence` must describe independently reviewed evidence (for example,
+a verified external identity or source that explicitly identifies the same
+person). This description is supplied by the caller, not independently verified
+by the server. The source record is removed only within the accepted atomic edit.
+
+Start with `force=false` (the default). After reviewing blockers, use `force=true`
+**only on selected operations** to:
+
+- Retain differing NAME/SEX/BIRT/DEAT evidence during a confirmed merge, rather
+  than choosing one silently.
+- Remove a selected person’s inbound non-family references and their subordinate
+  structures. Every such removal appears in the diff, including header pointers.
+- Remove evidence-bearing relationship subtrees or empty, unreferenced families
+  carrying notes, identifiers or other metadata.
+
+Force never permits new dangling references, wrong pointer types, ancestry
+cycles, self-parenting, duplicate partner roles, or discarded conflicting family
+qualifiers. Existing imported integrity errors can be repaired; new errors are
+refused. A family cannot be deleted while it still has members or inbound
+references from surviving records. Deleting people updates family membership;
+it does not recursively delete relatives or discard family event records.
+
+## Whole-tree audit and efficient pruning
+
+`audit_tree(expected_revision?, offset=0, limit=100)` scans the **entire document**,
+not just the home-person neighborhood. It checks all pointer-valued lines,
+reciprocal family links, duplicate memberships, partner-role cardinality,
+self-parenting and ancestry cycles, and flags conflicting vital structures,
+uncited vital events and multiple parent families. It reports connected-component
+counts and representatives. It is structural/evidence triage, not historical
+verification, DNA analysis, duplicate identity confirmation, or a complete GEDCOM
+standards validator. Follow `next_offset` with the returned revision until null;
+a changed revision is refused rather than mixing findings.
+
+`plan_tree_prune(expected_revision, home_person_id, collateral_id?, spouse_id?,
+protected_individual_ids?, dna_review_complete=false, force=false, offset=0,
+limit=50)` inventories all records and references and returns candidates with
+`status`, `blockers`, explicit `record_ids`, and proposed `operations`. Nothing
+is prepared or applied. Follow `next_offset` with unchanged parameters and
+revision. Select candidates before passing their operations to preparation.
+
+The planner distinguishes:
+
+- Empty, unreferenced placeholders. Relationship links, vital data, citations,
+  notes, media, identifiers and opaque fields block initial eligibility.
+- Empty, unreferenced families. Membership, family events, citations, notes and
+  metadata block initial eligibility; a family with members is not empty.
+- External-identity duplicate candidates, always requiring identity review.
+  Matching names/dates never produce a confirmed duplicate or automatic merge.
+- Branches connected solely through a specified collateral relative’s spouse.
+  The collateral relative must share recorded parentage with the home person and
+  must not be their direct ancestor/descendant. Retain recorded parent/child relatives, their
+  direct spouses, both boundary people, and **all descendants of either boundary
+  person**, including children from earlier relationships. Remove the spouse
+  from the relationship graph to identify components with no other connection
+  to that retained core. Other family connections or explicitly protected people
+  exclude a component even when force is requested.
+
+Check DNA relevance independently and supply all relevant people in
+`protected_individual_ids`. `dna_review_complete=false` blocks initial spouse
+branch eligibility; the absence of DNA tags proves nothing. Recorded DNA
+references, any research note, citation, external identifier, opaque extension,
+other inbound reference, family metadata or evidence on the retained spouse’s
+boundary link sends a branch to manual review.
+
+Run the planner with `force=false` first. After review, `force=true` can return
+`review_override` operations **while keeping the blockers visible**. It never
+confirms duplicate identity, overrides the retained core or explicit protected
+people, proves sole connectivity in a broken graph, or bypasses edit integrity
+checks. This flag produces recommendations, not authorization to apply them.
+Batch person/family deletion lets a branch be pruned in one proposal without an
+operation per person. All deleted IDs and boundary changes remain reviewable in
+the complete paginated diff, and the original baseline/history stay recoverable.
 
 `prepare_tree_restore` previews returning the **whole tree** to an older revision.
 Applying it creates a new revision and preserves all intervening history. It is
