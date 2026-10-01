@@ -1,7 +1,7 @@
 # Versioned tree writes
 
 Writes are opt-in. Read-only startup remains available; its catalog now includes
-the whole-tree audit. Enabling writes adds revision/review/backup tools and a read-only pruning planner.
+progressive discovery of the whole-tree audit. Enabling writes adds preparation, apply and maintenance entry points, plus discoverable diff/history reads and a read-only pruning planner.
 `audit_tree` is available with or without writes enabled.
 This release supports Linux and macOS with UTF-8 GEDCOM imports.
 
@@ -44,14 +44,32 @@ trusted operators by the deployment's authentication policy.
 
 ## Review and apply
 
-1. Read `get_tree_revision`.
-2. Call `prepare_tree_change` with that revision, a reason, and operations.
-   For a new person, `prepare_create_person` accepts given name and/or surname,
-   optional sex (`M`, `F`, `U`) and a note, and returns a generated individual ID.
-   Search for existing people first; creation does not deduplicate or infer facts.
-3. Review the affected records, diff, and counts. If `diff_truncated` is true,
-   use `get_tree_change_diff` and follow `next_offset` to review the full diff.
-4. Obtain authorization for the prepared change, then call `apply_tree_change`.
+1. Read `get_tree_context` for the current revision and store status.
+2. Discover the required schema with `search_tools(category="changes")`.
+3. Call `prepare_change` with the returned operation and its exact payload inside
+   `arguments`, including `expected_revision` and `reason`.
+   `create_person` accepts given name and/or surname, optional sex (`M`, `F`, `U`)
+   and note, returning a generated ID. Search existing people first; no facts or
+   relationships are inferred. `update_person_name` preserves structured evidence;
+   `edit_records` supports strict typed atomic batches; `restore` previews a prior
+   whole-tree revision.
+4. Review affected records, diff and counts. If `diff_truncated` is true, discover
+   `get_tree_change_diff` and invoke it through `call_research_tool`, following
+   `next_offset` until every diff page is reviewed.
+5. Obtain authorization for this specific proposal, then call `apply_tree_change`.
+
+For example:
+
+```json
+{"operation":"edit_records","arguments":{
+  "expected_revision":3,"reason":"Attach research context",
+  "operations":[{"op":"add_note","record_id":"@I123@","text":"Review census household"}]
+}}
+```
+
+The example is the argument payload for `prepare_change`. Detailed operation
+schemas are discoverable and excluded from the initial advertised catalog.
+Unknown operation fields and incorrect types are rejected before preparation.
 
 Preparation persists a proposal but does not change query results. Applying a
 stale proposal fails. Repeating an already applied proposal returns its original
@@ -68,7 +86,7 @@ Supported operation dictionaries:
 | `add_citation` | `record_id`, `path`, `source_id` | `page` |
 | `replace_value` | `record_id`, `path`, `old_value`, `value` | — |
 
-Values in this first release are single-line text of at most 200 UTF-8 bytes.
+Values in this release are single-line text of at most 200 UTF-8 bytes.
 Sources get stable collision-resistant IDs shown in the prepared diff; cite a
 new source in a subsequent proposal after accepting it. Events require an
 existing source. A citation is attached to a selected level-one event.
@@ -87,7 +105,7 @@ Paths select exact sibling occurrences, for example:
 
 Corrections support NAME, SEX, and event DATE/PLAC fields. Fields with child tags
 are refused to avoid contradictory values, including NAME with GIVN/SURN.
-For structured name corrections use `prepare_update_person_name`, or batch
+For structured name corrections use `prepare_change(operation="update_person_name", arguments=...)`, or batch
 `update_name`, with the exact old NAME, complete new NAME, and explicit given-name
 and surname components. It updates GIVN/SURN without removing name citations,
 other subordinate fields, or alternate NAME occurrences. Read `get_record` first;
@@ -101,7 +119,7 @@ source, note and reason rather than replacing it with an unsupported assertion.
 
 ## Structural edits and reviewed overrides
 
-All structural operations use the same `prepare_tree_change` → complete diff
+All structural operations use the same `prepare_change(operation="edit_records", arguments=...)` → complete diff
 review → authorized `apply_tree_change` sequence. Preparation changes no query
 results. Apply retains the existing stale-revision, verified-backup, atomic commit,
 read-publication, search refresh and whole-tree restore guarantees. The proposal
@@ -251,7 +269,7 @@ The service refuses new edits when the database reaches `GEDCOM_MAX_STORE_BYTES`
 (default 1 GiB) or free space falls below `GEDCOM_MIN_FREE_BYTES` (default 512 MiB)
 plus twice the database size, reserving space for backup/journal work. These are
 write guards, not a total-store quota. Backups, caches and requested exports also
-consume space. `get_tree_revision` reports database, total-store and free-disk bytes.
+consume space. `get_tree_context` reports database, total-store and free-disk bytes.
 No design can guarantee free space if unrelated programs fill the same volume.
 
 Backup files contain baseline, current state and revision history. Use the online

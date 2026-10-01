@@ -507,7 +507,7 @@ def test_stdio_audit_planner_merge_delete_and_revision_guard(tmp_path):
         )
         async with Client(transport, timeout=20) as client:
             names = {tool.name for tool in await client.list_tools()}
-            assert {"audit_tree", "plan_tree_prune"} <= names
+            assert {"search_tools", "call_research_tool", "prepare_change"} <= names
             result = await client.call_tool(
                 "plan_tree_prune",
                 {
@@ -520,11 +520,14 @@ def test_stdio_audit_planner_merge_delete_and_revision_guard(tmp_path):
             )
             (branch,) = branches(result.data)
             proposal = await client.call_tool(
-                "prepare_tree_change",
+                "prepare_change",
                 {
-                    "expected_revision": 0,
-                    "reason": "Reviewed spouse-side prune",
-                    "operations": branch["operations"],
+                    "operation": "edit_records",
+                    "arguments": {
+                        "expected_revision": 0,
+                        "reason": "Reviewed spouse-side prune",
+                        "operations": branch["operations"],
+                    },
                 },
             )
             assert not proposal.is_error
@@ -535,9 +538,9 @@ def test_stdio_audit_planner_merge_delete_and_revision_guard(tmp_path):
             assert applied.data["revision"] == 1
             audit = await client.call_tool("audit_tree", {"expected_revision": 1, "limit": 1})
             assert audit.data["complete_scan"] and audit.data["counts"]["individuals"] == 7
-            assert (
-                await client.call_tool("get_individual", {"individual_id": "@INLAW@"})
-            ).data is None
+            assert (await client.call_tool("get_people", {"individual_ids": ["@INLAW@"]})).data[
+                "people"
+            ]["@INLAW@"] is None
             with pytest.raises(Exception, match="Stale"):
                 await client.call_tool(
                     "plan_tree_prune", {"expected_revision": 0, "home_person_id": "@HOME@"}

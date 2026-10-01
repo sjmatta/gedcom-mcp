@@ -178,9 +178,12 @@ The overlay mounts the imported data read-only and the new private store at
 `/state`. Confirm the import matches the chosen immutable baseline before starting.
 Update any MCP Portal tool allowlist to expose only the desired write tools to
 trusted operators. Check the authenticated catalog, prepare a test proposal without
-applying it, inspect `get_tree_revision`, and exercise a separate restored instance
-before accepting family-data edits. The current read-only catalog has 32 tools;
-enabling writes yields 41 tools.
+applying it, inspect `get_tree_context`, and exercise a separate restored instance
+before accepting family-data edits. Version 2 advertises 9 read-only tools or 12
+with writes enabled. Refresh portal/client capabilities after deploying this major
+interface; discovery and dispatch must be allowed together. Check discovered
+read execution and preparation through the actual authenticated client. Historical
+deployment snapshots below describe earlier interfaces, not a version 2 deployment.
 
 Rivendell's existing NAS and S3 Restic containers both mount the complete
 `/home/sjmatta/.local/share/gedcom-mcp` directory. On 2026-09-30, live inspection

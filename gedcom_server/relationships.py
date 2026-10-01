@@ -83,7 +83,10 @@ def _path_label(steps: list[dict]) -> str:
 
 
 def _get_relationship_to_me(
-    individual_id: str, lineage: Lineage = "default", max_steps: int = 30
+    individual_id: str,
+    lineage: Lineage = "default",
+    max_steps: int = 30,
+    reference_id: str | None = None,
 ) -> dict:
     """Return the person's relationship to the home person and its record path.
 
@@ -92,7 +95,7 @@ def _get_relationship_to_me(
     to the home person. No parent qualifier is silently treated as biological.
     """
     start = _normalize_lookup_id(individual_id)
-    home = state.HOME_PERSON_ID
+    home = _normalize_lookup_id(reference_id) if reference_id else state.HOME_PERSON_ID
     if start not in state.individuals or home not in state.individuals:
         return {"error": "Individual or configured home person not found", "path": []}
     if not 1 <= max_steps <= 100:

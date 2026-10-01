@@ -1,217 +1,307 @@
-"""Smoke test the installed MCP stack through the actual stdio entry point."""
+"""Exercise progressive discovery and reviewed edits through real stdio MCP."""
 
 import asyncio
+import inspect
+import json
 import sys
 from pathlib import Path
 
+import pytest
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
+from fastmcp.exceptions import ToolError
 
-READ_TOOLS = {
-    "audit_tree",
-    "get_parent_families",
-    "get_relationship_to_me",
-    "get_home_person",
-    "get_statistics",
-    "get_individual",
-    "get_biography",
-    "get_family",
-    "get_parents",
-    "get_children",
-    "get_spouses",
-    "get_siblings",
-    "get_ancestors",
-    "get_descendants",
-    "search_individuals",
-    "get_relationship",
-    "detect_pedigree_collapse",
-    "traverse",
-    "semantic_search",
-    "search_nearby",
-    "get_timeline",
-    "get_military_service",
-    "get_place_cluster",
-    "get_surname_origins",
-    "find_associates",
-}
+from gedcom_server.discovery import CORE_READ_TOOLS, CORE_WRITE_TOOLS
 
-WRITE_TOOLS = {
-    "prepare_create_person",
-    "prepare_update_person_name",
-    "plan_tree_prune",
-    "get_tree_revision",
-    "prepare_tree_change",
-    "get_tree_change_diff",
-    "apply_tree_change",
-    "get_tree_history",
-    "prepare_tree_restore",
-    "backup_tree",
-    "export_tree_revision",
-}
+READ_TOOLS = CORE_READ_TOOLS | {"search_tools", "call_research_tool"}
+WRITE_TOOLS = CORE_WRITE_TOOLS
+
+
+def transport(store=None):
+    root = Path(__file__).resolve().parents[1]
+    env = {
+        "PHOENIX_ENABLED": "false",
+        "GIS_SEARCH_ENABLED": "false",
+        "SEMANTIC_SEARCH_ENABLED": "false",
+        "GEDCOM_HOME_PERSON_ID": "",
+        "GEDCOM_WRITES_ENABLED": "true" if store else "false",
+    }
+    if store:
+        env["GEDCOM_STORE_DIR"] = str(store)
+    return StdioTransport(
+        command=sys.executable,
+        args=["-m", "gedcom_server", "--gedcom-file", str(root / "tests/fixtures/sample.ged")],
+        cwd=str(root),
+        env=env,
+        keep_alive=False,
+    )
 
 
 def test_stdio_tools_and_resources():
-    async def exercise_server():
-        root = Path(__file__).resolve().parents[1]
-        transport = StdioTransport(
-            command=sys.executable,
-            args=["-m", "gedcom_server", "--gedcom-file", str(root / "tests/fixtures/sample.ged")],
-            cwd=str(root),
-            env={
-                "PHOENIX_ENABLED": "false",
-                "GIS_SEARCH_ENABLED": "false",
-                "SEMANTIC_SEARCH_ENABLED": "false",
-                "GEDCOM_HOME_PERSON_ID": "",
-                "GEDCOM_WRITES_ENABLED": "false",
-            },
-            keep_alive=False,
-        )
-        async with Client(transport, timeout=20) as client:
+    async def exercise():
+        async with Client(transport(), timeout=20) as client:
             tools = await client.list_tools()
-            names = {tool.name for tool in tools}
-            assert names >= READ_TOOLS
-            assert "query" not in names
-            assert names.isdisjoint(WRITE_TOOLS)
-            result = await client.call_tool("get_statistics", {})
-            assert not result.is_error
-            assert result.data["total_individuals"] > 0
-            resources = await client.list_resources()
-            assert "gedcom://stats" in {str(resource.uri) for resource in resources}
+            assert {tool.name for tool in tools} == READ_TOOLS
+            assert all(tool.annotations.read_only_hint for tool in tools)
+            # Initial catalog remains compact; detailed edit schemas are deferred.
+            assert len(json.dumps([tool.model_dump(mode="json") for tool in tools])) < 15000
+            context = (await client.call_tool("get_tree_context", {})).data
+            assert context["statistics"]["total_individuals"] > 0
+            assert context["writes_enabled"] is False and context["revision"] is None
+            person = (await client.call_tool("get_people", {})).data
+            assert context["home_person"]["id"] in person["people"]
+            search = (await client.call_tool("search_people", {"query": "Smith"})).data
+            assert search["items"]
+            assert (await client.call_tool("search_tools", {"category": "changes"})).data[
+                "total"
+            ] == 0
+            offset = 0
+            discovered = {}
+            while offset is not None:
+                page = (await client.call_tool("search_tools", {"offset": offset, "limit": 2})).data
+                discovered.update({t["name"]: t for t in page["tools"]})
+                offset = page["next_offset"]
+            assert {
+                "get_source",
+                "search_events",
+                "get_military_service",
+                "audit_tree",
+            } <= discovered.keys()
+            assert all(
+                t["inputSchema"] and t["execution"]["tool"] == "call_research_tool"
+                for t in discovered.values()
+            )
+            result = await client.call_tool(
+                "call_research_tool",
+                {
+                    "name": "get_source",
+                    "arguments": {"source_id": "S1"},
+                },
+            )
+            assert result.data["title"] == "Massachusetts Vital Records"
+            assert not (await client.call_tool("search_tools", {"query": "zzzzunserved"})).data[
+                "tools"
+            ]
+            for name in [
+                "get_individual",
+                "get_parents",
+                "get_statistics",
+                "get_group_timeline",
+                "get_individuals_batch",
+                "query",
+            ]:
+                with pytest.raises(Exception, match="Unknown tool"):
+                    await client.call_tool(name, {})
             assert await client.read_resource("gedcom://stats")
             surnames = await client.read_resource("gedcom://surnames")
             assert surnames[0].text.splitlines() == ["smith: 4", "jones: 1", "williams: 1"]
 
-    asyncio.run(asyncio.wait_for(exercise_server(), timeout=30))
+    asyncio.run(asyncio.wait_for(exercise(), timeout=45))
 
 
 def test_tool_descriptions_keep_full_docstring():
-    """FastMCP 3+ truncates docstrings with an Args section to their first paragraph.
-
-    Tools register through mcp_tools.tool(), which passes the whole docstring so
-    Returns/Examples/usage notes still reach the model.
-    """
-    import inspect
-
     from gedcom_server import mcp
 
-    tools = asyncio.run(mcp.list_tools())
-    assert tools
-    for tool in tools:
+    for tool in asyncio.run(mcp.list_tools()):
         assert tool.description == inspect.getdoc(tool.fn), tool.name
 
 
 def test_opt_in_write_tools_prepare_apply_and_current_reads(tmp_path):
-    async def exercise_server():
-        root = Path(__file__).resolve().parents[1]
-        transport = StdioTransport(
-            command=sys.executable,
-            args=["-m", "gedcom_server", "--gedcom-file", str(root / "tests/fixtures/sample.ged")],
-            cwd=str(root),
-            env={
-                "PHOENIX_ENABLED": "false",
-                "GIS_SEARCH_ENABLED": "false",
-                "SEMANTIC_SEARCH_ENABLED": "false",
-                "GEDCOM_HOME_PERSON_ID": "",
-                "GEDCOM_WRITES_ENABLED": "true",
-                "GEDCOM_STORE_DIR": str(tmp_path / "store"),
-            },
-            keep_alive=False,
-        )
-        async with Client(transport, timeout=20) as client:
-            tools = await client.list_tools()
-            assert {tool.name for tool in tools} >= WRITE_TOOLS
-            status = await client.call_tool("get_tree_revision", {})
-            assert status.data["revision"] == 0
-            created = await client.call_tool(
+    async def exercise():
+        async with Client(transport(tmp_path / "store"), timeout=20) as client:
+            assert {t.name for t in await client.list_tools()} == READ_TOOLS | WRITE_TOOLS
+            context = (await client.call_tool("get_tree_context", {})).data
+            assert context["revision"] == 0 and context["writes_enabled"] is True
+            definitions = (
+                await client.call_tool("search_tools", {"category": "changes", "limit": 10})
+            ).data
+            assert definitions["total"] == 4
+            for query, operation in [
+                ("create a new person", "create_person"),
+                ("correct a name", "update_person_name"),
+                ("edit records", "edit_records"),
+                ("restore earlier revision", "restore"),
+            ]:
+                ranked = (
+                    await client.call_tool("search_tools", {"query": query, "category": "changes"})
+                ).data
+                assert ranked["tools"][0]["execution"]["operation"] == operation, query
+            batch = next(
+                t for t in definitions["tools"] if t["execution"]["operation"] == "edit_records"
+            )
+            assert "oneOf" in json.dumps(batch["inputSchema"])
+            assert "update_name" in json.dumps(batch["inputSchema"])
+            for name in [
+                "apply_tree_change",
                 "prepare_create_person",
-                {
-                    "expected_revision": 0,
-                    "reason": "Preview new person",
-                    "given_name": "Zoë",
-                    "surname": "Example",
-                    "sex": "U",
-                },
+                "prepare_change",
+                "maintain_tree",
+            ]:
+                with pytest.raises(Exception, match="read-only"):
+                    await client.call_tool("call_research_tool", {"name": name, "arguments": {}})
+            for operation in ["apply_tree_change", "backup", "unknown"]:
+                with pytest.raises(ToolError):
+                    await client.call_tool(
+                        "prepare_change", {"operation": operation, "arguments": {}}
+                    )
+            for ops in [
+                [{"op": "add_note", "record_id": "@I1@", "text": "x", "typo": True}],
+                [{"op": "delete_individual", "individual_id": "@I1@", "force": "true"}],
+            ]:
+                with pytest.raises(ToolError):
+                    await client.call_tool(
+                        "prepare_change",
+                        {
+                            "operation": "edit_records",
+                            "arguments": {
+                                "expected_revision": 0,
+                                "reason": "Reject malformed inputs",
+                                "operations": ops,
+                            },
+                        },
+                    )
+            created = (
+                await client.call_tool(
+                    "prepare_change",
+                    {
+                        "operation": "create_person",
+                        "arguments": {
+                            "expected_revision": 0,
+                            "reason": "Preview person",
+                            "given_name": "Zoë",
+                            "surname": "Example",
+                            "sex": "U",
+                        },
+                    },
+                )
+            ).data
+            new_id = created["individual_id"]
+            assert "+1 NAME Zoë /Example/" in created["diff"]
+            assert (await client.call_tool("get_people", {"individual_ids": [new_id]})).data[
+                "people"
+            ][new_id] is None
+            assert (await client.call_tool("get_tree_context", {})).data["revision"] == 0
+            applied = (
+                await client.call_tool(
+                    "apply_tree_change",
+                    {
+                        "proposal_id": created["proposal_id"],
+                        "expected_revision": 0,
+                    },
+                )
+            ).data
+            assert applied["revision"] == 1
+            assert (await client.call_tool("get_people", {"individual_ids": [new_id]})).data[
+                "people"
+            ][new_id]
+            with pytest.raises(Exception, match="Tree changed"):
+                await client.call_tool("get_people", {"expected_snapshot": context["snapshot"]})
+            restored = (
+                await client.call_tool(
+                    "prepare_change",
+                    {
+                        "operation": "restore",
+                        "arguments": {
+                            "expected_revision": 1,
+                            "restore_revision": 0,
+                            "reason": "Undo creation",
+                        },
+                    },
+                )
+            ).data
+            await client.call_tool(
+                "apply_tree_change",
+                {"proposal_id": restored["proposal_id"], "expected_revision": 1},
             )
-            assert not created.is_error
-            new_id = created.data["individual_id"]
-            assert "+1 NAME Zoë /Example/" in created.data["diff"]
+            noted = (
+                await client.call_tool(
+                    "prepare_change",
+                    {
+                        "operation": "edit_records",
+                        "arguments": {
+                            "expected_revision": 2,
+                            "reason": "Atomic linked creation and sourced fact",
+                            "operations": [
+                                {
+                                    "op": "add_individual",
+                                    "individual_id": "@NEW@",
+                                    "name": "New /Person/",
+                                },
+                                {"op": "add_family", "family_id": "@NEWF@"},
+                                {
+                                    "op": "add_relationship",
+                                    "family_id": "@NEWF@",
+                                    "individual_id": "@NEW@",
+                                    "role": "CHIL",
+                                },
+                                {
+                                    "op": "add_event",
+                                    "record_id": "@NEW@",
+                                    "tag": "BIRT",
+                                    "source_id": "@S1@",
+                                    "date": "1900",
+                                },
+                                {"op": "add_note", "record_id": "@I1@", "text": "MCP test note"},
+                            ],
+                        },
+                    },
+                )
+            ).data
+            result = (
+                await client.call_tool(
+                    "apply_tree_change",
+                    {"proposal_id": noted["proposal_id"], "expected_revision": 2},
+                )
+            ).data
+            assert result["revision"] == 3
+            person = (
+                await client.call_tool("get_people", {"individual_ids": ["I1"], "view": "record"})
+            ).data["people"]["@I1@"]
+            assert "MCP test note" in person["notes"]
+            new_person = (
+                await client.call_tool("get_people", {"individual_ids": ["NEW"], "view": "record"})
+            ).data["people"]["@NEW@"]
+            assert new_person["sex"] is None
+            assert new_person["events"][0]["citations"][0]["source_id"] == "@S1@"
             assert (
-                await client.call_tool("get_individual", {"individual_id": new_id})
-            ).data is None
-            applied = await client.call_tool(
-                "apply_tree_change",
-                {"proposal_id": created.data["proposal_id"], "expected_revision": 0},
+                "MCP test note" in (await client.read_resource("gedcom://individual/@I1@"))[0].text
             )
-            assert applied.data["revision"] == 1
-            assert (await client.call_tool("get_individual", {"individual_id": new_id})).data
-            undo_creation = await client.call_tool(
-                "prepare_tree_restore",
-                {"expected_revision": 1, "restore_revision": 0, "reason": "Undo creation"},
-            )
+            renamed = (
+                await client.call_tool(
+                    "prepare_change",
+                    {
+                        "operation": "update_person_name",
+                        "arguments": {
+                            "expected_revision": 3,
+                            "reason": "Correct structured name",
+                            "individual_id": "@I1@",
+                            "old_name": "John /SMITH/",
+                            "name": "Jonathan /Smith/",
+                            "given_name": "Jonathan",
+                            "surname": "Smith",
+                        },
+                    },
+                )
+            ).data
+            assert "+2 GIVN Jonathan" in renamed["diff"]
             await client.call_tool(
-                "apply_tree_change",
-                {"proposal_id": undo_creation.data["proposal_id"], "expected_revision": 1},
+                "apply_tree_change", {"proposal_id": renamed["proposal_id"], "expected_revision": 3}
             )
-            prepared = await client.call_tool(
-                "prepare_tree_change",
-                {
-                    "expected_revision": 2,
-                    "reason": "MCP transport verification",
-                    "operations": [
-                        {"op": "add_note", "record_id": "@I1@", "text": "MCP test note"}
-                    ],
-                },
-            )
-            assert not prepared.is_error
-            assert "+1 NOTE MCP test note" in prepared.data["diff"]
-            result = await client.call_tool(
-                "apply_tree_change",
-                {
-                    "proposal_id": prepared.data["proposal_id"],
-                    "expected_revision": 2,
-                },
-            )
-            assert not result.is_error and result.data["revision"] == 3
-            person = await client.call_tool("get_individual", {"individual_id": "@I1@"})
-            assert "MCP test note" in person.data["notes"]
-            resource = await client.read_resource("gedcom://individual/@I1@")
-            assert "MCP test note" in resource[0].text
-            restored = await client.call_tool(
-                "prepare_tree_restore",
-                {
-                    "expected_revision": 3,
-                    "restore_revision": 0,
-                    "reason": "Undo transport test",
-                },
-            )
-            result = await client.call_tool(
-                "apply_tree_change",
-                {
-                    "proposal_id": restored.data["proposal_id"],
-                    "expected_revision": 3,
-                },
-            )
-            assert result.data["revision"] == 4
-            renamed = await client.call_tool(
-                "prepare_update_person_name",
-                {
-                    "expected_revision": 4,
-                    "reason": "Correct structured name through MCP",
-                    "individual_id": "@I1@",
-                    "old_name": "John /SMITH/",
-                    "name": "Jonathan /Smith/",
-                    "given_name": "Jonathan",
-                    "surname": "Smith",
-                },
-            )
-            assert not renamed.is_error
-            assert "+2 GIVN Jonathan" in renamed.data["diff"]
-            await client.call_tool(
-                "apply_tree_change",
-                {"proposal_id": renamed.data["proposal_id"], "expected_revision": 4},
-            )
-            person = await client.call_tool("get_individual", {"individual_id": "@I1@"})
-            assert person.data["given_name"] == "Jonathan"
-            assert person.data["surname"] == "Smith"
+            person = (
+                await client.call_tool("get_people", {"individual_ids": ["I1"], "view": "record"})
+            ).data["people"]["@I1@"]
+            assert person["given_name"] == "Jonathan" and person["surname"] == "Smith"
+            history = (
+                await client.call_tool(
+                    "call_research_tool", {"name": "get_tree_history", "arguments": {}}
+                )
+            ).data
+            assert len(history) == 5
+            export = (
+                await client.call_tool("maintain_tree", {"action": "export", "revision": 4})
+            ).data
+            assert Path(export["path"]).read_bytes()
+            backup = (await client.call_tool("maintain_tree", {"action": "backup"})).data
+            assert backup
 
-    asyncio.run(asyncio.wait_for(exercise_server(), timeout=45))
+    asyncio.run(asyncio.wait_for(exercise(), timeout=60))

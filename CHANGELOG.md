@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-10-01
+
+### Changed
+
+- Replace the broad advertised tool catalog with nine core/read-discovery tools,
+  or twelve with editing enabled. No legacy aliases or compatibility profile.
+- Consolidate person search/views, qualified family navigation, relationships and
+  evidence timelines. Add snapshot guards, explicit lineage, pagination, traversal
+  budgets and terminal-ancestor/depth-boundary distinctions.
+- Discover specialized research and exact preparation schemas on demand, with
+  separate read-only execution, proposal preparation, apply and maintenance.
+- Strict tagged schemas cover all 15 atomic record edit operations, including
+  person creation and evidence-preserving structured name correction.
+- Preserve original records, unknown fields, citations, qualified family links,
+  source/GIS/analysis functionality, revision history and backup/restore behavior.
+- Advertise MCP server version 2.0.0; document the new major interface.
+
+## Earlier unreleased work
 
 ### Removed
 

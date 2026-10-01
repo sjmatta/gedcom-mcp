@@ -30,12 +30,19 @@ def test_research_tools_stdio():
                 ("search_sources", {"query": "Census"}),
                 ("get_source_references", {"source_id": "S1", "page": "Page 42"}),
                 ("search_events", {"event_type": "MARR"}),
-                ("get_group_timeline", {"individual_ids": ["I1", "I2"]}),
-                ("get_individuals_batch", {"individual_ids": ["I1", "missing"]}),
+                ("get_timeline", {"individual_ids": ["I1", "I2"]}),
+                ("get_people", {"individual_ids": ["I1", "missing"]}),
             ]
             results = {}
             for name, arguments in cases:
-                result = await client.call_tool(name, arguments)
+                result = await client.call_tool(
+                    name
+                    if name in {"get_record", "get_timeline", "get_people"}
+                    else "call_research_tool",
+                    arguments
+                    if name in {"get_record", "get_timeline", "get_people"}
+                    else {"name": name, "arguments": arguments},
+                )
                 assert not result.is_error, name
                 results[name] = result.data
             page = results["get_record"]
@@ -53,7 +60,7 @@ def test_research_tools_stdio():
             assert results["search_sources"]["total"] == 1
             assert results["get_source_references"]["items"][0]["record_id"] == "@I1@"
             assert results["search_events"]["total"] == 2
-            assert sum(e["type"] == "MARR" for e in results["get_group_timeline"]["items"]) == 1
-            assert results["get_individuals_batch"]["@missing@"] is None
+            assert sum(e["type"] == "MARR" for e in results["get_timeline"]["items"]) == 1
+            assert results["get_people"]["people"]["@missing@"] is None
 
     asyncio.run(asyncio.wait_for(exercise(), timeout=30))

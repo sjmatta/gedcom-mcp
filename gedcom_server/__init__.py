@@ -10,6 +10,7 @@ Usage:
 
 from fastmcp import FastMCP
 
+from .discovery import ResearchDiscovery
 from .mcp_resources import register_resources
 from .mcp_tools import register_tools
 from .parsing import load_gedcom
@@ -23,12 +24,24 @@ from .writes import initialize_store
 initialize_tracing()
 
 # Initialize FastMCP server
-mcp = FastMCP("GEDCOM Genealogy Server")
+mcp = FastMCP(
+    "GEDCOM Genealogy Server",
+    version="2.0.0",
+    instructions=(
+        "Start with get_tree_context. Use core reads for people, relatives, "
+        "relationships, timelines and original records. Discover specialized tools "
+        "with search_tools and execute reads through call_research_tool. "
+        "When enabled, prepare_change previews edits; review the complete diff "
+        "and obtain authorization before apply_tree_change. Never infer facts "
+        "or genetic parentage from name matches or pedigree assertions."
+    ),
+)
 
 # Register tools and resources
 register_tools(mcp)
 register_resources(mcp)
 register_write_tools(mcp)
+mcp.add_transform(ResearchDiscovery())
 
 _initialized = False
 

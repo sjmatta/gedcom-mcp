@@ -687,7 +687,7 @@ wheels = [
 
 [[package]]
 name = "gedcom-server"
-version = "1.0.0"
+version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "arize-otel" },
@@ -701,6 +701,7 @@ dependencies = [
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
+    { name = "pydantic" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "python-dotenv" },
     { name = "rapidfuzz" },
@@ -735,6 +736,7 @@ requires-dist = [
     { name = "opentelemetry-api", specifier = ">=1.45.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.45.0" },
     { name = "opentelemetry-sdk", specifier = ">=1.45.0" },
+    { name = "pydantic", specifier = ">=2.13.5" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15.1" },
     { name = "python-dotenv", specifier = ">=1.2.3" },
     { name = "rapidfuzz", specifier = ">=3.14.6" },
