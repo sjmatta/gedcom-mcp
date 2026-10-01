@@ -4,7 +4,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-- **24 MCP Tools** for comprehensive genealogy research:
+- **32 read MCP tools** for comprehensive genealogy research:
 
   **Core Tools:**
   - `get_home_person` - Get the tree owner's record
@@ -51,6 +51,16 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
   - `gedcom://surnames` - All surnames with counts
 
 - **Optimized for large files** - Parses GEDCOM once at startup, builds in-memory indexes for fast search
+
+### Evidence research reads
+
+Read complete original records and field paths with `get_record`; find sources
+with `get_source` / `search_sources` and reverse citations with
+`get_source_references`. Search individual and family events with `search_events`,
+compare selected relatives with `get_group_timeline`, and read up to 500 people
+with `get_individuals_batch`. These work with writes disabled and enabled.
+See [Research tools and remaining recommendations](RESEARCH_TOOLS.md) for
+parameters, snapshot pagination, date semantics, examples and the remaining work.
 
 ### Optional Features
 
