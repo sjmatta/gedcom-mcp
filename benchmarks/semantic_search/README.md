@@ -2,7 +2,7 @@
 
 This is a fixed, synthetic person-retrieval evaluation of the real
 `gedcom_server.semantic._semantic_search` implementation. No embeddings or search
-results are mocked. It leaves the production retrieval implementation unchanged.
+results are mocked. It measures the code in this checkout without deploying it.
 
 ## Run
 
@@ -51,7 +51,7 @@ separate files. Metric unit tests run with the regular pytest suite.
 
 ## Initial baseline
 
-The current `all-MiniLM-L6-v2` implementation scores:
+The original `all-MiniLM-L6-v2` implementation scores:
 
 | Metric | Baseline |
 |---|---:|

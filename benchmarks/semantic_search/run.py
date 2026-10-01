@@ -100,9 +100,11 @@ def main():
     os.environ.update(
         SEMANTIC_SEARCH_ENABLED="true", GIS_SEARCH_ENABLED="false", PHOENIX_ENABLED="false"
     )
-    from huggingface_hub import try_to_load_from_cache
+    from gedcom_server import parsing, retrieval, semantic, state
 
-    from gedcom_server import parsing, semantic, state
+    semantic_source_hash = hashlib.sha256(Path(semantic.__file__).read_bytes()).hexdigest()
+    runner_source_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    retrieval_source_hash = hashlib.sha256(Path(retrieval.__file__).read_bytes()).hexdigest()
 
     with tempfile.TemporaryDirectory(prefix="gedcom-retrieval-") as directory:
         gedcom = Path(directory) / "benchmark.ged"
@@ -131,6 +133,8 @@ def main():
                 timings.append((time.perf_counter() - started) * 1000)
                 if "error" in response:
                     raise RuntimeError(response["error"])
+                if "warning" in response:
+                    raise RuntimeError(response["warning"])
                 ranked = [result["individual_id"] for result in response["results"]]
                 if not set(ranked) <= set(ids):
                     raise ValueError("Search returned unknown IDs")
@@ -147,35 +151,36 @@ def main():
                         **metrics(rankings[0], case["relevant"]),
                     },
                     "latency_ms_median": statistics.median(timings),
+                    "search_mode": response.get("search_mode", "dense"),
                 }
             )
         groups = defaultdict(list)
         for row in rows:
             groups[row["category"]].append(row)
-        revision = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
-        ).stdout.strip()
-        model_id = semantic.MODEL_NAME
-        if "/" not in model_id:
-            model_id = f"sentence-transformers/{model_id}"
-        cached_config = try_to_load_from_cache(model_id, "config.json")
-        model_revision = getattr(semantic._encoder[0].auto_model.config, "_commit_hash", None)
-        if not model_revision and isinstance(cached_config, str):
-            config_path = Path(cached_config)
-            if config_path.parent.parent.name == "snapshots":
-                model_revision = config_path.parent.name
+        revision = os.getenv("BENCHMARK_GIT_REVISION")
+        if revision is None:
+            revision = subprocess.run(
+                ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+            ).stdout.strip()
+        model_revision = getattr(
+            semantic._encoder[0].auto_model.config, "_commit_hash", None
+        ) or getattr(semantic, "MODEL_REVISION", None)
         report = {
             "run_at": datetime.now(UTC).isoformat(),
             "suite_version": suite["version"],
             "suite_sha256": hashlib.sha256(suite_bytes).hexdigest(),
             "corpus_sha256": hashlib.sha256(gedcom.read_bytes()).hexdigest(),
             "git_revision": revision,
-            "semantic_source_sha256": hashlib.sha256(
-                Path(semantic.__file__).read_bytes()
-            ).hexdigest(),
-            "runner_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "semantic_source_sha256": semantic_source_hash,
+            "runner_source_sha256": runner_source_hash,
+            "retrieval_source_sha256": retrieval_source_hash,
             "model": semantic.MODEL_NAME,
             "model_revision": model_revision,
+            "configured_model_revision": getattr(semantic, "MODEL_REVISION", None),
+            "reranker_model": getattr(semantic, "RERANKER_NAME", None),
+            "reranker_revision": getattr(semantic, "RERANKER_REVISION", None),
+            "rerank_enabled": os.getenv("SEMANTIC_RERANK_ENABLED", "true").lower() == "true",
+            "search_modes": sorted({row["search_mode"] for row in rows}),
             "content_version": semantic.CONTENT_VERSION,
             "embedding_shape": list(semantic._embeddings.shape),
             "device": str(semantic._encoder.device),
@@ -184,6 +189,14 @@ def main():
                 "python": platform.python_version(),
                 "platform": platform.platform(),
                 **{name: version(name) for name in ("sentence-transformers", "torch", "numpy")},
+                "omp_num_threads": os.getenv("OMP_NUM_THREADS"),
+                "rerank_candidates": os.getenv("SEMANTIC_RERANK_CANDIDATES", "20"),
+                "cpu_max": Path("/sys/fs/cgroup/cpu.max").read_text().strip()
+                if Path("/sys/fs/cgroup/cpu.max").exists()
+                else None,
+                "memory_max": Path("/sys/fs/cgroup/memory.max").read_text().strip()
+                if Path("/sys/fs/cgroup/memory.max").exists()
+                else None,
             },
             "record_count": len(ids),
             "query_count": len(cases),
