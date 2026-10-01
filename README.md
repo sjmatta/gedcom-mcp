@@ -24,7 +24,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
   **Search & Discovery:**
   - `search_individuals` - Search by name (partial match)
-  - `semantic_search` - Vector-based semantic search (e.g., "farmers in Scotland")
+  - `semantic_search` - Hybrid passage search with local reranking and evidence (e.g., "farmers in Scotland"); see [configuration and measured results](SEMANTIC_SEARCH.md)
   - `search_nearby` - GIS proximity search or bounding box search
 
   **Relationship Analysis:**

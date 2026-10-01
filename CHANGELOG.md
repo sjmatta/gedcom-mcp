@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Frozen basic/challenge semantic-retrieval benchmarks, per-query judgments and
+  measured baselines/results, plus an aggregate-only full-tree resource pilot.
+- Matching passage evidence with applicable event, note, family, and source
+  references in semantic-search results.
+
 - Seven evidence research reads: original GEDCOM records/subtrees, source lookup
   and search, reverse source citations, structured event search, group timelines,
   and batch person reads. Preserve original evidence paths/text, include family
@@ -27,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   biographies, timelines and semantic search. Shared timeline events appear once.
 
 ### Changed
+
+- Semantic search uses complete overlapping passages, pinned BGE-small embeddings,
+  BM25/dense rank fusion, and bounded local Ettin-68M reranking. Scores are now
+  explicitly typed ranking signals rather than cosine similarity; remove old
+  cosine thresholds. Content-version-4 caches require a prebuild before deployment
+  at Rivendell's production limits. Write refreshes reuse unchanged vectors.
 
 - Refresh runtime, development, and build dependencies.
   The lockfile retains CPU-only PyTorch packages for Linux deployments.

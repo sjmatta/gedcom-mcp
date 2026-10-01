@@ -137,6 +137,9 @@ overlapping passages, BM25/dense reciprocal-rank fusion, and a bounded 68M Ettin
 reranker. [Semantic search documentation](../../SEMANTIC_SEARCH.md) describes
 configuration, evidence, score changes, and how assistants should use the tool.
 The original suites and baseline files remain unchanged.
+The recorded commit IDs describe the original measurement checkout. PR commits
+were subsequently rebased onto current `main`; the measured semantic, retrieval,
+and runner source hashes remain unchanged.
 
 | Metric | Basic before | Basic after | Challenge before | Challenge after |
 |---|---:|---:|---:|---:|
