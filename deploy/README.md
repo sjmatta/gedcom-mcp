@@ -59,9 +59,10 @@ docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml build
 docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml up -d --no-build
 ```
 
-Back up the private data before replacing a tree. Restart to load the replacement;
-cache hashes are checked against the GEDCOM. Preserve the private data and model
-cache during rollback. To stop service, use `docker compose -f deploy/compose.yaml stop`;
+Use prepared, reviewed proposals for family-data edits. The imported GEDCOM is
+immutable; replacing it requires a deliberately separate store and import.
+Preserve revision history, private data, and model caches during rollback. To stop
+service, use `docker compose -f deploy/compose.yaml -f deploy/compose.writes.yaml stop`;
 do not operate the unrelated parent Compose project.
 
 ## Cloudflare inventory and rotation
