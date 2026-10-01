@@ -87,5 +87,8 @@ testing; use an independent writable cache and leave production limits unchanged
 `benchmarks.semantic_search.resources` measures parsing, cache startup, first and
 warm queries, process and cgroup memory, and OOM counters on Linux. It records
 aggregate counts and timings without names, tree excerpts, queries, or results.
+Its optional `--refresh-probe` adds a temporary note in memory and measures
+replacement vectors and lexical indexing while the previous index remains alive.
+It never persists the artificial note or replacement index.
 See [the benchmark report](benchmarks/semantic_search/README.md) for scores and
 Rivendell measurements.

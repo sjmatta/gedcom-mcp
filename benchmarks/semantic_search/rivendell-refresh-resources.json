@@ -1,0 +1,24 @@
+{
+  "cache_existed": true,
+  "people": 20132,
+  "passages": 86665,
+  "embedding_bytes": 133117440,
+  "cache_bytes": 125469937,
+  "parse_seconds": 9.214888160000555,
+  "index_seconds": 2.15861635300098,
+  "first_query_seconds": 6.21200564497849,
+  "temporary_note_refresh_seconds": 8.892711304011755,
+  "query_seconds": {
+    "p50": 1.24928185302997,
+    "p95": 3.687798820028547
+  },
+  "process_peak_rss_bytes": 1498628096,
+  "cgroup_peak_bytes": 1203392512,
+  "cgroup_memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+  "cpu_max": "150000 100000",
+  "memory_max": 2147483648,
+  "model": "BAAI/bge-small-en-v1.5",
+  "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "reranker": "cross-encoder/ettin-reranker-68m-v1",
+  "reranker_revision": "d166fa88ddde3c42bc3ee92f7df476d941c8204a"
+}
