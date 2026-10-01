@@ -1,6 +1,9 @@
 # API Reference
 
-Complete reference for all 24 MCP tools and 6 resources provided by the GEDCOM MCP Server.
+Reference for the 32 read MCP tools and 6 resources provided by the GEDCOM MCP Server.
+
+For the seven evidence research reads (records, sources, reverse citations, event
+search, group timelines and batch people), see [Research tools](RESEARCH_TOOLS.md).
 
 ## Table of Contents
 

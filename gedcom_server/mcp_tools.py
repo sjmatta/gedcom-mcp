@@ -39,6 +39,147 @@ def register_tools(mcp):
         # on. Pass the whole docstring; Args still become parameter descriptions.
         return mcp.tool(description=inspect.getdoc(fn))(synchronized(fn))
 
+    # Evidence reads are available even when writes are disabled.
+    @tool
+    def get_record(
+        record_id: str,
+        path: list[dict] | None = None,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Read original GEDCOM fields, including alternate facts and unknown tags.
+
+        Optional path selects a subtree using tag and zero-based sibling index,
+        e.g. [{"tag": "BIRT", "index": 1}]. Each field returns its absolute path
+        within the record and original text. Results are paginated by lines;
+        concatenate raw across pages for the complete record or subtree.
+        Pass returned snapshot as expected_snapshot on subsequent pages.
+        Missing records/paths raise errors. Current UTF-8 GEDCOM only.
+        """
+        from .research_reads import get_record as read
+
+        return read(record_id, path, expected_snapshot, offset, limit)
+
+    @tool
+    def get_source(source_id: str) -> dict | None:
+        """Read source metadata and its repository. Missing sources return null.
+
+        Use get_record for complete original source/repository fields, and
+        get_source_references to find the facts citing this source.
+        """
+        from .research_reads import get_source as read
+
+        return read(source_id)
+
+    @tool
+    def search_sources(
+        query: str,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Search source title, author, publication and note by case-insensitive substring.
+
+        Empty query lists sources. Follow next_offset and pass the returned
+        snapshot as expected_snapshot to avoid mixing tree versions.
+        """
+        from .research_reads import search_sources as read
+
+        return read(query, expected_snapshot, offset, limit)
+
+    @tool
+    def get_source_references(
+        source_id: str,
+        page: str | None = None,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Find all original citations pointing to a source, across every record type.
+
+        Returns owning record, exact citation and fact paths, original citation
+        fields/text, including page, notes, quality and exporter extensions.
+        Optional page matches PAGE text exactly. Sharing a source does not imply
+        sharing a document or household. Missing sources raise errors.
+        Follow next_offset with returned snapshot as expected_snapshot.
+        """
+        from .research_reads import get_source_references as read
+
+        return read(source_id, page, expected_snapshot, offset, limit)
+
+    @tool
+    def search_events(
+        event_type: str | None = None,
+        place: str | None = None,
+        start_year: int | None = None,
+        end_year: int | None = None,
+        individual_ids: list[str] | None = None,
+        include_undated: bool = False,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Search individual and family events with their original evidence fields.
+
+        Type is a GEDCOM tag; place uses case-insensitive substring matching.
+        Year filters use inclusive interval overlap, retaining original dates.
+        BEF/AFT and FROM/TO are open intervals at year precision; ABT/CAL/EST
+        use the nominal recorded year without inventing an uncertainty window.
+        Unknown dates and non-European calendar dates pass year filters only
+        with include_undated=true. Without year filters all dates are included.
+        Optional individual_ids scopes a branch/group selected using traversal
+        tools (max 500); includes family events for their recorded spouses.
+        No inferred events or participants. Follow next_offset with snapshot.
+        """
+        from .research_reads import search_events as read
+
+        return read(
+            event_type,
+            place,
+            start_year,
+            end_year,
+            individual_ids,
+            include_undated,
+            expected_snapshot,
+            offset,
+            limit,
+        )
+
+    @tool
+    def get_group_timeline(
+        individual_ids: list[str],
+        start_year: int | None = None,
+        end_year: int | None = None,
+        include_undated: bool = False,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Read a chronological evidence timeline for up to 500 selected people.
+
+        Includes personal events and each shared spouse-family event once.
+        Returns original dates, citations/notes and exact owning record paths.
+        Date matching and snapshot pagination follow search_events semantics.
+        Missing people raise errors; empty selection returns no events.
+        """
+        from .research_reads import get_group_timeline as read
+
+        return read(
+            individual_ids, start_year, end_year, include_undated, expected_snapshot, offset, limit
+        )
+
+    @tool
+    def get_individuals_batch(individual_ids: list[str]) -> dict:
+        """Read basic person records for up to 500 IDs in one consistent tree view.
+
+        Returns normalized IDs mapped to records; missing IDs map to null.
+        Duplicates are collapsed. Use get_record for complete original evidence.
+        """
+        from .research_reads import get_individuals_batch as read
+
+        return read(individual_ids)
+
     @mcp.tool(annotations={"readOnlyHint": True})
     def audit_tree(expected_revision: int | None = None, offset: int = 0, limit: int = 100) -> dict:
         """Scan the entire tree for structural errors and evidence-review warnings.

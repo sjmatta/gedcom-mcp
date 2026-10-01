@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Seven evidence research reads: original GEDCOM records/subtrees, source lookup
+  and search, reverse source citations, structured event search, group timelines,
+  and batch person reads. Preserve original evidence paths/text, include family
+  events, and reject stale snapshot pagination.
+- Research-tool usage and remaining traversal recommendations in `RESEARCH_TOOLS.md`.
+
 - `get_relationship_to_me`: one shortest path to the configured home person,
   with names, family IDs, pedigree qualifiers, lineage selection and search limits.
 - `get_parent_families`: all parent links and their imported qualifiers/status.
