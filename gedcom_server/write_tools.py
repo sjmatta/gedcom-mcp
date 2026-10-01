@@ -2,8 +2,11 @@
 
 import os
 import uuid
+from typing import Literal
 
 from . import state
+from .change_models import ChangeBatch
+from .discovery import READ_HINTS, register_prepare_tool
 from .revision_storage import digest, immutable_file
 from .writes import require_store
 
@@ -12,12 +15,6 @@ def register_write_tools(mcp):
     """Only expose mutation tools when explicitly enabled at process startup."""
     if os.getenv("GEDCOM_WRITES_ENABLED", "false").lower() != "true":
         return
-
-    @mcp.tool(annotations={"readOnlyHint": True})
-    @state.synchronized
-    def get_tree_revision() -> dict:
-        """Get current revision, immutable baseline checksum, and backup/search status."""
-        return require_store().status()
 
     @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False})
     def prepare_create_person(
@@ -35,7 +32,7 @@ def register_write_tools(mcp):
         the proposal and complete diff. Review it and obtain user authorization
         before calling apply_tree_change. Sex is optional M/F/U; never inferred.
         No dates or relationships are inferred. Add sourced events and explicit
-        family links afterward, or use add_individual in prepare_tree_change to
+        family links afterward, or use add_individual in prepare_record_changes to
         create and link a person atomically in a single reviewed batch.
         """
         from .document import Document
@@ -97,8 +94,10 @@ def register_write_tools(mcp):
         )
 
     @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False})
-    def prepare_tree_change(expected_revision: int, reason: str, operations: list[dict]) -> dict:
-        """Prepare and validate a change; returns a diff without changing the tree.
+    def prepare_record_changes(
+        expected_revision: int, reason: str, operations: ChangeBatch
+    ) -> dict:
+        """Edit records atomically in a reviewed proposal; validates edits without changing the tree.
 
         Operations: add_note(record_id,text); add_source(title,author?,publication?);
         add_event(record_id,tag,source_id,date?,place?,description?,page?);
@@ -127,9 +126,11 @@ def register_write_tools(mcp):
         Use update_name or prepare_update_person_name for names with subordinate tags.
         Sources created here receive an ID visible in the diff; cite them in a later proposal.
         """
-        return require_store().prepare(expected_revision, reason, operations)
+        return require_store().prepare(
+            expected_revision, reason, [op.model_dump(exclude_unset=True) for op in operations]
+        )
 
-    @mcp.tool(annotations={"readOnlyHint": True})
+    @mcp.tool(annotations=READ_HINTS)
     def plan_tree_prune(
         expected_revision: int,
         home_person_id: str,
@@ -154,7 +155,7 @@ def register_write_tools(mcp):
         override operations while preserving blockers. It never overrides protected
         core people, sole-connectivity checks or graph integrity. Follow next_offset
         with unchanged parameters and revision. Pass selected operations to
-        prepare_tree_change, review its full diff, and obtain authorization to apply.
+        prepare_record_changes, review its full diff, and obtain authorization to apply.
         """
         from .pruning import plan_tree_prune as run_plan
 
@@ -170,12 +171,12 @@ def register_write_tools(mcp):
             limit,
         )
 
-    @mcp.tool(annotations={"readOnlyHint": True})
+    @mcp.tool(annotations=READ_HINTS)
     @state.synchronized
     def get_tree_change_diff(proposal_id: str, offset: int = 0, limit: int = 500) -> dict:
         """Read a prepared diff in pages; follow next_offset until null before approval.
 
-        Use this when prepare_tree_change or prepare_tree_restore reports diff_truncated.
+        Use this when prepare_record_changes or prepare_tree_restore reports diff_truncated.
         """
         return require_store().proposal_diff(proposal_id, offset, limit)
 
@@ -188,7 +189,7 @@ def register_write_tools(mcp):
         """
         return require_store().apply(proposal_id, expected_revision)
 
-    @mcp.tool(annotations={"readOnlyHint": True})
+    @mcp.tool(annotations=READ_HINTS)
     @state.synchronized
     def get_tree_history(limit: int = 20) -> list[dict]:
         """List immutable revisions with reason, operator label, timestamp, and hash."""
@@ -205,17 +206,24 @@ def register_write_tools(mcp):
 
     @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False})
     @state.synchronized
-    def backup_tree() -> dict:
-        """Create and verify a consistent local backup containing baseline and history."""
-        return require_store().backup()
+    def maintain_tree(action: Literal["backup", "export"], revision: int | None = None) -> dict:
+        """Create a verified local backup or lossless GEDCOM export; does not edit the active tree.
 
-    @mcp.tool(annotations={"readOnlyHint": False, "destructiveHint": False})
-    @state.synchronized
-    def export_tree_revision(revision: int) -> dict:
-        """Create a lossless, read-only GEDCOM export inside the private store."""
+        backup includes the immutable baseline and history. export requires an
+        explicit revision and returns a private-store file path and checksum.
+        This creates local files; it does not publish or independently replicate them.
+        """
         tree = require_store()
+        if action == "backup":
+            if revision is not None:
+                raise ValueError("revision applies only to export")
+            return tree.backup()
+        if revision is None:
+            raise ValueError("export requires revision")
         data = tree.document(revision)
         path = immutable_file(
             tree.directory / "downloads" / f"revision-{revision}-{digest(data)}.ged", data
         )
         return {"revision": revision, "path": str(path), "sha256": digest(path.read_bytes())}
+
+    register_prepare_tool(mcp)

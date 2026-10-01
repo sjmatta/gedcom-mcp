@@ -4,63 +4,30 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-- **32 read MCP tools** for comprehensive genealogy research:
+Version **2.0** advertises **9 read-only tools**, or **12 with edits enabled**.
+A consolidated interface covers tree context, people search, batch person views,
+qualified relatives, relationships, evidence timelines and original records.
+Specialized research and exact edit schemas are discovered on demand using
+`search_tools`; `call_research_tool` executes reads only.
 
-  **Core Tools:**
-  - `get_home_person` - Get the tree owner's record
-  - `get_statistics` - Tree stats (counts, date ranges, top surnames)
-  - `get_individual` - Get basic details by ID
-  - `get_biography` - Get comprehensive narrative package for one person
-  - `get_family` - Get family info (spouses, children, marriage)
+- **All research functionality retained:** source/repository reads, reverse
+  citations, event search, GIS proximity, place/surname analysis, military
+  evidence, associates, pedigree collapse and whole-tree audit.
+- **Explicit editing stages:** `prepare_change` previews person creation, name
+  corrections, atomic record batches or restoration; `apply_tree_change` applies
+  a specifically reviewed proposal. `maintain_tree` creates backups/exports.
+- **Evidence preserved:** original fields, unknown tags, alternate facts,
+  citations, date text and qualified parent-family assertions remain available.
+- **Bounded results:** summary/detail views, pagination, snapshot guards and
+  traversal limits keep results useful without silently hiding incompleteness.
+- **Six resources:** individual, family, source, sources, statistics and surnames.
+- **Large-tree indexes:** GEDCOM parses once at startup; search and graph reads
+  use in-memory indexes.
 
-  **Navigation Tools:**
-  - `get_parents` - Get parents of an individual
-  - `get_children` - Get all children from all marriages
-  - `get_spouses` - Get all spouses with marriage details
-  - `get_siblings` - Get siblings (same parents)
-  - `get_ancestors` - Ancestor tree up to N generations
-  - `get_descendants` - Descendant tree up to N generations
-  - `traverse` - Generic graph traversal for custom navigation
-
-  **Search & Discovery:**
-  - `search_individuals` - Search by name (partial match)
-  - `semantic_search` - Hybrid passage search with local reranking and evidence (e.g., "farmers in Scotland"); see [configuration and measured results](SEMANTIC_SEARCH.md)
-  - `search_nearby` - GIS proximity search or bounding box search
-
-  **Relationship Analysis:**
-  - `get_relationship` - Calculate relationships between two people
-  - `detect_pedigree_collapse` - Find ancestors appearing multiple times
-  - `find_associates` - FAN Club technique (Friends, Associates, Neighbors)
-  - `get_relationship_to_me` - Explain how someone is related to the home person
-  - `get_parent_families` - List every parent family with pedigree qualifiers
-
-  **Timeline & Events:**
-  - `get_timeline` - Chronological life events for an individual
-  - `get_military_service` - Find all veterans in the tree
-
-  **Place & Surname Analysis:**
-  - `get_place_cluster` - Get all people connected to a location
-  - `get_surname_origins` - Analyze surname distribution and geographic origins
-
-- **6 MCP Resources**:
-  - `gedcom://individual/{id}` - Individual record by ID
-  - `gedcom://family/{id}` - Family record by ID
-  - `gedcom://source/{id}` - Source record by ID
-  - `gedcom://sources` - All sources
-  - `gedcom://stats` - Tree statistics
-  - `gedcom://surnames` - All surnames with counts
-
-- **Optimized for large files** - Parses GEDCOM once at startup, builds in-memory indexes for fast search
-
-### Evidence research reads
-
-Read complete original records and field paths with `get_record`; find sources
-with `get_source` / `search_sources` and reverse citations with
-`get_source_references`. Search individual and family events with `search_events`,
-compare selected relatives with `get_group_timeline`, and read up to 500 people
-with `get_individuals_batch`. These work with writes disabled and enabled.
-See [Research tools and remaining recommendations](RESEARCH_TOOLS.md) for
-parameters, snapshot pagination, date semantics, examples and the remaining work.
+This is a new major interface, with no legacy aliases or compatibility profile.
+See [API.md](API.md) for the complete interface and discovery examples,
+[RESEARCH_TOOLS.md](RESEARCH_TOOLS.md) for evidence semantics and research gaps,
+and [WRITES.md](WRITES.md) for versioned edit guarantees.
 
 ### Optional Features
 

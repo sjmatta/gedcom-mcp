@@ -1,5 +1,11 @@
 # Genealogical research reads and remaining work
 
+Version 2 exposes common people, relatives, timelines and record reads directly.
+For source/event and specialized research operations, discover the exact schema
+with `search_tools`, then execute through `call_research_tool`. See [API.md](API.md).
+Person results now live in the `people` map with a snapshot/revision envelope.
+
+
 ## Implemented first increment
 
 Seven read tools are available with writes disabled or enabled:
@@ -11,8 +17,8 @@ Seven read tools are available with writes disabled or enabled:
 | `search_sources(query, expected_snapshot?, offset=0, limit=100)` | Case-insensitive substring search in parsed title, author, publication and note. Empty query lists sources. |
 | `get_source_references(source_id, page?, expected_snapshot?, offset=0, limit=100)` | Reverse traversal of every original SOUR pointer, across all record types. Optional PAGE text matches exactly. |
 | `search_events(event_type?, place?, start_year?, end_year?, individual_ids?, include_undated=false, expected_snapshot?, offset=0, limit=100)` | Structured search of individual and family event/attribute tags recognized by this server, retaining original evidence fields. |
-| `get_group_timeline(individual_ids, start_year?, end_year?, include_undated=false, expected_snapshot?, offset=0, limit=100)` | Chronological personal and spouse-family events for a selected group; shared family events appear once. |
-| `get_individuals_batch(individual_ids)` | Basic person reads keyed by normalized ID; duplicates collapse and missing people map to null. |
+| `get_timeline(individual_ids, start_year?, end_year?, include_undated=false, expected_snapshot?, offset=0, limit=100)` | Chronological personal and spouse-family events for a selected group; shared family events appear once. |
+| `get_people(individual_ids, view="record")` | Basic person reads keyed by normalized ID; duplicates collapse and missing people map to null. |
 
 Evidence reads currently scan the current document on each call; pagination bounds the number of results returned, not scan cost.
 
@@ -22,14 +28,14 @@ Record fields have absolute paths within their owner, using tag plus zero-based 
 
 Event filters use inclusive overlap at calendar-year precision. BEF/AFT and FROM/TO have open bounds; ABT/CAL/EST use their nominal year without inventing an uncertainty window. Original date text and parsed interval kind remain visible. Unknown dates and dates in non-European calendars are excluded from year-filtered searches unless `include_undated=true`; without year filters they remain included. Julian years are compared at year precision without day conversion. Place matching is textual and does not establish historical jurisdiction.
 
-Use existing traversal tools to select a branch, then pass its IDs to `search_events` or `get_group_timeline`. Family events are included when a selected person occupies a recorded spouse role, rather than attributing a parent's marriage to a child. Separate searches can inspect a family's complete original record. No residence, household membership, migration, witness role or relationship is inferred.
+Use existing traversal tools to select a branch, then pass its IDs to `search_events` or `get_timeline`. Family events are included when a selected person occupies a recorded spouse role, rather than attributing a parent's marriage to a child. Separate searches can inspect a family's complete original record. No residence, household membership, migration, witness role or relationship is inferred.
 
 Example investigation:
 
 1. `search_sources("parish")` to identify a register.
 2. `get_source_references("S123", page="Page 42")` to inspect citations to one entry/page.
 3. `get_record(record_id, fact_path, expected_snapshot=snapshot)` to read the entire cited fact and its notes.
-4. `get_group_timeline(["I12", "I13", "I14"], start_year=1820, end_year=1850)` to compare family evidence.
+4. `get_timeline(["I12", "I13", "I14"], start_year=1820, end_year=1850)` to compare family evidence.
 
 Sharing a broad source (such as a census collection) does not establish that people shared a document or household. PAGE, image URLs, transcription text and source provenance must be correlated before drawing conclusions. The citation's `fact_path` denotes its immediate parent structure; record-level citations have an empty path.
 
@@ -37,7 +43,7 @@ Sharing a broad source (such as a census collection) does not establish that peo
 
 ### 1. Collateral relatives and mixed traversal
 
-Add `get_collateral_relatives`, or extend `traverse` with ordered/mixed relationship steps. Support questions such as “find this ancestor's siblings, their spouses, and their children.” Provide explicit options for half-siblings, step-relatives and in-laws. Repeated sibling traversal alone does not express this workflow.
+Add `get_collateral_relatives`, or extend `get_relatives` with ordered/mixed relationship steps. Support questions such as “find this ancestor's siblings, their spouses, and their children.” Provide explicit options for half-siblings, step-relatives and in-laws. Repeated sibling traversal alone does not express this workflow.
 
 Return people plus typed edges, family IDs, recorded pedigree/status qualifiers and explanatory paths. Apply lineage selection consistently in both directions; exclude disproven links and preserve ambiguity. Bound nodes, edges and depth, report incomplete results, and avoid treating a birth qualifier as proof of genetic parentage.
 

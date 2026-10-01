@@ -1,45 +1,166 @@
-"""MCP tool definitions for the GEDCOM genealogy server."""
+"""Consolidated, task-oriented MCP reads and discoverable research tools."""
 
 import inspect
+from typing import Literal
 
 from .associates import _find_associates
-from .core import (
-    _detect_pedigree_collapse,
-    _get_ancestors,
-    _get_children,
-    _get_descendants,
-    _get_family,
-    _get_home_person,
-    _get_individual,
-    _get_parents,
-    _get_relationship,
-    _get_siblings,
-    _get_spouses,
-    _get_statistics,
-    _get_surname_origins,
-    _search_individuals,
-    _traverse,
-)
-from .events import _get_military_service, _get_timeline
-from .narrative import _get_biography
+from .core import _detect_pedigree_collapse, _get_family, _get_relationship, _get_surname_origins
+from .discovery import READ_HINTS
+from .events import _get_military_service
+from .interface_reads import Relation, snapshot_metadata, tree_context
+from .interface_reads import get_people as read_people
+from .interface_reads import get_relatives as read_relatives
+from .interface_reads import search_people as find_people
 from .places import _get_place_cluster
-from .relationships import Lineage, _get_parent_families, _get_relationship_to_me
-from .semantic import _semantic_search
+from .relationships import Lineage, _get_relationship_to_me
 from .spatial import _search_nearby
 from .state import synchronized
 from .telemetry import traced_tool
 
 
 def register_tools(mcp):
-    """Register all MCP tools with the server."""
-
     def tool(fn):
-        # FastMCP 3+ keeps only the first paragraph of a docstring that has an
-        # Args section, dropping Returns/Examples/usage notes the model relies
-        # on. Pass the whole docstring; Args still become parameter descriptions.
-        return mcp.tool(description=inspect.getdoc(fn))(synchronized(fn))
+        return mcp.tool(description=inspect.getdoc(fn), annotations=READ_HINTS)(synchronized(fn))
 
-    # Evidence reads are available even when writes are disabled.
+    @tool
+    def get_tree_context() -> dict:
+        """Orient research: home person, tree statistics, snapshot, revision and capability status.
+
+        Start here for "my family" questions and before preparing edits. Disabled
+        capabilities are reported explicitly. Specialized tools are discovered
+        through search_tools; mutations use the separate prepare/review/apply flow.
+        """
+        return tree_context()
+
+    @tool
+    def search_people(
+        query: str,
+        mode: Literal["name", "semantic"] = "name",
+        limit: int = 50,
+        expected_snapshot: str | None = None,
+    ) -> dict:
+        """Find people by partial name or natural-language evidence, returning usable IDs.
+
+        Name matching is deterministic. Semantic mode requires enabled local search;
+        its ranked results are candidates, not proof. Verify evidence with person,
+        record, event and source reads. limit is 1–100. Preserve names, dates and
+        negation when trying query paraphrases; retain the original query.
+        """
+        return find_people(query, mode, limit, expected_snapshot)
+
+    @tool
+    def get_people(
+        individual_ids: list[str] | None = None,
+        view: Literal["summary", "record", "biography"] = "summary",
+        expected_snapshot: str | None = None,
+    ) -> dict:
+        """Read one or several people in a consistent snapshot; omitted IDs select home person.
+
+        summary gives compact names/vitals (up to 500 IDs); record includes parsed
+        events, notes and family IDs (100); biography includes narrative context,
+        relatives, citations and family events (20). Missing IDs map to null;
+        duplicate normalized IDs collapse. get_record preserves complete original
+        evidence, alternate facts, unknown fields and exact field paths.
+        """
+        return read_people(individual_ids, view, expected_snapshot)
+
+    @tool
+    def get_relatives(
+        individual_id: str,
+        relation: Relation,
+        generations: int = 1,
+        view: Literal["list", "tree", "terminal"] = "list",
+        lineage: Lineage = "default",
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        max_nodes: int = 1000,
+    ) -> dict:
+        """Navigate parents, children, spouses, siblings, ancestors or descendants with link evidence.
+
+        generations bounds repeated traversal: parents/ancestors 0–20, others 0–10.
+        list returns unique people with one shortest path; tree retains repeated
+        references; terminal finds known end-of-line ancestors within the limit.
+        list/terminal paginate with offset/limit (1–500); reuse expected_snapshot.
+        max_nodes (1–50000, default 1000) bounds work; exceeding it raises an
+        explicit error, never a false terminal ancestor. tree requires offset=0.
+        depth_limited means further recorded links exist beyond the requested depth.
+        default selects unambiguous parent families; all includes all usable links;
+        birth/adopted/foster/sealing require explicit matching qualifiers. Disproven
+        links are excluded. All root parent families, including ambiguous/disproven
+        assertions, remain visible. Pedigree does not prove genetic parentage.
+        """
+        return read_relatives(
+            individual_id,
+            relation,
+            generations,
+            view,
+            lineage,
+            expected_snapshot,
+            offset,
+            limit,
+            max_nodes,
+        )
+
+    @tool
+    def get_relationship(
+        individual_id: str,
+        reference_id: str | None = None,
+        method: Literal["kinship", "path"] = "kinship",
+        max_generations: int | None = 10,
+        lineage: Lineage = "default",
+        max_steps: int = 30,
+        expected_snapshot: str | None = None,
+    ) -> dict:
+        """Explain person 1 relative to a reference person; omitted reference selects home person.
+
+        kinship uses selected families and common ancestors (generation limit;
+        null searches up to 100), with detailed cousin/sibling labels. path searches
+        one shortest recorded family connection with pedigree evidence (max_steps
+        1–100), supporting explicit lineage and relatives by marriage. These are
+        distinct algorithms; paths do not enumerate every possible relationship.
+        Nondefault lineage is supported only by path. No genetic relationship is proven.
+        """
+        from . import state
+
+        reference = reference_id or state.HOME_PERSON_ID
+        if not reference:
+            raise ValueError("Provide reference_id or configure a home person")
+        meta = snapshot_metadata(expected_snapshot)
+        if method == "path":
+            result = _get_relationship_to_me(individual_id, lineage, max_steps, reference)
+            if "home_person" in result:
+                result["reference_person"] = result.pop("home_person")
+        elif lineage != "default":
+            raise ValueError("Explicit lineage requires method=path")
+        else:
+            result = _get_relationship(individual_id, reference, max_generations)
+        return {**meta, "method": method, **result}
+
+    @tool
+    def get_timeline(
+        individual_ids: list[str],
+        start_year: int | None = None,
+        end_year: int | None = None,
+        include_undated: bool = False,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Read an evidence timeline for one person or up to 500 selected people.
+
+        Includes personal and spouse-family events, shared family events once,
+        original dates, notes, citations and owning record paths. Year matching
+        uses inclusive interval overlap; approximate dates retain their recorded
+        nominal year. Unknown/calendar dates pass year filters only when requested.
+        Follow next_offset with the returned snapshot as expected_snapshot.
+        """
+        from .research_reads import get_group_timeline
+
+        return get_group_timeline(
+            individual_ids, start_year, end_year, include_undated, expected_snapshot, offset, limit
+        )
+
     @tool
     def get_record(
         record_id: str,
@@ -128,8 +249,8 @@ def register_tools(mcp):
         use the nominal recorded year without inventing an uncertainty window.
         Unknown dates and non-European calendar dates pass year filters only
         with include_undated=true. Without year filters all dates are included.
-        Optional individual_ids scopes a branch/group selected using traversal
-        tools (max 500); includes family events for their recorded spouses.
+        Optional individual_ids scopes a branch/group selected using get_relatives
+        selections (max 500); includes family events for their recorded spouses.
         No inferred events or participants. Follow next_offset with snapshot.
         """
         from .research_reads import search_events as read
@@ -147,40 +268,6 @@ def register_tools(mcp):
         )
 
     @tool
-    def get_group_timeline(
-        individual_ids: list[str],
-        start_year: int | None = None,
-        end_year: int | None = None,
-        include_undated: bool = False,
-        expected_snapshot: str | None = None,
-        offset: int = 0,
-        limit: int = 100,
-    ) -> dict:
-        """Read a chronological evidence timeline for up to 500 selected people.
-
-        Includes personal events and each shared spouse-family event once.
-        Returns original dates, citations/notes and exact owning record paths.
-        Date matching and snapshot pagination follow search_events semantics.
-        Missing people raise errors; empty selection returns no events.
-        """
-        from .research_reads import get_group_timeline as read
-
-        return read(
-            individual_ids, start_year, end_year, include_undated, expected_snapshot, offset, limit
-        )
-
-    @tool
-    def get_individuals_batch(individual_ids: list[str]) -> dict:
-        """Read basic person records for up to 500 IDs in one consistent tree view.
-
-        Returns normalized IDs mapped to records; missing IDs map to null.
-        Duplicates are collapsed. Use get_record for complete original evidence.
-        """
-        from .research_reads import get_individuals_batch as read
-
-        return read(individual_ids)
-
-    @mcp.tool(annotations={"readOnlyHint": True})
     def audit_tree(expected_revision: int | None = None, offset: int = 0, limit: int = 100) -> dict:
         """Scan the entire tree for structural errors and evidence-review warnings.
 
@@ -197,104 +284,6 @@ def register_tools(mcp):
 
     @tool
     @traced_tool
-    def get_parent_families(individual_id: str) -> dict:
-        """List every parent family, pedigree qualifier, status, and selected default.
-
-        Use when birth/adoptive/foster families or ambiguous parents matter.
-        Disproven links remain visible here but are excluded from traversal.
-        """
-        return _get_parent_families(individual_id)
-
-    @tool
-    @traced_tool
-    def get_relationship_to_me(
-        individual_id: str, lineage: Lineage = "default", max_steps: int = 30
-    ) -> dict:
-        """Explain this person's relationship to the configured home person.
-
-        Returns one shortest family path with names, family IDs and parent-link
-        qualifiers. Label describes the queried person relative to the home person.
-        default uses an unambiguous selected family; all includes every usable
-        family; birth/adopted/foster/sealing require explicit matching qualifiers.
-        A pedigree marked birth does not establish genetic parentage.
-        """
-        return _get_relationship_to_me(individual_id, lineage, max_steps)
-
-    # ============== CONTEXT TOOLS (2) ==============
-
-    @tool
-    @traced_tool
-    def get_home_person() -> dict | None:
-        """
-        Get the home person (tree owner) - Stephen John Matta (1984).
-
-        This is the essential starting point for "my ancestors" queries.
-        Use this first to establish context for genealogy exploration.
-
-        Returns:
-            Full individual record for the home person
-        """
-        return _get_home_person()
-
-    @tool
-    @traced_tool
-    def get_statistics() -> dict:
-        """
-        Get statistics about the genealogy tree.
-
-        Provides tree overview and orientation: total individuals, families,
-        date ranges, gender breakdown, and top surnames.
-
-        Returns:
-            Dictionary with counts, date ranges, and other statistics
-        """
-        return _get_statistics()
-
-    # ============== LOOKUP TOOLS (3) ==============
-
-    @tool
-    @traced_tool
-    def get_individual(individual_id: str) -> dict | None:
-        """
-        Get basic details for an individual by their GEDCOM ID.
-
-        Lightweight lookup - returns basic record with family link IDs.
-        Use get_biography() when you need full context (events, notes, sources).
-
-        Args:
-            individual_id: The GEDCOM ID (e.g., "I123" or "@I123@")
-
-        Returns:
-            Individual record with name, dates, places, and family IDs
-        """
-        return _get_individual(individual_id)
-
-    @tool
-    @traced_tool
-    def get_biography(individual_id: str) -> dict | None:
-        """
-        Get comprehensive narrative package for one person.
-
-        Heavy/full context - returns everything needed for biographical narrative:
-        - vital_summary: Quick "Born X. Died Y." summary
-        - birth/death: Full date and place info
-        - parents/spouses/children: Family names (not IDs) for easy narrative use
-        - events: All life events with full citation details including URLs
-        - notes: All biographical notes (obituaries, baptism records, etc.)
-
-        Use get_individual() for lightweight scanning of many people.
-        Use this when diving deep into one person.
-
-        Args:
-            individual_id: The GEDCOM ID (e.g., "I123" or "@I123@")
-
-        Returns:
-            Complete biography dict or None if not found
-        """
-        return _get_biography(individual_id)
-
-    @tool
-    @traced_tool
     def get_family(family_id: str) -> dict | None:
         """
         Get family unit information by GEDCOM family ID.
@@ -308,159 +297,6 @@ def register_tools(mcp):
             Family record with husband, wife, children IDs and marriage info
         """
         return _get_family(family_id)
-
-    # ============== NAVIGATION TOOLS (6) ==============
-
-    @tool
-    @traced_tool
-    def get_parents(individual_id: str) -> dict | None:
-        """
-        Get the parents of an individual.
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-
-        Returns:
-            Dictionary with father and mother info, or None if not found
-        """
-        return _get_parents(individual_id)
-
-    @tool
-    @traced_tool
-    def get_children(individual_id: str) -> list[dict]:
-        """
-        Get all children of an individual (from all marriages/partnerships).
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-
-        Returns:
-            List of children with summary info
-        """
-        return _get_children(individual_id)
-
-    @tool
-    @traced_tool
-    def get_spouses(individual_id: str) -> list[dict]:
-        """
-        Get all spouses/partners of an individual.
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-
-        Returns:
-            List of spouses with summary info and marriage details
-        """
-        return _get_spouses(individual_id)
-
-    @tool
-    @traced_tool
-    def get_siblings(individual_id: str) -> list[dict]:
-        """
-        Get siblings of an individual (same parents).
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-
-        Returns:
-            List of siblings with summary info
-        """
-        return _get_siblings(individual_id)
-
-    @tool
-    @traced_tool
-    def get_ancestors(
-        individual_id: str,
-        generations: int = 4,
-        filter: str | None = None,
-    ) -> dict | list[dict]:
-        """
-        Get ancestor tree up to N generations.
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-            generations: Number of generations to retrieve (default 4, max 20)
-            filter: Optional filter:
-                - None: Return full nested tree (default)
-                - "terminal": Return only end-of-line ancestors (brick walls/oldest known)
-
-        Returns:
-            If filter is None: Nested dictionary representing the ancestor tree
-            If filter is "terminal": List of terminal ancestors with generation and path
-
-        Examples:
-            get_ancestors("@I123@", 4)  # Standard 4-generation tree
-            get_ancestors("@I123@", 20, "terminal")  # Find oldest known ancestors
-        """
-        return _get_ancestors(individual_id, generations, filter)
-
-    @tool
-    @traced_tool
-    def get_descendants(individual_id: str, generations: int = 4) -> dict:
-        """
-        Get descendant tree up to N generations.
-
-        Args:
-            individual_id: The GEDCOM ID of the individual
-            generations: Number of generations to retrieve (default 4, max 10)
-
-        Returns:
-            Nested dictionary representing the descendant tree
-        """
-        return _get_descendants(individual_id, generations)
-
-    # ============== SEARCH TOOLS (1) ==============
-
-    @tool
-    @traced_tool
-    def search_individuals(name: str, max_results: int = 50) -> list[dict]:
-        """
-        Search for individuals by name (partial match on given name or surname).
-
-        Args:
-            name: Name to search for (case-insensitive partial match)
-            max_results: Maximum number of results to return (default 50)
-
-        Returns:
-            List of matching individuals with summary info
-        """
-        return _search_individuals(name, max_results)
-
-    # ============== RELATIONSHIP TOOLS (2) ==============
-
-    @tool
-    @traced_tool
-    def get_relationship(
-        id1: str,
-        id2: str,
-        max_generations: int | None = 10,
-    ) -> dict:
-        """
-        Calculate person 1's relationship to person 2 (e.g. child, parent).
-
-        Detects these relationship types:
-        - Direct lineage: parent, grandparent, great-grandparent, 2nd great-grandparent,
-          ..., 19th great-grandparent, etc. (unlimited depth)
-        - Direct descendants: child, grandchild, great-grandchild, etc.
-        - Siblings: sibling, half-sibling
-        - Extended: spouse, aunt/uncle, niece/nephew
-        - Cousins: first cousin, second cousin once removed, etc.
-
-        Args:
-            id1: GEDCOM ID of first individual
-            id2: GEDCOM ID of second individual
-            max_generations: How far back to search for common ancestors.
-                Pass null/None for unlimited depth (searches up to 100 generations).
-
-        Returns:
-            Dict with both individuals' info, relationship name, and
-            common ancestor info for cousin relationships
-
-        Examples:
-            get_relationship("@I123@", "@I456@")  # Default 10-generation search
-            get_relationship("@I123@", "@I456@", null)  # Unlimited search depth
-        """
-        return _get_relationship(id1, id2, max_generations)
 
     @tool
     @traced_tool
@@ -481,75 +317,6 @@ def register_tools(mcp):
             which ancestors appear multiple times and through which paths
         """
         return _detect_pedigree_collapse(individual_id, max_generations)
-
-    # ============== PRIMITIVES (1) ==============
-
-    @tool
-    @traced_tool
-    def traverse(
-        individual_id: str,
-        direction: str,
-        depth: int = 1,
-    ) -> list[dict]:
-        """
-        Generic graph traversal for advanced/custom navigation.
-
-        Use this when you need multi-level traversal beyond what the specific
-        navigation tools provide. Performs breadth-first traversal.
-
-        Args:
-            individual_id: Starting person's GEDCOM ID
-            direction: "parents" | "children" | "spouses" | "siblings"
-            depth: How many levels to traverse (default 1, max 10)
-
-        Returns:
-            List of individuals found, each with a "level" field indicating depth
-
-        Examples:
-            traverse("@I123@", "children", 2)  # Children and grandchildren
-            traverse("@I123@", "parents", 3)   # Parents, grandparents, great-grandparents
-            traverse("@I123@", "siblings", 1)  # Just siblings
-        """
-        return _traverse(individual_id, direction, depth)
-
-    # ============== SEMANTIC SEARCH (1) ==============
-
-    @tool
-    @traced_tool
-    def semantic_search(query: str, max_results: int = 20) -> dict:
-        """
-        Search for individuals using natural language semantic matching.
-
-        Combines semantic passage matching, keywords, and local reranking.
-        Accepts ordinary questions; no automatic LLM query rewrite is performed.
-        If trying paraphrases, preserve the original names, dates, negation, and
-        relationship constraints, and retain the original query as well.
-        Results are candidates: inspect evidence and verify exact dates, counts,
-        event order, and whose facts they are with biography/event/source tools.
-
-        Examples:
-            "served in Civil War"
-            "emigrated from Ireland"
-            "died in childbirth"
-            "coal miners in Pennsylvania"
-            "farmers in Scotland"
-
-        Requires SEMANTIC_SEARCH_ENABLED=true environment variable.
-        Results include individual IDs usable with get_biography() for full details.
-
-        Args:
-            query: Natural language description of what you're looking for
-            max_results: Max results to return (default 20, max 100)
-
-        Returns:
-            Dictionary with query, result_count, and results list containing
-            individual_id, name, birth_date, death_date, relevance_score, snippet,
-            and evidence. search_mode and score_type identify ranking behavior.
-            Scores are uncalibrated ranking signals, not probabilities or proof.
-        """
-        return _semantic_search(query, max_results)
-
-    # ============== GIS SEARCH (1) ==============
 
     @tool
     @traced_tool
@@ -607,25 +374,6 @@ def register_tools(mcp):
             mode=mode,  # type: ignore[arg-type]
         )
 
-    # ============== TIMELINE & EVENTS (2) ==============
-
-    @tool
-    @traced_tool
-    def get_timeline(individual_id: str) -> list[dict]:
-        """
-        Get chronological timeline of all life events for an individual.
-
-        Returns events sorted by date, with events lacking dates at the end.
-        Useful for building biographical narratives or understanding life progression.
-
-        Args:
-            individual_id: The GEDCOM ID (e.g., "I123" or "@I123@")
-
-        Returns:
-            List of events sorted chronologically, each with type, date, place, description
-        """
-        return _get_timeline(individual_id)
-
     @tool
     @traced_tool
     def get_military_service() -> dict:
@@ -650,8 +398,6 @@ def register_tools(mcp):
             - service_locations: Top locations where service occurred
         """
         return _get_military_service()
-
-    # ============== PLACE ANALYSIS (1) ==============
 
     @tool
     @traced_tool
@@ -679,8 +425,6 @@ def register_tools(mcp):
         """
         return _get_place_cluster(place, max_results)
 
-    # ============== SURNAME ANALYSIS (1) ==============
-
     @tool
     @traced_tool
     def get_surname_origins(surname: str) -> dict:
@@ -706,8 +450,6 @@ def register_tools(mcp):
             - statistics: earliest/latest birth, span, common places
         """
         return _get_surname_origins(surname)
-
-    # ============== ASSOCIATES / FAN CLUB (1) ==============
 
     @tool
     @traced_tool

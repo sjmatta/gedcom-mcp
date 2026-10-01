@@ -1,732 +1,129 @@
-# API Reference
+# MCP interface, version 2
 
-Reference for the 32 read MCP tools and 6 resources provided by the GEDCOM MCP Server.
+The server advertises **9 tools in read-only mode**, or **12 with writes enabled**.
+Specialized operations remain available through progressive discovery. This is a
+major release with no legacy tool aliases or compatibility profile.
 
-For the seven evidence research reads (records, sources, reverse citations, event
-search, group timelines and batch people), see [Research tools](RESEARCH_TOOLS.md).
+## Core reads
 
-## Table of Contents
+| Tool | Purpose and principal arguments |
+| --- | --- |
+| `get_tree_context()` | Home-person summary, statistics, snapshot, revision, store/backup status and search capabilities. Start here for family context and before edits. |
+| `search_people(query, mode="name", limit=50, expected_snapshot?)` | Partial-name matching or `mode="semantic"` evidence retrieval. Limit 1–100. Semantic results are candidates, not proof. |
+| `get_people(individual_ids?, view="summary", expected_snapshot?)` | One/batch lookup; omitted IDs select home person. Summary: 500 IDs; parsed record with events: 100; biography with relatives and citations: 20. Missing IDs map to null; duplicates collapse. |
+| `get_relatives(individual_id, relation, generations=1, view="list", lineage="default", expected_snapshot?, offset=0, limit=100, max_nodes=1000)` | Parents, children, spouses, siblings, ancestors or descendants. List, nested tree or terminal-ancestor view. Includes family-link evidence and all root parent-family assertions. |
+| `get_relationship(individual_id, reference_id?, method="kinship", max_generations=10, lineage="default", max_steps=30, expected_snapshot?)` | Person 1 relative to reference (default home). Kinship labels/common ancestors or one shortest qualified family path. |
+| `get_timeline(individual_ids, start_year?, end_year?, include_undated=false, expected_snapshot?, offset=0, limit=100)` | Evidence timeline for 1–500 people; shared spouse-family events appear once. Original dates, notes, citations and field paths retained. |
+| `get_record(record_id, path?, expected_snapshot?, offset=0, limit=100)` | Complete original GEDCOM record/subtree, including alternate facts and unknown fields. Paginated by lines. |
+| `search_tools(query="", category="research", offset=0, limit=3)` | Ranked tool discovery with exact input/output schemas and execution route. Empty query browses a category. Categories: research, changes, all. Limit 1–10. |
+| `call_research_tool(name, arguments)` | Executes an available read-only operation through the normal authorization/validation pipeline. Rejects proposals, apply, backup/export, unknown and disabled tools, and recursive discovery calls. |
 
-- [Context Tools (2)](#context-tools)
-- [Lookup Tools (3)](#lookup-tools)
-- [Navigation Tools (6)](#navigation-tools)
-- [Search Tools (3)](#search-tools)
-- [Relationship Tools (3)](#relationship-tools) (plus `get_relationship_to_me` and `get_parent_families`, see [Family provenance](#family-provenance-and-bounded-graph-queries))
-- [Timeline & Events (2)](#timeline--events)
-- [Place & Surname Analysis (2)](#place--surname-analysis)
-- [MCP Resources (6)](#mcp-resources)
+### Navigation and evidence semantics
 
----
+`generations` is 0–20 for parents/ancestors and 0–10 for other relations.
+`lineage="default"` uses selected, unambiguous parent families; `all` uses all
+usable assertions; `birth`, `adopted`, `foster`, and `sealing` require explicit
+matching qualifiers. Disproven links are excluded from traversal but retained in
+the root's parent-family evidence. Pedigree assertions do not prove genetic parentage.
 
-## Context Tools
+List navigation returns unique people with one shortest path. Tree navigation
+marks repeated references rather than recursively expanding cycles. Terminal
+ancestors have no further selected recorded parent links; a generation cutoff
+never establishes a terminal ancestor. `depth_limited` explicitly reports links
+beyond the selected depth. List/terminal results paginate with `offset` and
+`limit` (1–500); tree view requires offset zero. `max_nodes` bounds traversal,
+defaulting to 1,000 and allowing up to 50,000. Exceeded node/edge budgets fail
+explicitly; reduce depth or deliberately increase the node budget.
 
-### get_home_person()
+Kinship and shortest-path relationship methods are distinct. Kinship uses default
+parent selection and a common-ancestor generation bound (null permits up to 100).
+Path supports explicit lineage, marriage connections and `max_steps` 1–100. It
+returns one path, not all possible relationships.
 
-Get the home person (tree owner).
+Reuse the returned `snapshot` as `expected_snapshot` across pages and related
+reads. Stale snapshots are rejected. Timelines/event search use inclusive year
+interval overlap, preserving original date text; approximate years use their
+recorded nominal year. Unknown/non-European-calendar dates pass year filters only
+with `include_undated=true`. Without year filters, all dates are included.
 
-This is the essential starting point for "my ancestors" queries. Use this first to establish context for genealogy exploration.
+## Discoverable research
 
-**Returns:**
-- Full individual record for the home person
+| Operation | Purpose |
+| --- | --- |
+| `get_family` | Family unit, marriage and family events, children and spouse IDs. |
+| `get_source`, `search_sources` | Source/repository metadata and source search. |
+| `get_source_references` | Reverse citations across record types, exact fact/citation paths, page filtering. |
+| `search_events` | Individual/family evidence filtered by GEDCOM tag, place, year and selected people. |
+| `search_nearby` | Geographic proximity or bounding-box search, geocoding coverage and uncertainty. |
+| `get_place_cluster` | People connected to an exact recorded place and associated events. |
+| `get_surname_origins` | Recorded surname distribution and geographic patterns. |
+| `get_military_service` | Explicit service records and separately labeled possible references. |
+| `detect_pedigree_collapse` | Repeated ancestors and recorded paths. |
+| `find_associates` | Friends/associates/neighbors candidates from shared time/place context. |
+| `audit_tree` | Structural errors, evidence-review warnings and connected components. |
 
-**Example:**
+With writes enabled, discovery also exposes `plan_tree_prune`,
+`get_tree_change_diff`, and `get_tree_history` as read-only research operations.
+Preparation schemas are discoverable in the changes category.
+
+Discover, then execute using the returned schema and route:
+
 ```json
-{
-  "id": "@I123@",
-  "name": "Stephen John Matta",
-  "birth_date": "1984",
-  "birth_place": "Pittsburgh, Pennsylvania",
-  ...
-}
+{"name":"search_tools","arguments":{"query":"source citations"}}
 ```
 
----
-
-### get_statistics()
-
-Get statistics about the genealogy tree.
-
-Provides tree overview and orientation: total individuals, families, date ranges, gender breakdown, and top surnames.
-
-**Returns:**
-- Dictionary with counts, date ranges, and other statistics
-
-**Example:**
 ```json
-{
-  "total_individuals": 1523,
-  "total_families": 487,
-  "earliest_birth": "1720",
-  "latest_birth": "2020",
-  "top_surnames": [
-    {"surname": "Smith", "count": 45},
-    {"surname": "Jones", "count": 32}
-  ]
-}
+{"name":"call_research_tool","arguments":{
+  "name":"get_source_references",
+  "arguments":{"source_id":"@S1@","limit":20}
+}}
 ```
 
----
+Discovery pages include `total`, `next_offset`, and `tools`. Each definition has
+`inputSchema`, `outputSchema`, annotations, and `execution`. Browse empty-query
+pages to enumerate every operation; ranked searches may return no matches.
+Discovery does not grant access: filtered tools cannot be discovered or dispatched.
+All original operations use the standard FastMCP pipeline, including middleware.
 
-## Lookup Tools
+## Optional change and maintenance tools
 
-### get_individual(individual_id: str)
+| Advertised tool | Purpose |
+| --- | --- |
+| `prepare_change(operation, arguments)` | Persist a proposal and return its diff, without changing the active tree. Operations: create_person, update_person_name, edit_records, restore. |
+| `apply_tree_change(proposal_id, expected_revision)` | Apply the specifically authorized proposal atomically after a verified backup. Rejects stale revisions; applied-proposal retries are idempotent. |
+| `maintain_tree(action, revision?)` | Verified local backup or lossless export of an explicit revision. Creates private files without changing the active tree. |
 
-Get basic details for an individual by their GEDCOM ID.
+Obtain preparation schemas with `search_tools(category="changes")`. The returned
+`execution.operation` selects `prepare_change`; provide the complete matching
+`inputSchema` payload inside `arguments`, including revision and reason.
 
-Lightweight lookup - returns basic record with family link IDs. Use `get_biography()` when you need full context (events, notes, sources).
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID (e.g., "I123" or "@I123@")
-
-**Returns:**
-- Individual record with name, dates, places, and family IDs
-
-**Example:**
 ```json
-{
-  "id": "@I123@",
-  "full_name": "John Smith",
-  "birth_date": "1850",
-  "birth_place": "New York",
-  "death_date": "1920",
-  "family_as_child": "@F45@",
-  "families_as_spouse": ["@F67@"]
-}
+{"name":"search_tools","arguments":{"query":"create a person","category":"changes"}}
 ```
 
----
-
-### get_biography(individual_id: str)
-
-Get comprehensive narrative package for one person.
-
-Heavy/full context - returns everything needed for biographical narrative:
-- vital_summary: Quick "Born X. Died Y." summary
-- birth/death: Full date and place info
-- parents/spouses/children: Family names (not IDs) for easy narrative use
-- events: All life events with full citation details including URLs
-- notes: All biographical notes (obituaries, baptism records, etc.)
-
-Use `get_individual()` for lightweight scanning of many people. Use this when diving deep into one person.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID (e.g., "I123" or "@I123@")
-
-**Returns:**
-- Complete biography dictionary or None if not found
-
-**Example:**
 ```json
-{
-  "id": "@I123@",
-  "name": "John Smith",
-  "vital_summary": "Born 1850 in New York. Died 1920 in Pennsylvania.",
-  "parents": ["Mary Smith", "James Smith"],
-  "spouses": ["Jane Doe"],
-  "children": ["William Smith", "Sarah Smith"],
-  "events": [
-    {
-      "type": "BIRT",
-      "date": "1850",
-      "place": "New York",
-      "citations": [...]
-    }
-  ],
-  "notes": ["Obituary text..."]
-}
+{"name":"prepare_change","arguments":{
+  "operation":"create_person",
+  "arguments":{"expected_revision":3,"reason":"Document sourced relative",
+               "given_name":"Jane","surname":"Example"}
+}}
 ```
 
----
-
-### get_family(family_id: str)
-
-Get family unit information by GEDCOM family ID.
-
-Returns the family record with husband, wife, and children.
-
-**Parameters:**
-- `family_id` (str): The GEDCOM family ID (e.g., "F123" or "@F123@")
-
-**Returns:**
-- Family record with husband, wife, children IDs and marriage info
-
-**Example:**
-```json
-{
-  "id": "@F123@",
-  "husband_id": "@I100@",
-  "wife_id": "@I101@",
-  "children_ids": ["@I200@", "@I201@"],
-  "marriage_date": "1875",
-  "marriage_place": "Philadelphia"
-}
-```
-
----
-
-## Navigation Tools
-
-### get_parents(individual_id: str)
-
-Get the parents of an individual.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-
-**Returns:**
-- Dictionary with father and mother info, or None if not found
-
-**Example:**
-```json
-{
-  "individual": {"id": "@I123@", "name": "John Smith"},
-  "father": {"id": "@I100@", "name": "James Smith"},
-  "mother": {"id": "@I101@", "name": "Mary Smith"}
-}
-```
-
----
-
-### get_children(individual_id: str)
-
-Get all children of an individual (from all marriages/partnerships).
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-
-**Returns:**
-- List of children with summary info
-
-**Example:**
-```json
-[
-  {
-    "id": "@I200@",
-    "name": "William Smith",
-    "birth_date": "1880"
-  },
-  {
-    "id": "@I201@",
-    "name": "Sarah Smith",
-    "birth_date": "1882"
-  }
-]
-```
-
----
-
-### get_spouses(individual_id: str)
-
-Get all spouses/partners of an individual.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-
-**Returns:**
-- List of spouses with summary info and marriage details
-
-**Example:**
-```json
-[
-  {
-    "id": "@I150@",
-    "name": "Jane Doe",
-    "marriage_date": "1875",
-    "marriage_place": "Philadelphia"
-  }
-]
-```
-
----
-
-### get_siblings(individual_id: str)
-
-Get siblings of an individual (same parents).
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-
-**Returns:**
-- List of siblings with summary info
-
-**Example:**
-```json
-[
-  {
-    "id": "@I124@",
-    "name": "Mary Smith",
-    "birth_date": "1852"
-  }
-]
-```
-
----
-
-### get_ancestors(individual_id: str, generations: int = 4, filter: str | None = None)
-
-Get ancestor tree up to N generations.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-- `generations` (int): Number of generations to retrieve (default 4, max 20)
-- `filter` (str | None): Optional filter:
-  - `None`: Return full nested tree (default)
-  - `"terminal"`: Return only end-of-line ancestors (brick walls/oldest known)
-
-**Returns:**
-- If filter is None: Nested dictionary representing the ancestor tree
-- If filter is "terminal": List of terminal ancestors with generation and path
-
-**Examples:**
-```python
-get_ancestors("@I123@", 4)  # Standard 4-generation tree
-get_ancestors("@I123@", 20, "terminal")  # Find oldest known ancestors
-```
-
----
-
-### get_descendants(individual_id: str, generations: int = 4)
-
-Get descendant tree up to N generations.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID of the individual
-- `generations` (int): Number of generations to retrieve (default 4, max 10)
-
-**Returns:**
-- Nested dictionary representing the descendant tree
-
----
-
-### traverse(individual_id: str, direction: str, depth: int = 1)
-
-Generic graph traversal for advanced/custom navigation.
-
-Use this when you need multi-level traversal beyond what the specific navigation tools provide. Performs breadth-first traversal.
-
-**Parameters:**
-- `individual_id` (str): Starting person's GEDCOM ID
-- `direction` (str): "parents" | "children" | "spouses" | "siblings"
-- `depth` (int): How many levels to traverse (default 1, max 10)
-
-**Returns:**
-- List of individuals found, each with a "level" field indicating depth
-
-**Examples:**
-```python
-traverse("@I123@", "children", 2)  # Children and grandchildren
-traverse("@I123@", "parents", 3)  # Parents, grandparents, great-grandparents
-traverse("@I123@", "siblings", 1)  # Just siblings
-```
-
----
-
-## Search Tools
-
-### search_individuals(name: str, max_results: int = 50)
-
-Search for individuals by name (partial match on given name or surname).
-
-**Parameters:**
-- `name` (str): Name to search for (case-insensitive partial match)
-- `max_results` (int): Maximum number of results to return (default 50)
-
-**Returns:**
-- List of matching individuals with summary info
-
-**Example:**
-```json
-[
-  {
-    "id": "@I123@",
-    "name": "John Smith",
-    "birth_date": "1850",
-    "death_date": "1920"
-  }
-]
-```
-
----
-
-### semantic_search(query: str, max_results: int = 20)
-
-Search for individuals using natural language semantic matching.
-
-Combines semantic passage retrieval, keyword matching, and local reranking. Accepts ordinary questions. The calling assistant may try paraphrases, preserving names, dates, negation, relationships, and the original query; the server performs no automatic LLM rewrite.
-
-Results are candidates. Inspect their evidence and use event, biography, source, or relationship tools to verify exact constraints. See [semantic-search configuration and deployment guidance](SEMANTIC_SEARCH.md).
-
-**Requires:** `SEMANTIC_SEARCH_ENABLED=true` environment variable
-
-**Parameters:**
-- `query` (str): Natural language description of what you're looking for
-- `max_results` (int): Max results to return (default 20, max 100)
-
-**Returns:**
-- Dictionary with `query`, `result_count`, `search_mode`, `score_type`, and `results`.
-- Results contain `individual_id`, `name`, `birth_date`, `death_date`, `relevance_score`, `snippet`, and `evidence` with passage text and applicable event, note, family, chunk, and source references.
-- Scores are uncalibrated ranking signals. Reranker logits can be negative or exceed one; existing cosine thresholds must be removed or reconsidered. A reranker failure returns hybrid results with an explicit `warning`.
-
-**Examples:**
-```python
-semantic_search("served in Civil War")
-semantic_search("emigrated from Ireland")
-semantic_search("died in childbirth")
-semantic_search("coal miners in Pennsylvania")
-semantic_search("farmers in Scotland")
-```
-
----
-
-### search_nearby(location: str, radius_miles: float = 50, event_types: list[str] | None = None, unit: str = "miles", max_results: int = 100, mode: str = "proximity")
-
-Find individuals with events near or within a location.
-
-Supports two search modes:
-- **"proximity"** (default): Find people within X miles of a point
-- **"within"**: Find people with events inside a region's bounding box
-
-**Parameters:**
-- `location` (str): Place name to search around (fuzzy matched)
-- `radius_miles` (float): Search radius in the selected `unit` (legacy parameter name; default 50, max 500) - ignored when mode="within"
-- `event_types` (list[str] | None): Optional filter - list of event types like ["BIRT", "DEAT", "MARR"]
-- `unit` (str): Distance unit - "miles" (default) or "km"
-- `max_results` (int): Maximum results to return (default 100)
-- `mode` (str): Search mode - "proximity" (default) or "within"
-  - proximity: Find people within X miles of the location's center point
-  - within: Find people with events inside the location's bounding box
-
-**Returns:**
-- Dictionary with:
-  - reference_location: matched place with coordinates/bbox and confidence
-  - mode: the search mode used ("proximity" or "within")
-  - search_radius: the radius in the selected unit (proximity mode only)
-  - search_radius_miles: the radius converted to miles (proximity mode only)
-  - results[].distance_miles: distance in miles regardless of the selected unit
-  - results[].distance_km: distance in kilometers, included when `unit="km"`
-  - geocoding_status: "running", "complete", or "disabled"
-  - coverage: how many places were successfully geocoded
-  - result_count: number of matches found
-  - results: list of individuals with distance (proximity) or matching events
-
-**Examples:**
-```python
-search_nearby("Pittsburgh", 50)  # Within 50 miles of Pittsburgh
-search_nearby("Benkovce", 25, ["BIRT"])  # Births within 25 miles
-search_nearby("New York", mode="within")  # Everyone inside NY State
-search_nearby("California", mode="within", event_types=["BIRT"])  # Births in CA
-```
-
----
-
-## Relationship Tools
-
-### get_relationship(id1: str, id2: str, max_generations: int | None = 10)
-
-Calculate and name the relationship between two individuals.
-
-Detects these relationship types:
-- Direct lineage: parent, grandparent, great-grandparent, 2nd great-grandparent, etc. (unlimited depth)
-- Direct descendants: child, grandchild, great-grandchild, etc.
-- Siblings: sibling, half-sibling
-- Extended: spouse, aunt/uncle, niece/nephew
-- Cousins: first cousin, second cousin once removed, etc.
-
-**Parameters:**
-- `id1` (str): GEDCOM ID of first individual
-- `id2` (str): GEDCOM ID of second individual
-- `max_generations` (int | None): How far back to search for common ancestors. Pass null/None for unlimited depth (searches up to 100 generations).
-
-**Returns:**
-- Dict with both individuals' info, relationship name, and common ancestor info for cousin relationships
-
-**Examples:**
-```python
-get_relationship("@I123@", "@I456@")  # Default 10-generation search
-get_relationship("@I123@", "@I456@", None)  # Unlimited search depth
-```
-
----
-
-### detect_pedigree_collapse(individual_id: str, max_generations: int = 10)
-
-Detect pedigree collapse (ancestors appearing multiple times).
-
-Pedigree collapse occurs when ancestors appear multiple times in a family tree, typically due to cousin marriages or other intermarriage within a community. This is a discovery feature for finding interesting patterns.
-
-**Parameters:**
-- `individual_id` (str): GEDCOM ID of the individual
-- `max_generations` (int): Max generations to search (default 10)
-
-**Returns:**
-- Dict with individual info and list of collapse points showing which ancestors appear multiple times and through which paths
-
----
-
-### find_associates(individual_id: str, place: str | None = None, start_year: int | None = None, end_year: int | None = None, exclude_relatives: bool = True, max_results: int = 50)
-
-Find likely neighbors and associates based on time+place overlap.
-
-Implements the genealogist's FAN Club technique (Friends, Associates, Neighbors) to discover people who overlap in time AND place but are NOT known relatives. Useful for finding witnesses, godparents, business partners, or migration companions.
-
-**Scoring factors:**
-- Same place + same year: highest score
-- Same place + within 5 years: moderate score
-- Lifespan overlap: bonus up to 30%
-- Multiple matching places: bonus per additional place
-
-**Parameters:**
-- `individual_id` (str): GEDCOM ID of the focal individual (e.g., "I123" or "@I123@")
-- `place` (str | None): Optional - filter to specific location (fuzzy matched)
-- `start_year` (int | None): Optional - filter time range start
-- `end_year` (int | None): Optional - filter time range end
-- `exclude_relatives` (bool): Filter out blood/marriage relatives (default True)
-- `max_results` (int): Limit results (default 50, max 200)
-
-**Returns:**
-- Dictionary with:
-  - individual: The focal person's info
-  - filters_applied: Active filters
-  - result_count: Number of associates found
-  - associates: List sorted by association_strength (0.0-1.0) with:
-    - id, name, birth_date, death_date
-    - association_strength: Overall score
-    - overlapping_events: Where/when paths crossed
-    - lifespan_overlap_years: Years alive at same time
-    - is_relative: Whether related (when exclude_relatives=False)
-  - computation_stats: Performance metrics
-
-**Examples:**
-```python
-find_associates("@I123@")  # All associates
-find_associates("@I123@", place="Pittsburgh")  # Only Pittsburgh connections
-find_associates("@I123@", start_year=1880, end_year=1920)  # Time-bounded
-find_associates("@I123@", exclude_relatives=False)  # Include relatives
-```
-
----
-
-## Timeline & Events
-
-### get_timeline(individual_id: str)
-
-Get chronological timeline of all life events for an individual.
-
-Returns events sorted by date, with events lacking dates at the end. Useful for building biographical narratives or understanding life progression.
-
-**Parameters:**
-- `individual_id` (str): The GEDCOM ID (e.g., "I123" or "@I123@")
-
-**Returns:**
-- List of events sorted chronologically, each with type, date, place, description
-
-**Example:**
-```json
-[
-  {
-    "type": "BIRT",
-    "date": "1850",
-    "place": "New York",
-    "description": null
-  },
-  {
-    "type": "MARR",
-    "date": "1875",
-    "place": "Philadelphia",
-    "description": null
-  },
-  {
-    "type": "DEAT",
-    "date": "1920",
-    "place": "Pennsylvania",
-    "description": null
-  }
-]
-```
-
----
-
-### get_military_service()
-
-Find all individuals with military service across the tree.
-
-Scans all individuals' events for military indicators:
-- Event types: MILT, SERV
-- Keywords: war, military, army, navy, marine, soldier, regiment, etc.
-
-Useful for finding veterans, understanding family military history, or researching ancestors who served.
-
-**Returns:**
-- Dictionary with:
-  - result_count: Number of individuals with military service
-  - individuals: List of individuals with their military events
-  - time_periods: Counts grouped by century (1800s, 1900s, etc.)
-  - service_locations: Top locations where service occurred
-
----
-
-## Place & Surname Analysis
-
-### get_place_cluster(place: str, max_results: int = 100)
-
-Get all individuals connected to a location with event breakdown.
-
-Uses fuzzy place matching to find everyone with events at or near the specified location. Groups results by event type (births, deaths, etc.).
-
-Useful for understanding migration patterns, finding relatives in a region, or analyzing geographic concentrations.
-
-**Parameters:**
-- `place` (str): Place name to search for (fuzzy matched)
-- `max_results` (int): Maximum individuals to return (default 100)
-
-**Returns:**
-- Dictionary with:
-  - place: The search query
-  - result_count: Number of individuals found
-  - individuals: List of individuals with match scores
-  - place_variants: Similar place spellings found in tree
-  - event_breakdown: Counts by event type (BIRT, DEAT, RESI, etc.)
-
----
-
-### get_surname_origins(surname: str)
-
-Analyze surname distribution and detect geographic origins.
-
-Extends surname lookup with origin detection by finding earliest births by location and tracking the surname's geographic spread over time.
-
-Useful for understanding where a family line originated and how it migrated across generations.
-
-**Parameters:**
-- `surname` (str): Surname to analyze (case-insensitive)
-
-**Returns:**
-- Dictionary with:
-  - surname: The search query
-  - count: Total individuals with this surname
-  - individuals: List of all individuals
-  - primary_origin: Place with earliest births (likely origin)
-  - place_timeline: Place → [years] showing spread over time
-  - statistics: earliest/latest birth, span, common places
-
----
-
-## MCP Resources
-
-In addition to tools, the server provides 6 MCP resources for direct data access:
-
-### gedcom://individual/{id}
-
-Get individual record by GEDCOM ID.
-
-**Example:** `gedcom://individual/@I123@`
-
-Returns the complete individual record including all events, notes, and family links.
-
----
-
-### gedcom://family/{id}
-
-Get family record by GEDCOM family ID.
-
-**Example:** `gedcom://family/@F123@`
-
-Returns the complete family record including spouses, children, and marriage information.
-
----
-
-### gedcom://source/{id}
-
-Get source record by GEDCOM source ID.
-
-**Example:** `gedcom://source/@S12@`
-
-Returns the source record, or a not-found message.
-
----
-
-### gedcom://sources
-
-Get all sources.
-
-**Example:** `gedcom://sources`
-
-Returns one line per source (up to 1,000): ID, title and author.
-
----
-
-### gedcom://stats
-
-Get tree statistics.
-
-**Example:** `gedcom://stats`
-
-Returns comprehensive statistics about the genealogy tree including counts, date ranges, and surname distribution.
-
----
-
-### gedcom://surnames
-
-Get all surnames with counts.
-
-**Example:** `gedcom://surnames`
-
-Returns a list of all surnames in the tree with the count of individuals for each surname, sorted by frequency.
-
----
-
-## Common Event Types
-
-When using tools that filter by event type (like `search_nearby`), these are common GEDCOM event types:
-
-- `BIRT` - Birth
-- `DEAT` - Death
-- `MARR` - Marriage
-- `RESI` - Residence
-- `OCCU` - Occupation
-- `IMMI` - Immigration
-- `EMIG` - Emigration
-- `BURI` - Burial
-- `BAPM` - Baptism
-- `CHR` - Christening
-- `MILT` - Military service
-- `SERV` - General service
-- `EVEN` - Generic event
-
-For a complete list, consult the GEDCOM 5.5.1 specification.
-
-
-## Family provenance and bounded graph queries
-
-`get_relationship_to_me(individual_id, lineage="default", max_steps=30)` returns
-one shortest recorded path from the queried person to the home person. The label
-is the queried person's relationship to the home person. Every step includes
-names, direction and family ID; parent steps also carry imported `pedigree` and
-`status`. This is one connection, not an enumeration of all relationships.
-
-`lineage` is `default`, `all`, `birth`, `adopted`, `foster` or `sealing`. Default
-uses the selected parent family (unique explicit birth, otherwise sole usable
-family); ambiguity stops default parent traversal. Other named selections require
-that exact imported qualifier. Disproven links are excluded. The `birth` qualifier
-is not proof of genetic parentage. Marriage edges are available in every mode.
-
-`get_parent_families(individual_id)` exposes all links, including disproven or
-missing-family references, and explains the default selection. Individual records
-and biographies also include `parent_families` and `parent_selection`.
-
-Families now have `events` with citations. Biographies include `family_events`,
-and timelines include events from the person's spouse families with `family_id`.
-Merged family events have `individual_id: null` and are not duplicated for spouses.
-
-Limits: ancestor tree 20 generations / 1,000 output nodes; descendant tree 10 /
-1,000; ancestor-distance search 100 generations / 50,000 nodes; pedigree collapse
-20 generations / 5,000 paths; relationship matrices 50 people. Nested tree and
-pedigree results expose `truncated`; repeat tree references stop expansion and are
-marked `repeated_reference`. List-only queries fail explicitly on exhausted budgets.
-Relationship-to-me has a maximum of 100 steps, 50,000 visited nodes and 200,000
-adjacency entries. No-path results distinguish a depth-limited search from exhaustion
-of the selected graph. Partial and missing data never prove unrelatedness.
-
-Geocoding uses complete supplied jurisdiction context. Ambiguous locations should
-be retried with state/region and country; fuzzy matching never silently substitutes
-a different place. Region searches still use bounding boxes, not exact borders.
+`edit_records` has strict, tagged operation schemas for all 15 edit types,
+including atomic person/family creation and linking, evidence edits, structured
+names, explicit deletion and merging. Unknown fields and invalid types are
+rejected. Detailed schemas are deferred until discovery; they do not enlarge the
+initial catalog. Omitted sex is not inferred. Name changes retain evidence and
+alternate names, with an exact old-value guard.
+
+Review every diff page through discovered `get_tree_change_diff` before obtaining
+user authorization and invoking `apply_tree_change`. The read dispatcher cannot
+prepare/apply changes; the preparation dispatcher cannot apply or run maintenance.
+See [versioned writes](WRITES.md) for safeguards and operation semantics.
+
+## Resources
+
+Six existing read-only resources remain: `gedcom://individual/{id}`,
+`gedcom://family/{id}`, `gedcom://source/{id}`, `gedcom://sources`,
+`gedcom://stats`, and `gedcom://surnames`. Tools retain evidence access for clients
+that do not use resources.

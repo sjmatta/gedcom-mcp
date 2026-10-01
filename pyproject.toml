@@ -1,6 +1,6 @@
 [project]
 name = "gedcom-server"
-version = "1.0.0"
+version = "2.0.0"
 description = "MCP server for querying genealogy data from GEDCOM files"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "fastmcp>=4.0.10",
+    "pydantic>=2.13.5",
     "PyJWT[crypto]>=2.15.1",
     "uvicorn>=0.54.0",
     "starlette>=1.7.0",
