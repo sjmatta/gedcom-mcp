@@ -440,3 +440,23 @@ def test_complete_diff_is_available_in_pages(tree):
     assert len(complete) == page["total_lines"]
     with pytest.raises(ValueError, match="nonnegative"):
         tree.proposal_diff(proposal["proposal_id"], -1)
+
+
+def test_core_snapshot_identity_does_not_rehydrate_large_revision(tree, monkeypatch):
+    from gedcom_server import writes
+    from gedcom_server.interface_reads import get_people
+    from gedcom_server.revision_storage import digest
+
+    commit(tree)
+    expected = digest(tree.document(tree.revision))
+    monkeypatch.setattr(writes, "store", tree)
+
+    def refuse_rehydration(revision):
+        raise AssertionError("Core lookup reconstructed the whole revision")
+
+    monkeypatch.setattr(tree, "document", refuse_rehydration)
+    result = get_people(["I1"])
+    assert result["snapshot"] == expected and result["revision"] == 1
+    assert result["people"]["@I1@"]
+    with pytest.raises(ValueError, match="Tree changed"):
+        get_people(["I1"], expected_snapshot="stale")

@@ -21,12 +21,18 @@ Relation = Literal["parents", "children", "spouses", "siblings", "ancestors", "d
 
 def snapshot_metadata(expected_snapshot: str | None = None) -> dict:
     store = writes.store
-    data = (
-        store.document(store.revision)
-        if store
-        else (state.GEDCOM_FILE.read_bytes() if state.GEDCOM_FILE else b"")
-    )
-    token = hashlib.sha256(data).hexdigest()
+    if store:
+        # Revisions are immutable and verified when loaded/published. Reading
+        # their identity must not reconstruct/decompress the entire large tree.
+        row = store.db.execute(
+            "SELECT digest FROM revisions WHERE id=?", (store.revision,)
+        ).fetchone()
+        if row is None:
+            raise ValueError("Unknown active revision")
+        token = row["digest"]
+    else:
+        data = state.GEDCOM_FILE.read_bytes() if state.GEDCOM_FILE else b""
+        token = hashlib.sha256(data).hexdigest()
     if expected_snapshot is not None and token != expected_snapshot:
         raise ValueError("Tree changed; restart the query")
     return {"snapshot": token, "revision": store.revision if store else None}
