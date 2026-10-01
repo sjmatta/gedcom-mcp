@@ -520,8 +520,12 @@ def register_tools(mcp):
         """
         Search for individuals using natural language semantic matching.
 
-        Finds people based on meaning, not keywords. Works best for conceptual
-        queries that traditional text search would miss.
+        Combines semantic passage matching, keywords, and local reranking.
+        Accepts ordinary questions; no automatic LLM query rewrite is performed.
+        If trying paraphrases, preserve the original names, dates, negation, and
+        relationship constraints, and retain the original query as well.
+        Results are candidates: inspect evidence and verify exact dates, counts,
+        event order, and whose facts they are with biography/event/source tools.
 
         Examples:
             "served in Civil War"
@@ -539,7 +543,9 @@ def register_tools(mcp):
 
         Returns:
             Dictionary with query, result_count, and results list containing
-            individual_id, name, birth_date, death_date, relevance_score, and snippet
+            individual_id, name, birth_date, death_date, relevance_score, snippet,
+            and evidence. search_mode and score_type identify ranking behavior.
+            Scores are uncalibrated ranking signals, not probabilities or proof.
         """
         return _semantic_search(query, max_results)
 

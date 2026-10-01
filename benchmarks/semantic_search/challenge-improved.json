@@ -1,0 +1,1668 @@
+{
+  "run_at": "2026-10-01T01:41:28.587148+00:00",
+  "suite_version": 2,
+  "suite_sha256": "04d707c4326df074ca15617262591bda9db0a8a7304c76e4dde28fa0edba7cf8",
+  "corpus_sha256": "59aa0f39660534d8b2c8f9acd145ae7c9ed8724d0eb60d30ed12c739bf39fb2d",
+  "git_revision": "ab74e6059682dc5b4f0bcb124232c6da463df640",
+  "semantic_source_sha256": "789db22f7ecbbc2f57ff50f8dbcb743083c36b19d15965ce4b36914c05d9d1e2",
+  "runner_source_sha256": "4adfee93d128c5f3b0c0e0d2667dbd59818e672455c2dbec126a9f1e6d2d0c53",
+  "retrieval_source_sha256": "c1fca65fd1b9172ad65a96176e2fc6255dc91c35531be17d6e12a377071ae3f4",
+  "model": "BAAI/bge-small-en-v1.5",
+  "model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "configured_model_revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+  "reranker_model": "cross-encoder/ettin-reranker-68m-v1",
+  "reranker_revision": "d166fa88ddde3c42bc3ee92f7df476d941c8204a",
+  "rerank_enabled": true,
+  "search_modes": [
+    "hybrid_reranked"
+  ],
+  "content_version": 4,
+  "embedding_shape": [
+    405,
+    384
+  ],
+  "device": "cpu",
+  "max_sequence_length": 512,
+  "environment": {
+    "python": "3.14.7",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.41",
+    "sentence-transformers": "6.1.0",
+    "torch": "2.14.1+cpu",
+    "numpy": "2.5.3",
+    "omp_num_threads": "2",
+    "rerank_candidates": "20",
+    "cpu_max": "150000 100000",
+    "memory_max": "2147483648"
+  },
+  "record_count": 200,
+  "query_count": 40,
+  "repeats": 3,
+  "build_seconds": 8.085338944045361,
+  "latency_ms": {
+    "p50": 1108.458778995555,
+    "p95": 2042.1862899675034
+  },
+  "overall": {
+    "ndcg@5": 0.6434096485137656,
+    "recall@5": 1.0,
+    "mrr@5": 0.5245833333333333,
+    "top1_accuracy": 0.25,
+    "ndcg@10": 0.6434096485137656,
+    "recall@10": 1.0,
+    "mrr@10": 0.5245833333333333
+  },
+  "random_ranking_expectation": {
+    "ndcg@5": 0.014825698062468192,
+    "recall@5": 0.025,
+    "mrr@5": 0.011698670435510886,
+    "top1_accuracy": 0.005125,
+    "ndcg@10": 0.022846319436508725,
+    "recall@10": 0.05,
+    "mrr@10": 0.015002079095876206
+  },
+  "categories": {
+    "temporal_order": {
+      "query_count": 5,
+      "ndcg@5": 0.5559284135897828,
+      "recall@5": 1.0,
+      "mrr@5": 0.4066666666666667,
+      "top1_accuracy": 0.0,
+      "ndcg@10": 0.5559284135897828,
+      "recall@10": 1.0,
+      "mrr@10": 0.4066666666666667
+    },
+    "conjunction": {
+      "query_count": 5,
+      "ndcg@5": 0.7123212623289701,
+      "recall@5": 1.0,
+      "mrr@5": 0.6166666666666667,
+      "top1_accuracy": 0.4,
+      "ndcg@10": 0.7123212623289701,
+      "recall@10": 1.0,
+      "mrr@10": 0.6166666666666667
+    },
+    "subject_attribution": {
+      "query_count": 5,
+      "ndcg@5": 0.7385072130432616,
+      "recall@5": 1.0,
+      "mrr@5": 0.65,
+      "top1_accuracy": 0.4,
+      "ndcg@10": 0.7385072130432616,
+      "recall@10": 1.0,
+      "mrr@10": 0.65
+    },
+    "negation": {
+      "query_count": 5,
+      "ndcg@5": 0.6261859507142915,
+      "recall@5": 1.0,
+      "mrr@5": 0.5,
+      "top1_accuracy": 0.2,
+      "ndcg@10": 0.6261859507142915,
+      "recall@10": 1.0,
+      "mrr@10": 0.5
+    },
+    "lexical_alias": {
+      "query_count": 5,
+      "ndcg@5": 0.752371901428583,
+      "recall@5": 1.0,
+      "mrr@5": 0.6666666666666666,
+      "top1_accuracy": 0.4,
+      "ndcg@10": 0.752371901428583,
+      "recall@10": 1.0,
+      "mrr@10": 0.6666666666666666
+    },
+    "date_numeric": {
+      "query_count": 5,
+      "ndcg@5": 0.5261859507142915,
+      "recall@5": 1.0,
+      "mrr@5": 0.36666666666666664,
+      "top1_accuracy": 0.0,
+      "ndcg@10": 0.5261859507142915,
+      "recall@10": 1.0,
+      "mrr@10": 0.36666666666666664
+    },
+    "ambiguous_identity": {
+      "query_count": 5,
+      "ndcg@5": 0.8,
+      "recall@5": 1.0,
+      "mrr@5": 0.7333333333333333,
+      "top1_accuracy": 0.6,
+      "ndcg@10": 0.8,
+      "recall@10": 1.0,
+      "mrr@10": 0.7333333333333333
+    },
+    "late_evidence": {
+      "query_count": 5,
+      "ndcg@5": 0.43577649629094417,
+      "recall@5": 1.0,
+      "mrr@5": 0.25666666666666665,
+      "top1_accuracy": 0.0,
+      "ndcg@10": 0.43577649629094417,
+      "recall@10": 1.0,
+      "mrr@10": 0.25666666666666665
+    }
+  },
+  "cases": [
+    {
+      "id": "h01",
+      "category": "temporal_order",
+      "query": "Who moved from Lisbon to Recife and later returned to Lisbon?",
+      "relevant": [
+        "@I1@"
+      ],
+      "judgment": "Only the first person changes residence in the requested order and returns.",
+      "hard_negative_ids": [
+        "@I2@",
+        "@I3@",
+        "@I4@",
+        "@I5@"
+      ],
+      "ranked_ids": [
+        "@I4@",
+        "@I1@",
+        "@I3@",
+        "@I2@",
+        "@I5@",
+        "@I133@",
+        "@I168@",
+        "@I166@",
+        "@I170@",
+        "@I181@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 1390.9492489765398,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h02",
+      "category": "temporal_order",
+      "query": "Who became a railway worker after leaving farming in Lincolnshire?",
+      "relevant": [
+        "@I6@"
+      ],
+      "judgment": "Farming must precede railway employment, not follow or overlap it.",
+      "hard_negative_ids": [
+        "@I7@",
+        "@I8@",
+        "@I9@",
+        "@I10@"
+      ],
+      "ranked_ids": [
+        "@I8@",
+        "@I9@",
+        "@I6@",
+        "@I10@",
+        "@I7@",
+        "@I181@",
+        "@I186@",
+        "@I196@",
+        "@I191@",
+        "@I176@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 2093.0806290125474,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h03",
+      "category": "temporal_order",
+      "query": "Who lost their spouse before relocating from Bergen to Seattle?",
+      "relevant": [
+        "@I11@"
+      ],
+      "judgment": "Correct origin, bereavement, and order are all required.",
+      "hard_negative_ids": [
+        "@I12@",
+        "@I13@",
+        "@I14@",
+        "@I15@"
+      ],
+      "ranked_ids": [
+        "@I12@",
+        "@I11@",
+        "@I14@",
+        "@I13@",
+        "@I15@",
+        "@I147@",
+        "@I146@",
+        "@I149@",
+        "@I148@",
+        "@I150@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 921.8743030214682,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h04",
+      "category": "temporal_order",
+      "query": "Who recovered from typhoid before joining the navy at Portsmouth?",
+      "relevant": [
+        "@I16@"
+      ],
+      "judgment": "Illness, recovery, and successful enlistment must occur for the same person in order.",
+      "hard_negative_ids": [
+        "@I17@",
+        "@I18@",
+        "@I19@",
+        "@I20@"
+      ],
+      "ranked_ids": [
+        "@I18@",
+        "@I19@",
+        "@I17@",
+        "@I20@",
+        "@I16@",
+        "@I95@",
+        "@I91@",
+        "@I94@",
+        "@I67@",
+        "@I172@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.38685280723454163,
+        "recall@5": 1.0,
+        "mrr@5": 0.2,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.38685280723454163,
+        "recall@10": 1.0,
+        "mrr@10": 0.2
+      },
+      "latency_ms_median": 962.803020956926,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h05",
+      "category": "temporal_order",
+      "query": "Who was imprisoned in Nantes and only afterward opened a bakery?",
+      "relevant": [
+        "@I21@"
+      ],
+      "judgment": "A bakery must actually open after the person is released.",
+      "hard_negative_ids": [
+        "@I22@",
+        "@I23@",
+        "@I24@",
+        "@I25@"
+      ],
+      "ranked_ids": [
+        "@I22@",
+        "@I21@",
+        "@I23@",
+        "@I24@",
+        "@I25@",
+        "@I165@",
+        "@I163@",
+        "@I187@",
+        "@I190@",
+        "@I189@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 932.9118359601125,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h06",
+      "category": "conjunction",
+      "query": "Who was born in Yorkshire, mined copper in Michigan, and later kept a Wisconsin dairy farm?",
+      "relevant": [
+        "@I26@",
+        "@I27@"
+      ],
+      "judgment": "All three conditions; copper rather than coal, Yorkshire rather than Lancashire, Wisconsin rather than Minnesota.",
+      "hard_negative_ids": [
+        "@I28@",
+        "@I29@",
+        "@I30@"
+      ],
+      "ranked_ids": [
+        "@I27@",
+        "@I26@",
+        "@I28@",
+        "@I29@",
+        "@I30@",
+        "@I154@",
+        "@I152@",
+        "@I136@",
+        "@I140@",
+        "@I153@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1001.8479229765944,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h07",
+      "category": "conjunction",
+      "query": "Who was a female printer in Rouen who also ran a lending library?",
+      "relevant": [
+        "@I31@"
+      ],
+      "judgment": "The same woman must perform both occupations in Rouen.",
+      "hard_negative_ids": [
+        "@I32@",
+        "@I33@",
+        "@I34@",
+        "@I35@"
+      ],
+      "ranked_ids": [
+        "@I31@",
+        "@I33@",
+        "@I32@",
+        "@I35@",
+        "@I34@",
+        "@I127@",
+        "@I191@",
+        "@I159@",
+        "@I157@",
+        "@I109@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1127.3553450009786,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h08",
+      "category": "conjunction",
+      "query": "Who survived the Valparaiso earthquake and subsequently adopted an orphan?",
+      "relevant": [
+        "@I36@"
+      ],
+      "judgment": "Survival at Valparaiso followed by actual adoption; donations, earlier adoption, and relatives do not qualify.",
+      "hard_negative_ids": [
+        "@I37@",
+        "@I38@",
+        "@I39@",
+        "@I40@"
+      ],
+      "ranked_ids": [
+        "@I39@",
+        "@I37@",
+        "@I38@",
+        "@I36@",
+        "@I40@",
+        "@I71@",
+        "@I74@",
+        "@I73@",
+        "@I140@",
+        "@I138@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.43067655807339306,
+        "recall@5": 1.0,
+        "mrr@5": 0.25,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25
+      },
+      "latency_ms_median": 932.7202070271596,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h09",
+      "category": "conjunction",
+      "query": "Who married in Quebec but was buried in Louisiana after working as a shipwright?",
+      "relevant": [
+        "@I41@"
+      ],
+      "judgment": "Occupation, marriage location, and own burial location must all match.",
+      "hard_negative_ids": [
+        "@I42@",
+        "@I43@",
+        "@I44@",
+        "@I45@"
+      ],
+      "ranked_ids": [
+        "@I45@",
+        "@I41@",
+        "@I44@",
+        "@I43@",
+        "@I42@",
+        "@I157@",
+        "@I156@",
+        "@I159@",
+        "@I158@",
+        "@I89@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 930.004446010571,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h10",
+      "category": "conjunction",
+      "query": "Who taught music in Prague while caring for a deaf child?",
+      "relevant": [
+        "@I46@"
+      ],
+      "judgment": "Subject must be the music teacher and caregiver, rather than the child.",
+      "hard_negative_ids": [
+        "@I47@",
+        "@I48@",
+        "@I49@",
+        "@I50@"
+      ],
+      "ranked_ids": [
+        "@I50@",
+        "@I48@",
+        "@I46@",
+        "@I49@",
+        "@I47@",
+        "@I195@",
+        "@I94@",
+        "@I75@",
+        "@I36@",
+        "@I73@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 898.3746310113929,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h11",
+      "category": "subject_attribution",
+      "query": "Who personally served as a surgeon in the Crimean War?",
+      "relevant": [
+        "@I51@"
+      ],
+      "judgment": "Medical service must belong to the person, not a relative, biography subject, or treating doctor.",
+      "hard_negative_ids": [
+        "@I52@",
+        "@I53@",
+        "@I54@",
+        "@I55@"
+      ],
+      "ranked_ids": [
+        "@I51@",
+        "@I53@",
+        "@I54@",
+        "@I52@",
+        "@I55@",
+        "@I20@",
+        "@I16@",
+        "@I17@",
+        "@I18@",
+        "@I19@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 923.8148669828661,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h12",
+      "category": "subject_attribution",
+      "query": "Whose own death was caused by a foundry explosion in Essen?",
+      "relevant": [
+        "@I56@"
+      ],
+      "judgment": "Own death, fatal explosion, and Essen foundry must match.",
+      "hard_negative_ids": [
+        "@I57@",
+        "@I58@",
+        "@I59@",
+        "@I60@"
+      ],
+      "ranked_ids": [
+        "@I57@",
+        "@I59@",
+        "@I58@",
+        "@I56@",
+        "@I60@",
+        "@I85@",
+        "@I84@",
+        "@I171@",
+        "@I37@",
+        "@I83@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.43067655807339306,
+        "recall@5": 1.0,
+        "mrr@5": 0.25,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25
+      },
+      "latency_ms_median": 920.1775279943831,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h13",
+      "category": "subject_attribution",
+      "query": "Who crossed the Sahara as a caravan guide?",
+      "relevant": [
+        "@I61@"
+      ],
+      "judgment": "Actual guide, rather than customer, family member, supplier, or storyteller.",
+      "hard_negative_ids": [
+        "@I62@",
+        "@I63@",
+        "@I64@",
+        "@I65@"
+      ],
+      "ranked_ids": [
+        "@I61@",
+        "@I65@",
+        "@I63@",
+        "@I62@",
+        "@I64@",
+        "@I181@",
+        "@I186@",
+        "@I176@",
+        "@I3@",
+        "@I136@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1125.6815860397182,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h14",
+      "category": "subject_attribution",
+      "query": "Who received a medal for rescuing passengers from a ferry fire in Helsinki?",
+      "relevant": [
+        "@I66@"
+      ],
+      "judgment": "Rescuer and medal recipient must be the same subject.",
+      "hard_negative_ids": [
+        "@I67@",
+        "@I68@",
+        "@I69@",
+        "@I70@"
+      ],
+      "ranked_ids": [
+        "@I69@",
+        "@I66@",
+        "@I68@",
+        "@I67@",
+        "@I70@",
+        "@I186@",
+        "@I39@",
+        "@I38@",
+        "@I173@",
+        "@I172@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 1126.395653001964,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h15",
+      "category": "subject_attribution",
+      "query": "Who personally spent childhood in a Krakow orphanage?",
+      "relevant": [
+        "@I71@"
+      ],
+      "judgment": "Own childhood residence, not adult employment, donation, or fictional character.",
+      "hard_negative_ids": [
+        "@I72@",
+        "@I73@",
+        "@I74@",
+        "@I75@"
+      ],
+      "ranked_ids": [
+        "@I75@",
+        "@I71@",
+        "@I73@",
+        "@I72@",
+        "@I74@",
+        "@I181@",
+        "@I191@",
+        "@I186@",
+        "@I196@",
+        "@I176@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 1365.857109951321,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h16",
+      "category": "negation",
+      "query": "Who declined an inheritance in Dundee rather than accepting it?",
+      "relevant": [
+        "@I76@"
+      ],
+      "judgment": "An offered inheritance explicitly renounced, rather than absent, considered, or accepted.",
+      "hard_negative_ids": [
+        "@I77@",
+        "@I78@",
+        "@I79@",
+        "@I80@"
+      ],
+      "ranked_ids": [
+        "@I77@",
+        "@I76@",
+        "@I78@",
+        "@I80@",
+        "@I79@",
+        "@I181@",
+        "@I200@",
+        "@I186@",
+        "@I199@",
+        "@I196@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 1361.7817490012385,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h17",
+      "category": "negation",
+      "query": "Who was acquitted of arson in Bremen?",
+      "relevant": [
+        "@I81@"
+      ],
+      "judgment": "Own not-guilty verdict on arson, not another charge or another person.",
+      "hard_negative_ids": [
+        "@I82@",
+        "@I83@",
+        "@I84@",
+        "@I85@"
+      ],
+      "ranked_ids": [
+        "@I83@",
+        "@I85@",
+        "@I81@",
+        "@I82@",
+        "@I84@",
+        "@I58@",
+        "@I56@",
+        "@I59@",
+        "@I60@",
+        "@I57@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 911.092100024689,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h18",
+      "category": "negation",
+      "query": "Who in Siena had an engagement that ended without a wedding?",
+      "relevant": [
+        "@I86@"
+      ],
+      "judgment": "Requires an actual engagement, followed by no marriage to that partner.",
+      "hard_negative_ids": [
+        "@I87@",
+        "@I88@",
+        "@I89@",
+        "@I90@"
+      ],
+      "ranked_ids": [
+        "@I86@",
+        "@I87@",
+        "@I90@",
+        "@I88@",
+        "@I89@",
+        "@I148@",
+        "@I131@",
+        "@I160@",
+        "@I37@",
+        "@I159@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 916.6450399789028,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h19",
+      "category": "negation",
+      "query": "Who in Utrecht did not lose their hearing despite a childhood fever?",
+      "relevant": [
+        "@I91@"
+      ],
+      "judgment": "Fever must happen to subject and hearing must remain normal.",
+      "hard_negative_ids": [
+        "@I92@",
+        "@I93@",
+        "@I94@",
+        "@I95@"
+      ],
+      "ranked_ids": [
+        "@I95@",
+        "@I93@",
+        "@I91@",
+        "@I92@",
+        "@I94@",
+        "@I47@",
+        "@I48@",
+        "@I181@",
+        "@I196@",
+        "@I191@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1394.1733689862303,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h20",
+      "category": "negation",
+      "query": "Who applied to settle in Tasmania but never actually moved there?",
+      "relevant": [
+        "@I96@"
+      ],
+      "judgment": "Actual application, no subsequent move; intentions alone do not qualify.",
+      "hard_negative_ids": [
+        "@I97@",
+        "@I98@",
+        "@I99@",
+        "@I100@"
+      ],
+      "ranked_ids": [
+        "@I99@",
+        "@I100@",
+        "@I96@",
+        "@I98@",
+        "@I97@",
+        "@I124@",
+        "@I5@",
+        "@I131@",
+        "@I132@",
+        "@I196@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1502.1561079774983,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h21",
+      "category": "lexical_alias",
+      "query": "Who earned money making wooden barrels in Cognac?",
+      "relevant": [
+        "@I101@"
+      ],
+      "judgment": "Cooper is the occupation paraphrase; merchants, wheelwrights, other places, and relatives excluded.",
+      "hard_negative_ids": [
+        "@I102@",
+        "@I103@",
+        "@I104@",
+        "@I105@"
+      ],
+      "ranked_ids": [
+        "@I102@",
+        "@I103@",
+        "@I101@",
+        "@I104@",
+        "@I105@",
+        "@I42@",
+        "@I41@",
+        "@I43@",
+        "@I154@",
+        "@I26@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 895.1503289863467,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h22",
+      "category": "lexical_alias",
+      "query": "Who was paid to carry letters door to door in Inverness?",
+      "relevant": [
+        "@I106@"
+      ],
+      "judgment": "Postman delivery occupation, not letter-writing, counter work, milk delivery, or spouse.",
+      "hard_negative_ids": [
+        "@I107@",
+        "@I108@",
+        "@I109@",
+        "@I110@"
+      ],
+      "ranked_ids": [
+        "@I106@",
+        "@I107@",
+        "@I109@",
+        "@I110@",
+        "@I108@",
+        "@I116@",
+        "@I153@",
+        "@I154@",
+        "@I181@",
+        "@I152@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1371.8049739836715,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h23",
+      "category": "lexical_alias",
+      "query": "Who earned a living repairing footwear in Toledo?",
+      "relevant": [
+        "@I111@"
+      ],
+      "judgment": "Cobbler paraphrase plus correct location and own occupation.",
+      "hard_negative_ids": [
+        "@I112@",
+        "@I113@",
+        "@I114@",
+        "@I115@"
+      ],
+      "ranked_ids": [
+        "@I114@",
+        "@I111@",
+        "@I112@",
+        "@I115@",
+        "@I113@",
+        "@I103@",
+        "@I196@",
+        "@I154@",
+        "@I101@",
+        "@I153@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 1102.1147459978238,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h24",
+      "category": "lexical_alias",
+      "query": "Who helped women deliver babies professionally in Limerick?",
+      "relevant": [
+        "@I116@"
+      ],
+      "judgment": "Midwife and confinement terminology paraphrase; own profession in correct city.",
+      "hard_negative_ids": [
+        "@I117@",
+        "@I118@",
+        "@I119@",
+        "@I120@"
+      ],
+      "ranked_ids": [
+        "@I117@",
+        "@I116@",
+        "@I120@",
+        "@I119@",
+        "@I118@",
+        "@I106@",
+        "@I181@",
+        "@I3@",
+        "@I149@",
+        "@I186@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 2022.240937978495,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h25",
+      "category": "lexical_alias",
+      "query": "Who maintained the light that warned ships away from rocks at Whitby?",
+      "relevant": [
+        "@I121@"
+      ],
+      "judgment": "Lighthouse-keeper role paraphrase, location and own activity.",
+      "hard_negative_ids": [
+        "@I122@",
+        "@I123@",
+        "@I124@",
+        "@I125@"
+      ],
+      "ranked_ids": [
+        "@I121@",
+        "@I122@",
+        "@I124@",
+        "@I123@",
+        "@I125@",
+        "@I133@",
+        "@I174@",
+        "@I196@",
+        "@I191@",
+        "@I176@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1365.5521990149282,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h26",
+      "category": "date_numeric",
+      "query": "Who was born in 1847 and married at age 23 in Lancaster?",
+      "relevant": [
+        "@I126@"
+      ],
+      "judgment": "1870 wedding after May birthday gives age 23; nearby dates do not.",
+      "hard_negative_ids": [
+        "@I127@",
+        "@I128@",
+        "@I129@",
+        "@I130@"
+      ],
+      "ranked_ids": [
+        "@I130@",
+        "@I127@",
+        "@I126@",
+        "@I129@",
+        "@I128@",
+        "@I157@",
+        "@I156@",
+        "@I159@",
+        "@I158@",
+        "@I148@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 905.472994025331,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h27",
+      "category": "date_numeric",
+      "query": "Who lived in Trieste continuously for at least twenty years before 1900?",
+      "relevant": [
+        "@I131@"
+      ],
+      "judgment": "At least twenty uninterrupted years completed before 1900.",
+      "hard_negative_ids": [
+        "@I132@",
+        "@I133@",
+        "@I134@",
+        "@I135@"
+      ],
+      "ranked_ids": [
+        "@I133@",
+        "@I135@",
+        "@I131@",
+        "@I134@",
+        "@I132@",
+        "@I137@",
+        "@I57@",
+        "@I180@",
+        "@I4@",
+        "@I186@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1161.0008159768768,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h28",
+      "category": "date_numeric",
+      "query": "Who died aged 41 during the 1893 cholera outbreak in Naples?",
+      "relevant": [
+        "@I136@"
+      ],
+      "judgment": "Correct age, outbreak year, cause, and Naples location.",
+      "hard_negative_ids": [
+        "@I137@",
+        "@I138@",
+        "@I139@",
+        "@I140@"
+      ],
+      "ranked_ids": [
+        "@I138@",
+        "@I136@",
+        "@I137@",
+        "@I139@",
+        "@I140@",
+        "@I37@",
+        "@I57@",
+        "@I11@",
+        "@I84@",
+        "@I13@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.6309297535714575,
+        "recall@5": 1.0,
+        "mrr@5": 0.5,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.6309297535714575,
+        "recall@10": 1.0,
+        "mrr@10": 0.5
+      },
+      "latency_ms_median": 917.2911710338667,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h29",
+      "category": "date_numeric",
+      "query": "Who had exactly three children, all born in Adelaide before 1880?",
+      "relevant": [
+        "@I141@"
+      ],
+      "judgment": "Exact count and every child matching both place and date.",
+      "hard_negative_ids": [
+        "@I142@",
+        "@I143@",
+        "@I144@",
+        "@I145@"
+      ],
+      "ranked_ids": [
+        "@I143@",
+        "@I145@",
+        "@I141@",
+        "@I142@",
+        "@I144@",
+        "@I133@",
+        "@I100@",
+        "@I147@",
+        "@I10@",
+        "@I129@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 916.2487809662707,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h30",
+      "category": "date_numeric",
+      "query": "Who was widowed twice in Dijon before turning fifty?",
+      "relevant": [
+        "@I146@"
+      ],
+      "judgment": "Two spouse deaths in Dijon before 1880, not divorce, later death, or relative.",
+      "hard_negative_ids": [
+        "@I147@",
+        "@I148@",
+        "@I149@",
+        "@I150@"
+      ],
+      "ranked_ids": [
+        "@I150@",
+        "@I148@",
+        "@I146@",
+        "@I147@",
+        "@I149@",
+        "@I37@",
+        "@I181@",
+        "@I11@",
+        "@I129@",
+        "@I191@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1374.6052400092594,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h31",
+      "category": "ambiguous_identity",
+      "query": "Find the Samuel Harper born in Chester who worked as a surveyor, not his namesake from York.",
+      "relevant": [
+        "@I151@"
+      ],
+      "judgment": "Same-name disambiguation by own birthplace and occupation.",
+      "hard_negative_ids": [
+        "@I152@",
+        "@I153@",
+        "@I154@",
+        "@I155@"
+      ],
+      "ranked_ids": [
+        "@I151@",
+        "@I153@",
+        "@I152@",
+        "@I155@",
+        "@I154@",
+        "@I26@",
+        "@I28@",
+        "@I30@",
+        "@I27@",
+        "@I139@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1074.3330239783973,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h32",
+      "category": "ambiguous_identity",
+      "query": "Find Eleanor Mason, also called Nell, whose wedding was in Exeter in 1886.",
+      "relevant": [
+        "@I156@"
+      ],
+      "judgment": "Exact alias, place, year, and subject.",
+      "hard_negative_ids": [
+        "@I157@",
+        "@I158@",
+        "@I159@",
+        "@I160@"
+      ],
+      "ranked_ids": [
+        "@I156@",
+        "@I159@",
+        "@I160@",
+        "@I158@",
+        "@I157@",
+        "@I45@",
+        "@I87@",
+        "@I89@",
+        "@I43@",
+        "@I86@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1004.6569749829359,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h33",
+      "category": "ambiguous_identity",
+      "query": "Which Jean Moreau was a notary in Arles rather than a miller?",
+      "relevant": [
+        "@I161@"
+      ],
+      "judgment": "Own occupation and city disambiguate identical names.",
+      "hard_negative_ids": [
+        "@I162@",
+        "@I163@",
+        "@I164@",
+        "@I165@"
+      ],
+      "ranked_ids": [
+        "@I165@",
+        "@I162@",
+        "@I161@",
+        "@I163@",
+        "@I164@",
+        "@I44@",
+        "@I43@",
+        "@I181@",
+        "@I41@",
+        "@I45@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1417.09401702974,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h34",
+      "category": "ambiguous_identity",
+      "query": "Find Maria Silva whose maiden surname was Costa and who moved to Porto in 1892.",
+      "relevant": [
+        "@I166@"
+      ],
+      "judgment": "Maiden name plus destination and year.",
+      "hard_negative_ids": [
+        "@I167@",
+        "@I168@",
+        "@I169@",
+        "@I170@"
+      ],
+      "ranked_ids": [
+        "@I166@",
+        "@I167@",
+        "@I170@",
+        "@I169@",
+        "@I168@",
+        "@I1@",
+        "@I5@",
+        "@I133@",
+        "@I2@",
+        "@I15@"
+      ],
+      "metrics": {
+        "ndcg@5": 1.0,
+        "recall@5": 1.0,
+        "mrr@5": 1.0,
+        "top1_accuracy": 1.0,
+        "ndcg@10": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 1.0
+      },
+      "latency_ms_median": 1007.2350750560872,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h35",
+      "category": "ambiguous_identity",
+      "query": "Which Patrick OBrien lost a hand working in a Belfast shipyard?",
+      "relevant": [
+        "@I171@"
+      ],
+      "judgment": "Same-name injury, body part, and location disambiguation.",
+      "hard_negative_ids": [
+        "@I172@",
+        "@I173@",
+        "@I174@",
+        "@I175@"
+      ],
+      "ranked_ids": [
+        "@I175@",
+        "@I172@",
+        "@I171@",
+        "@I174@",
+        "@I173@",
+        "@I44@",
+        "@I42@",
+        "@I153@",
+        "@I43@",
+        "@I154@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 986.6361210006289,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h36",
+      "category": "late_evidence",
+      "query": "Who in Odessa secretly sheltered political fugitives in their cellar?",
+      "relevant": [
+        "@I176@"
+      ],
+      "judgment": "Only the target actually shelters fugitives; its evidence is beyond the model window.",
+      "hard_negative_ids": [
+        "@I177@",
+        "@I178@",
+        "@I179@",
+        "@I180@"
+      ],
+      "ranked_ids": [
+        "@I178@",
+        "@I180@",
+        "@I179@",
+        "@I176@",
+        "@I177@",
+        "@I191@",
+        "@I192@",
+        "@I195@",
+        "@I194@",
+        "@I81@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.43067655807339306,
+        "recall@5": 1.0,
+        "mrr@5": 0.25,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25
+      },
+      "latency_ms_median": 1172.9223110014573,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h37",
+      "category": "late_evidence",
+      "query": "Who in Grenoble donated their entire savings to establish a free school?",
+      "relevant": [
+        "@I181@"
+      ],
+      "judgment": "Own entire savings and founding a tuition-free school.",
+      "hard_negative_ids": [
+        "@I182@",
+        "@I183@",
+        "@I184@",
+        "@I185@"
+      ],
+      "ranked_ids": [
+        "@I185@",
+        "@I184@",
+        "@I181@",
+        "@I182@",
+        "@I183@",
+        "@I38@",
+        "@I196@",
+        "@I80@",
+        "@I186@",
+        "@I191@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.5,
+        "recall@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.5,
+        "recall@10": 1.0,
+        "mrr@10": 0.3333333333333333
+      },
+      "latency_ms_median": 1720.3667569556274,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h38",
+      "category": "late_evidence",
+      "query": "Who in Kyoto trained as a potter after being released from captivity?",
+      "relevant": [
+        "@I186@"
+      ],
+      "judgment": "Captivity then release then pottery training, with own Kyoto evidence late in the text.",
+      "hard_negative_ids": [
+        "@I187@",
+        "@I188@",
+        "@I189@",
+        "@I190@"
+      ],
+      "ranked_ids": [
+        "@I190@",
+        "@I187@",
+        "@I188@",
+        "@I189@",
+        "@I186@",
+        "@I21@",
+        "@I176@",
+        "@I181@",
+        "@I67@",
+        "@I191@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.38685280723454163,
+        "recall@5": 1.0,
+        "mrr@5": 0.2,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.38685280723454163,
+        "recall@10": 1.0,
+        "mrr@10": 0.2
+      },
+      "latency_ms_median": 2120.7536840229295,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h39",
+      "category": "late_evidence",
+      "query": "Who in Riga secretly printed banned newspapers at night?",
+      "relevant": [
+        "@I191@"
+      ],
+      "judgment": "Own clandestine printing activity, not reader, confiscator, or spouse.",
+      "hard_negative_ids": [
+        "@I192@",
+        "@I193@",
+        "@I194@",
+        "@I195@"
+      ],
+      "ranked_ids": [
+        "@I195@",
+        "@I192@",
+        "@I194@",
+        "@I191@",
+        "@I193@",
+        "@I178@",
+        "@I176@",
+        "@I31@",
+        "@I32@",
+        "@I180@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.43067655807339306,
+        "recall@5": 1.0,
+        "mrr@5": 0.25,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25
+      },
+      "latency_ms_median": 1117.771591001656,
+      "search_mode": "hybrid_reranked"
+    },
+    {
+      "id": "h40",
+      "category": "late_evidence",
+      "query": "Who in Hobart sold their house to pay for a sister's surgery?",
+      "relevant": [
+        "@I196@"
+      ],
+      "judgment": "House sale must finance own sister's surgery; target evidence is late.",
+      "hard_negative_ids": [
+        "@I197@",
+        "@I198@",
+        "@I199@",
+        "@I200@"
+      ],
+      "ranked_ids": [
+        "@I197@",
+        "@I199@",
+        "@I200@",
+        "@I196@",
+        "@I198@",
+        "@I99@",
+        "@I97@",
+        "@I78@",
+        "@I160@",
+        "@I77@"
+      ],
+      "metrics": {
+        "ndcg@5": 0.43067655807339306,
+        "recall@5": 1.0,
+        "mrr@5": 0.25,
+        "top1_accuracy": 0.0,
+        "ndcg@10": 0.43067655807339306,
+        "recall@10": 1.0,
+        "mrr@10": 0.25
+      },
+      "latency_ms_median": 1123.1026509776711,
+      "search_mode": "hybrid_reranked"
+    }
+  ],
+  "contrast_set_random_top1": 0.20500000000000002
+}

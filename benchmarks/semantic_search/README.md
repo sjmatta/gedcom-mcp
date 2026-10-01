@@ -129,3 +129,73 @@ relevance even when answering fully may need structured reasoning. Neither suite
 tests no-answer queries or calibrated abstention. Use the challenge to measure
 improvements and the basic suite to catch regressions, always comparing each
 against its own frozen baseline on the same suite hash.
+
+## Passage and hybrid implementation
+
+The implementation in `ab74e60` uses pinned BGE-small embeddings, complete
+overlapping passages, BM25/dense reciprocal-rank fusion, and a bounded 68M Ettin
+reranker. [Semantic search documentation](../../SEMANTIC_SEARCH.md) describes
+configuration, evidence, score changes, and how assistants should use the tool.
+The original suites and baseline files remain unchanged.
+
+| Metric | Basic before | Basic after | Challenge before | Challenge after |
+|---|---:|---:|---:|---:|
+| nDCG@10 | 0.7875 | 0.9561 | 0.6249 | 0.6434 |
+| Recall@10 | 86.67% | 100% | 87.50% | 100% |
+| MRR@10 | 0.7694 | 0.9417 | 0.5375 | 0.5246 |
+| Top-1 accuracy | 70% | 90% | 30% | 25% |
+
+Every relevant person is now found within five results on both suites. All four
+basic long-note questions rank their correct person first. The five challenge
+late-evidence questions now find the right person, but none rank that person
+first. **Challenge first-result accuracy and MRR regress:** this implementation
+improves candidate completeness substantially, but its small reranker still
+confuses close alternatives. Dates/counts, temporal order, and attribution need
+structured verification. These are development results, not production accuracy
+estimates, and the challenge was used while choosing the implementation.
+
+`improved.json` and `challenge-improved.json` record final three-repeat CPU runs
+on Rivendell, including immutable model revisions, code hashes, full rankings,
+suite/corpus hashes, library versions, and actual cgroup limits. Their
+`git_revision` identifies the implementation measured, before this report commit.
+The original baselines were measured locally; compare accuracy on identical
+suite hashes, but do not treat their timing differences as a hardware-controlled
+speed comparison.
+
+## Rivendell resource pilot
+
+The isolated, offline test used the deployed image's dependencies and the exact
+read-only 20,132-person tree, with a separate cache. Production's container,
+image, tree, cache, and limits were unchanged and its health check remained healthy.
+The host is an Intel i7-13700F; serving was limited to **1.5 CPUs and 2 GiB RAM**,
+without GPU or swap, with two inference threads and batches of four reranker pairs.
+
+| Measurement | Full-tree cached serving | Including temporary note refresh |
+|---|---:|---:|
+| Passages | 86,665 | 86,665 before edit |
+| Index size | 119.66 MiB | Same on-disk cache |
+| Parse tree | 9.12 s | 9.21 s |
+| Load index and lexical index | 2.16 s | 2.16 s |
+| First query, including lazy model load | 5.95 s | 6.21 s |
+| Warm query p50 | 1.24 s | 1.25 s |
+| Warm query p95 | 3.54 s | 3.69 s |
+| Peak process RSS | 1.17 GiB | 1.40 GiB |
+| Peak cgroup memory | 0.95 GiB | 1.12 GiB |
+| OOM events / kills | 0 / 0 | 0 / 0 |
+| Temporary note refresh | — | 8.89 s |
+
+See `rivendell-resources.json` and `rivendell-refresh-resources.json` for exact
+measurements. RSS and cgroup memory use different accounting, so both are shown.
+The refresh probe retains previous and replacement vectors and lexical indexes
+at the same time; it never persists its artificial note or replacement index.
+Each serving run measures five generic queries three times, returning ten people
+and reranking twenty. GIS and telemetry are disabled. This is a backend resource
+pilot, not a concurrent HTTP or full production deployment test.
+
+A cold full rebuild at the serving CPU quota started too slowly for startup; it
+was stopped. A separate 6-CPU build was also stopped after an identical prebuilt
+index became available. The complete index was prepared locally with MPS, then
+transferred to the isolated test cache with explicit permission. Neither run
+establishes full cold-build CPU duration. **Prebuild before deployment**, using
+the exact tree, code and pinned model. Routine refreshes reuse unchanged vectors.
+The temporary private caches and test containers are separate from production.

@@ -16,6 +16,11 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--refresh-probe",
+        action="store_true",
+        help="Measure a temporary in-memory note edit; never persist it",
+    )
     args = parser.parse_args()
     os.environ.update(
         SEMANTIC_SEARCH_ENABLED="true", GIS_SEARCH_ENABLED="false", PHOENIX_ENABLED="false"
@@ -50,6 +55,23 @@ def main():
         if response.get("warning") or response.get("error"):
             raise RuntimeError("Search failed or degraded")
         timings.append(time.perf_counter() - started)
+    refresh_seconds = None
+    if args.refresh_probe:
+        from gedcom_server.retrieval import BM25
+
+        # Keep old and replacement vectors/indexes alive together, as during a
+        # publication. The artificial note never touches the GEDCOM or cache.
+        person = next(iter(state.individuals.values()))
+        person.notes.append("Resource probe: a household item was repaired.")
+        started = time.perf_counter()
+        try:
+            ids, texts, _ = semantic._collect_passages(semantic._encoder)
+            replacement_vectors = semantic._encode_changed_passages(semantic._encoder, ids, texts)
+            replacement_lexical = BM25(texts)
+            assert len(replacement_vectors) == len(replacement_lexical.texts)
+            refresh_seconds = time.perf_counter() - started
+        finally:
+            person.notes.pop()
     cgroup = Path("/sys/fs/cgroup")
     report = {
         "cache_existed": cache_existed,
@@ -60,6 +82,7 @@ def main():
         "parse_seconds": parse_seconds,
         "index_seconds": build_seconds,
         "first_query_seconds": first_query_seconds,
+        "temporary_note_refresh_seconds": refresh_seconds,
         "query_seconds": {"p50": statistics.median(timings), "p95": sorted(timings)[-1]},
         "process_peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
         "cgroup_peak_bytes": int((cgroup / "memory.peak").read_text()),
