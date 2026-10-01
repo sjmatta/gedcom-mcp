@@ -15,6 +15,7 @@ from typing import Protocol
 class EditResult:
     data: bytes
     affected_records: tuple[str, ...]
+    review: dict | None = None
 
 
 class GedcomEditor(Protocol):

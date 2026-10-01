@@ -39,6 +39,21 @@ def register_tools(mcp):
         # on. Pass the whole docstring; Args still become parameter descriptions.
         return mcp.tool(description=inspect.getdoc(fn))(synchronized(fn))
 
+    @mcp.tool(annotations={"readOnlyHint": True})
+    def audit_tree(expected_revision: int | None = None, offset: int = 0, limit: int = 100) -> dict:
+        """Scan the entire tree for structural errors and evidence-review warnings.
+
+        Checks all pointer tags (including extensions), reciprocal family links,
+        duplicate memberships, self-parenting, ancestry cycles, conflicting vital
+        facts and uncited vital events. Reports connected components. This does not
+        establish historical truth or fully validate the GEDCOM standard.
+        Findings are paginated; follow next_offset with the returned revision as
+        expected_revision to prevent mixing revisions. No tree changes occur.
+        """
+        from .tree_audit import audit_tree as run_audit
+
+        return run_audit(expected_revision, offset, limit)
+
     @tool
     @traced_tool
     def get_parent_families(individual_id: str) -> dict:

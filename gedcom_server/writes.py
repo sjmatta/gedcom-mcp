@@ -296,6 +296,7 @@ class TreeStore:
                 "families": len(candidate.families),
             },
             "reason": reason,
+            "review": edited.review if restored is None else None,
         }
 
     def proposal_diff(self, proposal_id: str, offset: int = 0, limit: int = 500) -> dict:
