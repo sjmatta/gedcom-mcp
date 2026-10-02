@@ -2,6 +2,7 @@
 
 import hashlib
 from collections import defaultdict
+from collections.abc import Iterator
 
 from ged4py.date import DateValue
 
@@ -45,6 +46,19 @@ class Snapshot:
             counts[line.tag] += 1
             self.paths[pos] = path
             stack.append((line.level, path, defaultdict(int)))
+
+    def iter_records(self) -> Iterator[tuple[str, int]]:
+        """Yield every root with the same editable ID used by the record inventory."""
+        anonymous_counts: dict[str, int] = {}
+        for pos, line in enumerate(self.doc.lines):
+            if line.level != 0:
+                continue
+            key = line.xref
+            if key is None:
+                index = anonymous_counts.get(line.tag, 0)
+                anonymous_counts[line.tag] = index + 1
+                key = line.tag if line.tag in {"HEAD", "TRLR"} else f"anonymous-{line.tag}-{index}"
+            yield key, pos
 
     def fields(self, start, end=None):
         end = self.doc.end(start) if end is None else end
@@ -95,15 +109,8 @@ def list_records(record_type=None, expected_snapshot=None, offset=0, limit=100):
     """Inventory every editable record, including unreferenced auxiliary records."""
     snap = Snapshot(expected_snapshot)
     items = []
-    anonymous_counts: dict[str, int] = {}
-    for line in snap.doc.lines:
-        if line.level != 0:
-            continue
-        key = line.xref
-        if key is None:
-            index = anonymous_counts.get(line.tag, 0)
-            anonymous_counts[line.tag] = index + 1
-            key = line.tag if line.tag in {"HEAD", "TRLR"} else f"anonymous-{line.tag}-{index}"
+    for key, start in snap.iter_records():
+        line = snap.doc.lines[start]
         if record_type is None or line.tag == record_type:
             items.append({"record_id": key, "record_type": line.tag})
     return snap.page(items, offset, limit)
@@ -152,7 +159,7 @@ def get_source_references(source_id, page=None, expected_snapshot=None, offset=0
     if source_id not in snap.records or snap.doc.lines[snap.records[source_id]].tag != "SOUR":
         raise ValueError("Source not found")
     items = []
-    for owner, start in snap.records.items():
+    for owner, start in snap.iter_records():
         for pos in range(start + 1, snap.doc.end(start)):
             line = snap.doc.lines[pos]
             if line.tag != "SOUR" or line.value != source_id:

@@ -324,6 +324,49 @@ def test_citation_retarget_and_source_delete_require_explicit_reference_cleanup(
     assert "@S1@" not in state.sources
 
 
+def test_reverse_citations_enable_header_and_anonymous_source_cleanup(tree):
+    original_header = get_record("HEAD")["raw"]
+    original_anonymous = get_record("anonymous-_CUSTOM-0")["raw"]
+    commit(
+        tree,
+        {"op": "add_source", "source_id": "@SNEW@", "title": "Auxiliary evidence"},
+        *[
+            {
+                "op": "add_citation",
+                "record_id": record,
+                "path": selected,
+                "source_id": "@SNEW@",
+                "page": "Auxiliary page",
+            }
+            for record, selected in [("HEAD", []), ("anonymous-_CUSTOM-0", path("_VALUE"))]
+        ],
+    )
+    revision = tree.revision
+    before = tree.document(revision)
+    with pytest.raises(ValueError, match="integrity"):
+        tree.prepare(revision, "Referenced source", [remove(tree, "@SNEW@", [])])
+    assert tree.revision == revision and tree.document(revision) == before
+    refs = get_source_references("SNEW")
+    assert refs["revision"] == revision and refs["total"] == 2
+    assert [r["record_id"] for r in refs["items"]] == ["HEAD", "anonymous-_CUSTOM-0"]
+    operations = [
+        {
+            "op": "remove_field",
+            "record_id": ref["record_id"],
+            "path": ref["path"],
+            "expected_sha256": get_record(ref["record_id"], ref["path"])["items"][0][
+                "subtree_sha256"
+            ],
+        }
+        for ref in refs["items"]
+    ]
+    commit(tree, *operations, remove(tree, "@SNEW@", []))
+    assert "@SNEW@" not in state.sources
+    assert b"@SNEW@" not in tree.document(tree.revision)
+    assert get_record("anonymous-_CUSTOM-0")["raw"] == original_anonymous
+    assert get_record("HEAD")["raw"] == original_header
+
+
 def test_relationship_qualifier_update_retains_all_evidence(tree):
     link = get_record("I5", path("FAMC"))["items"][0]
     proposal = commit(
