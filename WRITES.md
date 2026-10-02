@@ -80,16 +80,29 @@ Supported operation dictionaries:
 
 | `op` | Required fields | Optional fields |
 | --- | --- | --- |
-| `add_note` | `record_id`, `text` | — |
-| `add_source` | `title` | `author`, `publication` |
+| `add_note` | `record_id`, `text` | `path` (parent subtree; default record) |
+| `add_source` | `title` | `author`, `publication`, `source_id`, `repository_id`, `note` |
 | `add_event` | `record_id`, `tag`, `source_id` | `date`, `place`, `description`, `page` |
-| `add_citation` | `record_id`, `path`, `source_id` | `page` |
+| `add_citation` | `record_id`, `path`, `source_id` | `page`, `text`, `url` |
 | `replace_value` | `record_id`, `path`, `old_value`, `value` | — |
+| `add_field` | `record_id`, `field` | `path` (parent; default record), `index` |
+| `update_field` | `record_id`, `expected_sha256`, `value` | `path` (default record text), `tag` |
+| `replace_field` | `record_id`, nonempty `path`, `expected_sha256`, `field` | — |
+| `remove_field` | `record_id`, nonempty `path`, `expected_sha256` | — |
+| `add_record` | new `record_id`, `tag` | `value`, `fields` |
+| `remove_record` | `record_id`, `expected_sha256` | — |
 
-Values in this release are single-line text of at most 200 UTF-8 bytes.
-Sources get stable collision-resistant IDs shown in the prepared diff; cite a
-new source in a subsequent proposal after accepting it. Events require an
-existing source. A citation is attached to a selected level-one event.
+Notes, source metadata, event text, citations and generic field values accept up
+to 1 MiB of UTF-8 text each. Newlines and long lines are encoded with GEDCOM
+`CONT`/`CONC`, splitting at UTF-8 character boundaries. Control characters are
+rejected; text resembling GEDCOM syntax stays text and cannot inject records.
+Convenience person/name operations and `replace_value` retain their single-line,
+200-byte limit; generic field operations can represent longer name structures.
+Sources get generated collision-resistant IDs, or accept an explicit unused
+`source_id`. Create a source first and cite that ID later in the **same batch**.
+Events require a source present at that point in the batch. Citations and notes
+can attach to any selected subtree, including names and family links. Citation
+text/URL is stored under `DATA/TEXT` and `DATA/WWW`.
 
 Paths select exact sibling occurrences, for example:
 
@@ -103,8 +116,8 @@ Paths select exact sibling occurrences, for example:
 }
 ```
 
-Corrections support NAME, SEX, and event DATE/PLAC fields. Fields with child tags
-are refused to avoid contradictory values, including NAME with GIVN/SURN.
+The conservative `replace_value` operation supports NAME, SEX, and event DATE/PLAC
+fields without child tags. For complete editing use the field operations below.
 For structured name corrections use `prepare_change(operation="update_person_name", arguments=...)`, or batch
 `update_name`, with the exact old NAME, complete new NAME, and explicit given-name
 and surname components. It updates GIVN/SURN without removing name citations,
@@ -112,10 +125,84 @@ other subordinate fields, or alternate NAME occurrences. Read `get_record` first
 `name_index` selects the zero-based NAME occurrence. Blank components mean unknown.
 Include retained prefixes/suffixes in the complete new NAME where appropriate.
 Person creation uses the same reviewed proposal workflow. Structural changes use explicit operations
-described below; direct value replacement never changes relationship pointers.
+described below; `replace_value` never changes relationship pointers.
 Notes and sources preserve research context; edits do not establish historical
 truth merely because they have a citation. Preserve uncertainty in the value,
 source, note and reason rather than replacing it with an unsupported assertion.
+
+## Complete field and auxiliary record editing
+
+`field` is a structured subtree: `{ "tag": "NOTE", "value": "Text",
+"children": [...] }`. The editor generates levels and line endings; callers do
+not supply raw GEDCOM. Nested fields can represent alternate names, event types,
+notes, source metadata, repositories, citation details, media, external IDs,
+coordinates and vendor extensions. New subtrees are limited to 64 levels and
+8 MiB. Existing unknown structures are preserved verbatim unless explicitly
+selected for replacement/removal.
+
+Discover `list_records` to enumerate all records, including unreferenced sources,
+repositories, media and shared notes. It supports exact `record_type` filtering
+and snapshot-guarded pagination. Use `get_record` on each ID for exact paths and
+`subtree_sha256`. `HEAD` and `TRLR` select document metadata; other anonymous
+records use `anonymous-TAG-index` with zero-based occurrence. HEAD/TRLR envelopes
+cannot be added or removed. The UTF-8 import boundary remains enforced.
+
+`get_record.items[].text` joins direct CONT/CONC text, with a 2000-byte preview and
+`text_truncated`. Follow raw-line pages to inspect the complete content. Each
+`subtree_sha256` hashes the **entire** selected subtree's original UTF-8 bytes,
+including children and line endings, even when the response is paginated. Supply
+that hash as `expected_sha256` for update, replacement, removal, or auxiliary
+record deletion. A mismatched hash aborts preparation without persisting a proposal.
+
+- `add_field` inserts a missing field, or adds another occurrence. `path` selects
+  its parent. Omit `index` to append; specify a same-tag index to insert before
+  that occurrence (e.g. NAME index 0 selects a new primary name).
+- `update_field` changes a value and optionally its tag while retaining every
+  non-continuation child verbatim. Empty text clears the value. Use it to correct
+  notes, event descriptions/types, citation pages/source pointers, source titles,
+  repository addresses, media paths, identifiers and custom fields. `path=[]`
+  updates record text, including shared NOTE records, without changing its ID/type.
+  When changing a place, review retained MAP coordinates as part of the same batch.
+- `replace_field` replaces the **whole** selected subtree. Any removed evidence
+  appears in the complete diff. `remove_field` removes the selected field and all
+  descendants, for example an incorrect event, alternate name or citation.
+- `add_record` creates a record with an explicit unused `@ID@` and structured
+  fields. `remove_record` deletes an auxiliary record. Resolve its inbound
+  references explicitly in the same batch; deletion cannot leave new dangling
+  references. Use the dedicated person/family deletion operations for INDI/FAM.
+
+Operations run in supplied order. Paths and hashes must match the document **at
+that step**, including earlier operations. When removing several same-tag sibling
+occurrences, work from the highest index downward to avoid shifting later paths.
+Adding missing DATE/PLAC/SEX uses `add_field`; removing them uses `remove_field`.
+Use `update_name` for coordinated NAME/GIVN/SURN corrections. Generic name edits
+must not introduce contradictory components.
+
+All operations, including generic fields, are checked against the original tree
+for new integrity errors. Pointer targets/types, valid sex/qualifier values,
+reciprocal links, partner roles and ancestry cycles remain enforced. Generic
+relationship pointer corrections must edit both sides atomically; they cannot
+bypass the graph checks. Existing import errors may be repaired, but new errors
+are refused. This is not a complete GEDCOM standards validator or historical
+verification. Newly added generic facts may be uncited; preserve uncertainty and
+provide sources when the evidence warrants a factual claim. The convenience
+`add_event` operation continues to require a source.
+
+For example, after reading the birth DATE field, prepare this operation through
+`prepare_change(operation="edit_records", arguments=...)`:
+
+```json
+{
+  "op": "update_field",
+  "record_id": "@I123@",
+  "path": [{"tag": "BIRT", "index": 0}, {"tag": "DATE", "index": 0}],
+  "expected_sha256": "<subtree_sha256 returned by get_record>",
+  "value": "ABT 1900"
+}
+```
+
+The revision/reason, complete diff review and user authorization requirements
+apply to every field operation exactly as they do to structural edits.
 
 ## Structural edits and reviewed overrides
 
@@ -132,6 +219,7 @@ reviewers can see every override and the stated basis for identity consolidation
 | `update_name` | `individual_id`, `old_name`, `name`, `given_name`, `surname` | `name_index` (default 0) |
 | `add_family` | `family_id` (new `@ID@`) | — |
 | `add_relationship` | `family_id`, `individual_id`, `role` | `pedigree`, `status` |
+| `update_relationship` | `family_id`, `individual_id`, `role`, `expected_sha256` | `pedigree`, `status` (at least one) |
 | `remove_relationship` | `family_id`, `individual_id`, `role` | `force` |
 | `delete_individual` | `individual_id` | `force` |
 | `delete_individuals` | `individual_ids` (1–50,000 unique IDs) | `force` |
@@ -144,7 +232,13 @@ inferring sex or gender. Edits update both the family membership and the person�
 `FAMS`/`FAMC`. Replace a relationship by removing and adding it in the same batch.
 Child links may specify `pedigree` (`birth`, `adopted`, `foster`, `sealing`) and
 `status` (`challenged`, `disproven`, `proven`). These record claims, not biological
-proof. Other families and opaque GEDCOM structures remain unchanged.
+proof. `update_relationship` edits CHIL qualifiers in place, using the FAMC
+subtree hash from `get_record`. An omitted qualifier is preserved; null removes
+it. Notes, citations, unknown fields and the reciprocal membership remain intact.
+It requires a unique reciprocal link; duplicate qualifiers require explicit field
+edits. No force override is needed to preserve relationship evidence. Removing a
+qualifier with subordinate evidence requires an explicit reviewed subtree removal.
+Other families and opaque GEDCOM structures remain unchanged.
 
 `add_individual` accepts a single-line name such as `Jane /Smith/` (or a name
 without a surname delimiter). Its ID must be unused across all record types.
@@ -291,8 +385,9 @@ Recovery refuses an existing destination and never replaces a running store.
 
 `editing.py` defines `GedcomEditor` and the sole default-backend factory. The
 contract uses bytes, stable operation dictionaries and `EditResult`; parser nodes
-never cross the boundary. `document.py` contains the current implementation and
-all GEDCOM syntax manipulation, including record splitting and review diffs.
+never cross the boundary. `document.py` implements record parsing, splitting and
+review diffs; `field_edits.py` implements structured field/text editing and hashes;
+`structural_edits.py` implements graph edits. All are internal to the default backend.
 
 `revision_storage.py` handles snapshots and private files; `writes.py` coordinates
 revisions; `tree_projection.py` builds read indexes using the existing ged4py
@@ -301,6 +396,16 @@ levels or manipulate GEDCOM tags. `TreeStore(editor=...)` supports an injected
 adapter. A replacement should pass `tests/test_editing_contract.py` and the full
 write/recovery suite before changing `default_editor()`. The SQLite schema and
 MCP operation contracts need not change when replacing the editing backend.
+
+## Editing coverage verification recorded 2026-10-01
+
+The expanded editor passed 599 tests, Ruff lint/format, mypy and dependency checks.
+New tests exercise field and auxiliary-record lifecycles, exact subtree guards,
+evidence-preserving updates, relationship qualifiers, multiline UTF-8 text,
+pointer/type/reciprocity/cycle refusal, paginated discovery, actual stdio MCP
+prepare/apply, process restart and byte-exact whole-tree restoration. This is
+local sample/synthetic verification; the full-tree capacity measurements below
+remain dated evidence from the earlier implementation.
 
 ## Verification recorded 2026-09-30
 

@@ -162,6 +162,24 @@ def register_tools(mcp):
         )
 
     @tool
+    def list_records(
+        record_type: str | None = None,
+        expected_snapshot: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> dict:
+        """Find all GEDCOM record IDs, including sources, repositories, media and shared notes.
+
+        Optional record_type is an exact GEDCOM tag (e.g. REPO or OBJE). Includes
+        unreferenced records and HEAD/TRLR metadata. Read each with get_record for
+        exact field paths and subtree hashes before editing. Follow next_offset
+        with the returned snapshot as expected_snapshot. limit is 1–500.
+        """
+        from .research_reads import list_records as read
+
+        return read(record_type, expected_snapshot, offset, limit)
+
+    @tool
     def get_record(
         record_id: str,
         path: list[dict] | None = None,
@@ -173,7 +191,11 @@ def register_tools(mcp):
 
         Optional path selects a subtree using tag and zero-based sibling index,
         e.g. [{"tag": "BIRT", "index": 1}]. Each field returns its absolute path
-        within the record and original text. Results are paginated by lines;
+        within the record, original text, logical continuation text (up to 2000
+        UTF-8 bytes, with text_truncated), and
+        subtree_sha256 for guarded update/replace/remove operations. Use HEAD or
+        TRLR for document metadata, or anonymous-TAG-index for other anonymous
+        records. Results are paginated by lines;
         concatenate raw across pages for the complete record or subtree.
         Pass returned snapshot as expected_snapshot on subsequent pages.
         Missing records/paths raise errors. Current UTF-8 GEDCOM only.

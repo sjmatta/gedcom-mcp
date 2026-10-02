@@ -9,6 +9,7 @@ from . import state, writes
 from .constants import EVENT_TAGS, FAMILY_EVENT_TAGS
 from .core import _get_individuals_batch, _normalize_lookup_id
 from .document import Document
+from .field_edits import logical_text, subtree_hash
 from .helpers import date_sort_key
 from .sources import _get_source
 
@@ -54,9 +55,13 @@ class Snapshot:
                 "value": line.value,
                 "level": line.level,
                 "raw": line.raw,
+                "text": text[:2000].decode("utf-8", errors="ignore"),
+                "text_truncated": len(text) > 2000,
+                "subtree_sha256": subtree_hash(self.doc, pos),
             }
             for pos in range(start, end)
             for line in [self.doc.lines[pos]]
+            for text in [logical_text(self.doc, pos).encode("utf-8")]
         ]
 
     def page(self, items, offset, limit):
@@ -74,7 +79,8 @@ class Snapshot:
 
 def get_record(record_id, path=None, expected_snapshot=None, offset=0, limit=100):
     snap = Snapshot(expected_snapshot)
-    record_id = _normalize_lookup_id(record_id)
+    if record_id not in {"HEAD", "TRLR"} and not record_id.startswith("anonymous-"):
+        record_id = _normalize_lookup_id(record_id)
     start = snap.doc.locate(record_id, path or [])
     result = snap.page(snap.fields(start), offset, limit)
     return {
@@ -83,6 +89,24 @@ def get_record(record_id, path=None, expected_snapshot=None, offset=0, limit=100
         "selected_path": path or [],
         "raw": "".join(field["raw"] for field in result["items"]),
     }
+
+
+def list_records(record_type=None, expected_snapshot=None, offset=0, limit=100):
+    """Inventory every editable record, including unreferenced auxiliary records."""
+    snap = Snapshot(expected_snapshot)
+    items = []
+    anonymous_counts: dict[str, int] = {}
+    for line in snap.doc.lines:
+        if line.level != 0:
+            continue
+        key = line.xref
+        if key is None:
+            index = anonymous_counts.get(line.tag, 0)
+            anonymous_counts[line.tag] = index + 1
+            key = line.tag if line.tag in {"HEAD", "TRLR"} else f"anonymous-{line.tag}-{index}"
+        if record_type is None or line.tag == record_type:
+            items.append({"record_id": key, "record_type": line.tag})
+    return snap.page(items, offset, limit)
 
 
 def get_source(source_id):

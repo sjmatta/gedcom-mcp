@@ -66,9 +66,17 @@ class Document:
         )
 
     def record(self, record_id: str) -> int:
+        anonymous_counts: dict[str, int] = {}
         for i, line in enumerate(self.lines):
             if line.xref == record_id:
                 return i
+            if line.level == 0 and not line.xref:
+                index = anonymous_counts.get(line.tag, 0)
+                anonymous_counts[line.tag] = index + 1
+                if record_id == f"anonymous-{line.tag}-{index}" or (
+                    record_id == line.tag and line.tag in {"HEAD", "TRLR"}
+                ):
+                    return i
         raise ValueError(f"Record not found: {record_id}")
 
     def locate(self, record_id: str, path: list[dict]) -> int:
@@ -107,26 +115,50 @@ class Document:
             raise ValueError("Values must be single-line text, at most 200 UTF-8 bytes")
         return value
 
-    def citation(self, source_id: str, level: int, page: str = "") -> str:
+    def citation(
+        self, source_id: str, level: int, page: str = "", text: str = "", url: str = ""
+    ) -> str:
+        from .field_edits import text_lines
+
         if self.lines[self.record(source_id)].tag != "SOUR":
             raise ValueError("Citation must reference a source record")
-        text = f"{level} SOUR {source_id}{self.newline}"
+        citation = f"{level} SOUR {source_id}{self.newline}"
         if page:
-            text += f"{level + 1} PAGE {self.value(page)}{self.newline}"
-        return text
+            citation += text_lines(self, level + 1, "PAGE", page)
+        if text or url:
+            citation += text_lines(self, level + 1, "DATA")
+            if text:
+                citation += text_lines(self, level + 2, "TEXT", text)
+            if url:
+                citation += text_lines(self, level + 2, "WWW", url)
+        return citation
 
     def edit(self, operations: list[dict]) -> list[str]:
+        from pydantic import TypeAdapter
+
+        from .change_models import ChangeBatch
+        from .field_edits import OPERATIONS, field_edit, name_errors, record_id_value, text_lines
         from .structural_edits import FIELDS, structural_edit
         from .tree_audit import error_signatures
 
-        if not operations or len(operations) > 50:
-            raise ValueError("Provide between 1 and 50 operations")
+        operations = [
+            op.model_dump(exclude_unset=True)
+            for op in TypeAdapter(ChangeBatch).validate_python(operations)
+        ]
         affected = []
-        structural = any(operation.get("op") in FIELDS for operation in operations)
-        original_errors = error_signatures(self) if structural else None
+        original_errors = error_signatures(self)
+        original_name_errors = name_errors(self)
         allowed = {
-            "add_source": {"op", "title", "author", "publication"},
-            "add_note": {"op", "record_id", "text"},
+            "add_source": {
+                "op",
+                "title",
+                "author",
+                "publication",
+                "source_id",
+                "repository_id",
+                "note",
+            },
+            "add_note": {"op", "record_id", "text", "path"},
             "add_event": {
                 "op",
                 "record_id",
@@ -137,54 +169,77 @@ class Document:
                 "source_id",
                 "page",
             },
-            "add_citation": {"op", "record_id", "path", "source_id", "page"},
+            "add_citation": {"op", "record_id", "path", "source_id", "page", "text", "url"},
             "replace_value": {"op", "record_id", "path", "old_value", "value"},
         }
         for operation in operations:
             op = operation.get("op")
+            if op in OPERATIONS:
+                affected.extend(field_edit(self, operation))
+                continue
             if op in FIELDS:
                 affected.extend(structural_edit(self, operation))
                 continue
             if op not in allowed or set(operation) - allowed[op]:
                 raise ValueError("Unsupported operation or fields")
             if op == "add_source":
-                record_id = f"@S{uuid.uuid4().hex}@"
-                text = f"0 {record_id} SOUR{self.newline}1 TITL {self.value(operation.get('title'))}{self.newline}"
+                record_id = operation.get("source_id")
+                if record_id is None:
+                    record_id = f"@S{uuid.uuid4().hex}@"
+                record_id_value(self, record_id)
+                title = operation["title"]
+                if not title.strip():
+                    raise ValueError("Source title must be nonempty")
+                text = text_lines(self, 0, "SOUR", xref=record_id)
+                text += text_lines(self, 1, "TITL", title)
                 for key, tag in (("author", "AUTH"), ("publication", "PUBL")):
                     if operation.get(key):
-                        text += f"1 {tag} {self.value(operation[key])}{self.newline}"
+                        text += text_lines(self, 1, tag, operation[key])
+                if operation.get("repository_id"):
+                    repo = operation["repository_id"]
+                    if self.lines[self.record(repo)].tag != "REPO":
+                        raise ValueError("repository_id must reference a REPO record")
+                    text += text_lines(self, 1, "REPO", repo)
+                if operation.get("note"):
+                    text += text_lines(self, 1, "NOTE", operation["note"])
                 self.insert(len(self.lines) - 1, text)
             else:
                 record_id = operation["record_id"]
                 start = self.record(record_id)
                 kind = self.lines[start].tag
-                if kind not in {"INDI", "FAM"}:
-                    raise ValueError("Edits require an individual or family record")
                 if op == "add_note":
-                    text = self.value(operation.get("text"))
-                    self.insert(self.end(start), f"1 NOTE {text}{self.newline}")
+                    target = self.locate(record_id, operation.get("path", []))
+                    if not operation["text"].strip():
+                        raise ValueError("A nonempty text value is required")
+                    self.insert(
+                        self.end(target),
+                        text_lines(self, self.lines[target].level + 1, "NOTE", operation["text"]),
+                    )
                 elif op == "add_event":
+                    if kind not in {"INDI", "FAM"}:
+                        raise ValueError("Events require an individual or family record")
                     tag = operation["tag"]
                     if tag not in (EVENT_TAGS if kind == "INDI" else FAMILY_EVENT_TAGS):
                         raise ValueError("Unsupported event tag")
                     # Dates/places never become uncited facts through this operation.
                     citation = self.citation(operation["source_id"], 2, operation.get("page", ""))
-                    description = self.value(operation.get("description", ""), required=False)
-                    text = f"1 {tag}{' ' + description if description else ''}{self.newline}"
+                    text = text_lines(self, 1, tag, operation.get("description", ""))
                     for key, subtag in (("date", "DATE"), ("place", "PLAC")):
                         if operation.get(key):
-                            text += f"2 {subtag} {self.value(operation[key])}{self.newline}"
+                            text += text_lines(self, 2, subtag, operation[key])
                     self.insert(self.end(start), text + citation)
                 elif op == "add_citation":
                     path = operation["path"]
                     target = self.locate(record_id, path)
-                    if len(path) != 1 or self.lines[target].tag not in set(EVENT_TAGS) | set(
-                        FAMILY_EVENT_TAGS
-                    ):
-                        raise ValueError("Citations currently target a level-one event")
                     self.insert(
                         self.end(target),
-                        self.citation(operation["source_id"], 2, operation.get("page", "")),
+                        self.citation(
+                            operation["source_id"],
+                            self.lines[target].level + 1,
+                            operation.get("page", ""),
+                            operation.get("text", ""),
+                            operation.get("url", ""),
+                        ),
                     )
                 elif op == "replace_value":
                     path = operation["path"]
@@ -199,7 +254,7 @@ class Document:
                         raise ValueError("Field is not editable or old value does not match")
                     # NAME's subordinate GIVN/SURN could contradict the edited value.
                     if self.end(target) != target + 1:
-                        raise ValueError("Field has child tags; use a future structured edit")
+                        raise ValueError("Field has child tags; use update_field or update_name")
                     value = self.value(operation.get("value"))
                     if line.tag == "SEX" and value not in {"M", "F", "U"}:
                         raise ValueError("SEX must be M, F, or U")
@@ -209,12 +264,15 @@ class Document:
             affected.append(record_id)
         # Validate our output independently of the editing logic.
         Document(self.bytes())
-        if original_errors is not None:
-            introduced = error_signatures(self) - original_errors
-            if introduced:
-                raise ValueError(
-                    f"Structural edit introduces integrity errors: {list(introduced)[:10]}"
-                )
+        introduced = error_signatures(self) - original_errors
+        if introduced:
+            raise ValueError(
+                f"Structural edit introduces integrity errors: {list(introduced)[:10]}"
+            )
+        if name_errors(self) - original_name_errors:
+            raise ValueError(
+                "Name components conflict; use update_name or provide consistent NAME fields"
+            )
         return list(dict.fromkeys(affected))
 
 
