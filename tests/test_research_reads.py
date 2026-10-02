@@ -12,6 +12,7 @@ from gedcom_server.research_reads import (
     get_record,
     get_source,
     get_source_references,
+    list_records,
     search_events,
     search_sources,
     year_interval,
@@ -92,6 +93,43 @@ def test_source_lookup_and_reverse_citations_preserve_context(evidence):
     assert get_source_references("S1", page="42")["total"] == 0
     with pytest.raises(ValueError, match="Source not found"):
         get_source_references("I1")
+
+
+def test_reverse_citations_include_header_and_repeated_anonymous_records(evidence):
+    raw = evidence.read_bytes().replace(
+        b"0 TRLR\n",
+        b"0 @SNEW@ SOUR\n1 TITL Anonymous evidence\n"
+        b"0 _CUSTOM\n1 SOUR @SNEW@\n2 PAGE First\n"
+        b"0 @CUSTOM@ _CUSTOM\n1 SOUR @SNEW@\n2 PAGE Named\n"
+        b"0 _OTHER\n1 NOTE Unrelated\n"
+        b"0 _CUSTOM\n1 NOTE Nested evidence\n2 SOUR @SNEW@\n3 PAGE Second\n0 TRLR\n",
+    )
+    raw = raw.replace(b"0 HEAD\n", b"0 HEAD\n1 SOUR @SNEW@\n2 PAGE Header\n", 1)
+    evidence.write_bytes(raw)
+    expected = [
+        ("HEAD", "HEAD", "Header"),
+        ("anonymous-_CUSTOM-0", "_CUSTOM", "First"),
+        ("@CUSTOM@", "_CUSTOM", "Named"),
+        ("anonymous-_CUSTOM-1", "_CUSTOM", "Second"),
+    ]
+    first = get_source_references("SNEW", limit=2)
+    assert first["total"] == 4
+    second = get_source_references(
+        "@SNEW@", expected_snapshot=first["snapshot"], offset=first["next_offset"], limit=2
+    )
+    assert second["total"] == 4 and second["next_offset"] is None
+    refs = first["items"] + second["items"]
+    assert [(r["record_id"], r["record_type"], r["pages"][0]) for r in refs] == expected
+    inventory = {r["record_id"]: r["record_type"] for r in list_records()["items"]}
+    for ref in refs:
+        assert inventory[ref["record_id"]] == ref["record_type"]
+        assert get_record(ref["record_id"], ref["path"])["raw"] == ref["raw"]
+    assert refs[-1]["fact_path"] == [{"tag": "NOTE", "index": 0}]
+    assert get_source_references("SNEW", page="Second")["items"] == [refs[-1]]
+    assert get_source_references("SNEW", page="Missing")["total"] == 0
+    evidence.write_bytes(raw.replace(b"3 PAGE Second", b"3 PAGE Changed"))
+    with pytest.raises(ValueError, match="Tree changed"):
+        get_source_references("SNEW", expected_snapshot=first["snapshot"], offset=2)
 
 
 def test_events_include_alternate_facts_and_family_events_once(evidence):
