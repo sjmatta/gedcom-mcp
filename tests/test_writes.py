@@ -229,7 +229,7 @@ def test_correct_field_and_indexes(tree):
 @pytest.mark.parametrize(
     "operation",
     [
-        {"op": "add_note", "record_id": "@I1@", "text": "injected\n0 @FAKE@ INDI"},
+        {"op": "add_note", "record_id": "@I1@", "text": "injected\x00control"},
         {"op": "add_event", "record_id": "@I1@", "tag": "BIRT", "source_id": "@missing@"},
         {
             "op": "replace_value",

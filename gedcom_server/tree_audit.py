@@ -16,6 +16,22 @@ LINK_TYPES = {
     "REPO": "REPO",
     "ASSO": "INDI",
     "ALIA": "INDI",
+    "NOTE": "NOTE",
+    "OBJE": "OBJE",
+    "SUBM": "SUBM",
+    "SUBN": "SUBN",
+}
+REQUIRED_POINTER_TAGS = {
+    "HUSB",
+    "WIFE",
+    "CHIL",
+    "FAMC",
+    "FAMS",
+    "REPO",
+    "ASSO",
+    "ALIA",
+    "SUBM",
+    "SUBN",
 }
 
 
@@ -96,6 +112,39 @@ def audit_document(doc):
                 "message": message,
             }
         )
+
+    parents: list[int] = []
+    for pos, line in enumerate(doc.lines):
+        while parents and doc.lines[parents[-1]].level >= line.level:
+            parents.pop()
+        parent = doc.lines[parents[-1]] if parents else None
+        owner = index.owners[pos]
+        if (
+            line.level > 0
+            and line.tag in REQUIRED_POINTER_TAGS
+            and not POINTER.fullmatch(line.value)
+        ):
+            report("invalid_pointer_value", [owner], f"{line.tag} requires an @ID@ pointer")
+        if (
+            owner in index.people
+            and line.level == 1
+            and line.tag == "SEX"
+            and line.value not in {"", "M", "F", "U"}
+        ):
+            report("invalid_sex_value", [owner], f"Invalid SEX value: {line.value}")
+        if parent and parent.tag == "FAMC" and line.tag in {"PEDI", "STAT"}:
+            choices = (
+                {"", "birth", "adopted", "foster", "sealing"}
+                if line.tag == "PEDI"
+                else {"", "challenged", "disproven", "proven"}
+            )
+            if line.value.lower() not in choices:
+                report(
+                    "invalid_relationship_qualifier",
+                    [owner],
+                    f"Invalid {line.tag} value: {line.value}",
+                )
+        parents.append(pos)
 
     for target, refs in sorted(index.references.items()):
         for pos in refs:

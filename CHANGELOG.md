@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-10-01
 
+### Added
+
+- Complete field/subtree and auxiliary record editing with exact subtree hashes,
+  evidence-preserving value/type updates, and explicit replacement/removal.
+- Relationship qualifier updates that preserve attached citations, notes and
+  extensions; apply pointer/type/reciprocity/cycle checks to every edit batch.
+- Multiline UTF-8 notes and research text using CONT/CONC; notes/citations on any
+  subtree, citation text/URLs, and atomic source creation/citation with explicit IDs.
+- Discoverable inventory of all record types, including unreferenced auxiliary
+  records; original-field reads expose subtree hashes and bounded logical text.
+
 ### Changed
 
 - Replace the broad advertised tool catalog with nine core/read-discovery tools,
@@ -16,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   budgets and terminal-ancestor/depth-boundary distinctions.
 - Discover specialized research and exact preparation schemas on demand, with
   separate read-only execution, proposal preparation, apply and maintenance.
-- Strict tagged schemas cover all 15 atomic record edit operations, including
+- Strict tagged schemas cover all 22 atomic record edit operations, including
   person creation and evidence-preserving structured name correction.
 - Preserve original records, unknown fields, citations, qualified family links,
   source/GIS/analysis functionality, revision history and backup/restore behavior.

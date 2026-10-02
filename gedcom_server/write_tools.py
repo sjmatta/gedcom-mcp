@@ -99,19 +99,47 @@ def register_write_tools(mcp):
     ) -> dict:
         """Edit records atomically in a reviewed proposal; validates edits without changing the tree.
 
-        Operations: add_note(record_id,text); add_source(title,author?,publication?);
+        Operations: add_note(record_id,text,path?);
+        add_source(title,author?,publication?,source_id?,repository_id?,note?);
         add_event(record_id,tag,source_id,date?,place?,description?,page?);
-        add_citation(record_id,path,source_id,page?);
+        add_citation(record_id,path,source_id,page?,text?,url?);
         replace_value(record_id,path,old_value,value).
+        Complete field editing: add_field(record_id,field,path?,index?);
+        update_field(record_id,path?,expected_sha256,value,tag?);
+        replace_field(record_id,path,expected_sha256,field);
+        remove_field(record_id,path,expected_sha256).
+        A field is {tag,value?,children?}, recursively. path selects the parent
+        for add_field and the exact existing field for other operations. index
+        inserts before that same-tag occurrence; omit to append. get_record returns
+        subtree_sha256; use it as expected_sha256. Hashes cover the full subtree,
+        including evidence. Read all raw pages before replacing/removing a subtree.
+        update_field preserves non-continuation children; an empty value clears
+        text, and optional tag changes a field's type. path=[] updates record text
+        (e.g. a shared NOTE); record IDs/types stay stable. replace_field explicitly
+        replaces the entire selected subtree, including its evidence.
+        add_record(record_id,tag,value?,fields?) creates an auxiliary record;
+        remove_record(record_id,expected_sha256) removes one after explicit inbound
+        reference cleanup. Use list_records to find unreferenced auxiliary records.
+        These operations cover names, events, sources, repositories, citations,
+        shared notes, media, identifiers, coordinates, custom tags and HEAD metadata.
+        New dangling/wrong-type pointers, broken reciprocal links and ancestry
+        cycles are refused across the complete batch. Graph pointer corrections
+        must update both sides atomically. NAME/GIVN/SURN must remain consistent;
+        prefer update_name for structured name corrections. Review coordinates
+        when changing PLAC text. Text accepts up to 1 MiB, safely encoded as CONT/CONC.
         Structural operations: add_individual(individual_id,name,sex?,note?);
         update_name(individual_id,old_name,name,given_name,surname,name_index?);
         add_family(family_id);
         add_relationship(family_id,individual_id,role,pedigree?,status?);
+        update_relationship(family_id,individual_id,role,expected_sha256,pedigree?,status?);
         remove_relationship(family_id,individual_id,role,force?);
         delete_individual(individual_id,force?); delete_individuals(individual_ids,force?);
         delete_family(family_id,force?); delete_families(family_ids,force?);
         merge_individuals(source_id,target_id,identity_evidence,force?).
         Roles are HUSB/WIFE/CHIL, never inferred from sex. Both sides are updated.
+        update_relationship changes child pedigree/status while preserving notes,
+        citations and extensions. Use the FAMC subtree hash; null clears a qualifier
+        and an omitted qualifier is retained. No force is needed to preserve evidence.
         add_individual requires a new @ID@ and name (GEDCOM /surname/ optional).
         Create first, then add relationships/events using its ID in the same batch.
         Deletion uses explicit IDs, never an implicit descendant walk. Families
@@ -124,7 +152,8 @@ def register_write_tools(mcp):
         Each operation includes op. Paths are lists of {tag,index}, with zero-based
         sibling occurrence indexes. Review the diff before calling apply_tree_change.
         Use update_name or prepare_update_person_name for names with subordinate tags.
-        Sources created here receive an ID visible in the diff; cite them in a later proposal.
+        Supply a new source_id to create and cite a source in the same batch;
+        omit source_id to generate an ID visible in the diff.
         """
         return require_store().prepare(
             expected_revision, reason, [op.model_dump(exclude_unset=True) for op in operations]

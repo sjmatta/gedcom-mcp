@@ -61,6 +61,7 @@ with `include_undated=true`. Without year filters, all dates are included.
 | `detect_pedigree_collapse` | Repeated ancestors and recorded paths. |
 | `find_associates` | Friends/associates/neighbors candidates from shared time/place context. |
 | `audit_tree` | Structural errors, evidence-review warnings and connected components. |
+| `list_records` | All record IDs, including unreferenced repositories, media, shared notes and anonymous metadata; optional exact record-type filter. |
 
 With writes enabled, discovery also exposes `plan_tree_prune`,
 `get_tree_change_diff`, and `get_tree_history` as read-only research operations.
@@ -109,12 +110,20 @@ Obtain preparation schemas with `search_tools(category="changes")`. The returned
 }}
 ```
 
-`edit_records` has strict, tagged operation schemas for all 15 edit types,
+`edit_records` has strict, tagged operation schemas for all 22 edit types,
 including atomic person/family creation and linking, evidence edits, structured
 names, explicit deletion and merging. Unknown fields and invalid types are
 rejected. Detailed schemas are deferred until discovery; they do not enlarge the
 initial catalog. Omitted sex is not inferred. Name changes retain evidence and
 alternate names, with an exact old-value guard.
+
+Field operations add missing fields, update text/type while preserving child
+evidence, or explicitly replace/remove a subtree using its `subtree_sha256` from
+`get_record`. Auxiliary records can be created/deleted; existing IDs/types stay
+stable during updates. Relationship qualifiers can be corrected in place without
+discarding evidence. Notes and citations can target any subtree, and explicit
+source IDs support creation and citation in one atomic batch. Multiline text is
+encoded as GEDCOM CONT/CONC. Generic graph edits retain all integrity checks.
 
 Review every diff page through discovered `get_tree_change_diff` before obtaining
 user authorization and invoking `apply_tree_change`. The read dispatcher cannot
