@@ -4,7 +4,7 @@ A [FastMCP](https://github.com/jlowin/fastmcp) server that enables AI assistants
 
 ## Features
 
-Version **2.0** advertises **9 read-only tools**, or **12 with edits enabled**.
+Version **2.0** advertises **9 read-only tools**, or **13 with edits enabled**.
 A consolidated interface covers tree context, people search, batch person views,
 qualified relatives, relationships, evidence timelines and original records.
 Specialized research and exact edit schemas are discovered on demand using

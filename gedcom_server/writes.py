@@ -17,6 +17,7 @@ from pathlib import Path
 
 from . import state
 from .editing import GedcomEditor, default_editor
+from .research_ledger import LEDGER_SCHEMA
 from .revision_storage import (
     SCHEMA,
     digest,
@@ -80,6 +81,7 @@ class TreeStore:
             self.db.execute("PRAGMA journal_mode=DELETE")
             self.db.execute("PRAGMA synchronous=FULL")
             self.db.executescript(SCHEMA)
+            self.db.executescript(LEDGER_SCHEMA)
             with self.db:
                 if not self.db.execute("SELECT 1 FROM revisions").fetchone():
                     initial = projection(data, self.directory)

@@ -130,6 +130,22 @@ Notes and sources preserve research context; edits do not establish historical
 truth merely because they have a citation. Preserve uncertainty in the value,
 source, note and reason rather than replacing it with an unsupported assertion.
 
+## Research ledger
+
+`record_research(entry)` appends hypotheses, evidence and verdicts to the
+`research_entries` table in the same SQLite store. The ledger never changes the
+family tree, so it needs no proposal or authorization; rows are append-only
+(update/delete triggers abort) and are included in every backup. A hypothesis
+needs subject IDs present in the tree, at least one rival and at least one
+prediction. Evidence records its stance, source/information/evidence types and a
+locator (tree record and path, source, URL or description). A verdict records
+status, an ICD-203-style likelihood, confidence, the argument and the search made
+for disconfirming evidence; supported or refuted verdicts require recorded
+evidence. Each entry stores the operator label and the tree revision current when
+it was written. Read with the discovered `get_research_ledger` research tool.
+Ledger entries are research reasoning, not tree facts; corrections that follow
+from a verdict still use the reviewed proposal flow.
+
 ## Complete field and auxiliary record editing
 
 `field` is a structured subtree: `{ "tag": "NOTE", "value": "Text",

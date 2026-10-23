@@ -31,7 +31,8 @@ mcp = FastMCP(
         "Start with get_tree_context. Use core reads for people, relatives, "
         "relationships, timelines and original records. Discover specialized tools "
         "with search_tools and execute reads through call_research_tool. "
-        "When enabled, prepare_change previews edits; review the complete diff "
+        "When enabled, record_research keeps hypotheses, evidence and verdicts in "
+        "an append-only ledger, and prepare_change previews edits; review the complete diff "
         "and obtain authorization before apply_tree_change. Never infer facts "
         "or genetic parentage from name matches or pedigree assertions."
     ),

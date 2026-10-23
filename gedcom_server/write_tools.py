@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import Literal
 
-from . import state
+from . import research_ledger, state
 from .change_models import ChangeBatch
 from .discovery import READ_HINTS, register_prepare_tool
 from .revision_storage import digest, immutable_file
@@ -254,5 +254,40 @@ def register_write_tools(mcp):
             tree.directory / "downloads" / f"revision-{revision}-{digest(data)}.ged", data
         )
         return {"revision": revision, "path": str(path), "sha256": digest(path.read_bytes())}
+
+    @mcp.tool(
+        annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False}
+    )
+    def record_research(entry: research_ledger.ResearchEntry) -> dict:
+        """Append a hypothesis, evidence item or verdict to the research ledger.
+
+        The ledger never changes the family tree, so no proposal or approval is
+        needed; entries are append-only and cannot be edited or deleted. Record a
+        hypothesis first (statement, subject IDs, at least one rival, predictions);
+        it returns hypothesis_id. Attach evidence with its source, information and
+        evidence types and a locator, then a verdict with likelihood, confidence,
+        the argument and the search made for disconfirming evidence. A supported
+        or refuted verdict requires recorded evidence. Tree corrections that follow
+        from a verdict still go through prepare_change and apply_tree_change.
+        """
+        return research_ledger.record(require_store(), entry)
+
+    @mcp.tool(annotations=READ_HINTS)
+    @state.synchronized
+    def get_research_ledger(
+        hypothesis_id: str | None = None,
+        individual_id: str | None = None,
+        status: Literal["open", "supported", "refuted", "inconclusive", "withdrawn"] | None = None,
+        offset: int = 0,
+        limit: int = 20,
+    ) -> dict:
+        """Read recorded hypotheses with their evidence and verdicts, newest first.
+
+        Filter by hypothesis, subject person or current status (the latest verdict,
+        or open). Check here before starting a hypothesis to avoid repeating work.
+        """
+        return research_ledger.read(
+            require_store(), hypothesis_id, individual_id, status, offset, limit
+        )
 
     register_prepare_tool(mcp)

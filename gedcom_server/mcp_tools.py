@@ -306,6 +306,30 @@ def register_tools(mcp):
 
     @tool
     @traced_tool
+    def get_research_gaps(
+        individual_id: str | None = None,
+        generations: int = 4,
+        offset: int = 0,
+        limit: int = 50,
+        expected_snapshot: str | None = None,
+    ) -> dict:
+        """List research gaps in a person's ancestry, nearest generation first.
+
+        Scope is the person (default: home person) and their selected ancestors up
+        to `generations` (0–10). Reports ambiguous or disproven parent links, missing
+        parents, dangling parent-family pointers, conflicting or uncited birth and
+        death events, and absent birth records, each with a reason and the next
+        useful read. A gap means this tree lacks the record, not that no record
+        exists; depth_limited_people counts ancestors beyond the generation bound.
+        Use it to seed hypotheses. Paginate with offset/limit (1–200) and reuse the
+        returned snapshot as expected_snapshot.
+        """
+        from .research_gaps import research_gaps
+
+        return research_gaps(individual_id, generations, offset, limit, expected_snapshot)
+
+    @tool
+    @traced_tool
     def get_family(family_id: str) -> dict | None:
         """
         Get family unit information by GEDCOM family ID.
