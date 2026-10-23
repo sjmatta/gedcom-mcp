@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Research ledger: `record_research` appends hypotheses (with rivals and predictions),
+  classified evidence with locators, and verdicts (likelihood, confidence, argument,
+  disconfirmation search) to an append-only table in the revision store. It never
+  changes the tree, is covered by backups, and is read with discoverable
+  `get_research_ledger`. Write-enabled servers now advertise 13 tools.
+- `get_research_gaps`: ancestry-scoped research gaps, nearest generation first, with
+  reasons and next reads; generation bounds are reported, not shown as brick walls.
+- `tests/fixtures/planted.ged`: a tree with planted evidence problems that the audit
+  and research-gap tests must find.
+
+### Changed
+
+- Pin Python 3.14 for local development and the Docker image; locked torch has no
+  Python 3.15 wheels. Renovate no longer proposes Python 3.15 images.
+
 ### Fixed
 
 - Reverse source lookup includes citations on headers and anonymous records,

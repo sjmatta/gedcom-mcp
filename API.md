@@ -1,6 +1,6 @@
 # MCP interface, version 2
 
-The server advertises **9 tools in read-only mode**, or **12 with writes enabled**.
+The server advertises **9 tools in read-only mode**, or **13 with writes enabled**.
 Specialized operations remain available through progressive discovery. This is a
 major release with no legacy tool aliases or compatibility profile.
 
@@ -61,10 +61,12 @@ with `include_undated=true`. Without year filters, all dates are included.
 | `detect_pedigree_collapse` | Repeated ancestors and recorded paths. |
 | `find_associates` | Friends/associates/neighbors candidates from shared time/place context. |
 | `audit_tree` | Structural errors, evidence-review warnings and connected components. |
+| `get_research_gaps` | Gaps in a person's ancestry (ambiguous, disproven or missing parents, dangling parent families, conflicting or uncited vitals, absent birth records), nearest generation first, each with a reason and next read. |
 | `list_records` | All record IDs, including unreferenced repositories, media, shared notes and anonymous metadata; optional exact record-type filter. |
 
 With writes enabled, discovery also exposes `plan_tree_prune`,
-`get_tree_change_diff`, and `get_tree_history` as read-only research operations.
+`get_tree_change_diff`, `get_tree_history` and `get_research_ledger` as read-only
+research operations.
 Preparation schemas are discoverable in the changes category.
 
 Discover, then execute using the returned schema and route:
@@ -93,6 +95,7 @@ All original operations use the standard FastMCP pipeline, including middleware.
 | `prepare_change(operation, arguments)` | Persist a proposal and return its diff, without changing the active tree. Operations: create_person, update_person_name, edit_records, restore. |
 | `apply_tree_change(proposal_id, expected_revision)` | Apply the specifically authorized proposal atomically after a verified backup. Rejects stale revisions; applied-proposal retries are idempotent. |
 | `maintain_tree(action, revision?)` | Verified local backup or lossless export of an explicit revision. Creates private files without changing the active tree. |
+| `record_research(entry)` | Append a hypothesis, evidence item or verdict to the research ledger. Never changes the tree, so no proposal or approval; entries are append-only. Read them with discovered `get_research_ledger`. |
 
 Obtain preparation schemas with `search_tools(category="changes")`. The returned
 `execution.operation` selects `prepare_change`; provide the complete matching

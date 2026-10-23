@@ -1,8 +1,9 @@
 # GEDCOM on Rivendell for ChatGPT
 
 Connect ChatGPT using OAuth to **https://gedcom-mcp.matta.family/mcp**.
-Sign in through Cloudflare Access as `stephenjmatta@gmail.com`. The portal exposes
-41 genealogy, evidence-research, audit and versioning tools. ChatGPT reasons
+Sign in through Cloudflare Access as `stephenjmatta@gmail.com`. The running image
+(`versioned-writes-1`, started 2026-10-11) serves the v2 interface: 13 advertised
+tools with writes enabled and the rest through `search_tools` discovery. ChatGPT reasons
 using the structured tools; the internal `query` agent has been removed.
 No Codex MCP configuration is required or created.
 
@@ -179,7 +180,7 @@ The overlay mounts the imported data read-only and the new private store at
 Update any MCP Portal tool allowlist to expose only the desired write tools to
 trusted operators. Check the authenticated catalog, prepare a test proposal without
 applying it, inspect `get_tree_context`, and exercise a separate restored instance
-before accepting family-data edits. Version 2 advertises 9 read-only tools or 12
+before accepting family-data edits. Version 2 advertises 9 read-only tools or 13
 with writes enabled. Refresh portal/client capabilities after deploying this major
 interface; discovery and dispatch must be allowed together. Check discovered
 read execution and preparation through the actual authenticated client. Historical

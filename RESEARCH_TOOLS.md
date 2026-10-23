@@ -57,9 +57,9 @@ Distinguish nearest shared ancestors from their own ancestors, and preserve mult
 
 Acceptance: direct descent, unrelated people, repeated ancestors, multiple cousin lines, birth/adoptive alternatives and spouse-only connections have deterministic, qualified results and clear completeness metadata.
 
-### 3. Scoped research gaps
+### 3. Scoped research gaps — implemented
 
-Add `get_research_gaps` using `audit_tree` findings and bounded branch traversal. Report missing parent slots, uncited vital events, conflicting claims, ambiguous parent families and unresolved places, with evidence paths and an explainable ordering.
+`get_research_gaps` (discoverable) walks the selected ancestry of a person up to 10 generations and reports ambiguous, disproven-only or missing parents, dangling parent-family pointers, conflicting or uncited birth/death events and absent birth records, nearest generation first, each with a reason and next read. Unresolved places are not yet included; `search_nearby` reports geocoding coverage separately. The original design notes follow.
 
 Distinguish a genuinely unrecorded parent from an ambiguous/disproven family link, dangling pointer or depth limit. A missing citation means documentation is absent in this GEDCOM, not that no external record exists. Keep research suggestions distinct from verified historical conclusions.
 

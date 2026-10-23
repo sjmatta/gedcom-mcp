@@ -1,0 +1,64 @@
+0 HEAD
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Root /Planted/
+1 SEX F
+1 BIRT
+2 DATE 1 JAN 1950
+2 SOUR @S1@
+1 FAMC @F1@
+0 @I2@ INDI
+1 NAME Father /Planted/
+1 SEX M
+1 BIRT
+2 DATE 1920
+1 FAMS @F1@
+1 FAMC @F2@
+0 @I3@ INDI
+1 NAME Mother /Other/
+1 SEX F
+1 BIRT
+2 DATE 1922
+2 SOUR @S1@
+1 BIRT
+2 DATE 1923
+2 SOUR @S1@
+1 FAMS @F1@
+0 @I4@ INDI
+1 NAME Grandfather /Planted/
+1 SEX M
+1 FAMS @F2@
+1 FAMC @F3@
+1 FAMC @F4@
+0 @I5@ INDI
+1 NAME Candidate /One/
+1 SEX M
+1 BIRT
+2 DATE 1870
+2 SOUR @S1@
+1 FAMS @F3@
+0 @I6@ INDI
+1 NAME Candidate /Two/
+1 SEX M
+1 BIRT
+2 DATE 1872
+2 SOUR @S1@
+1 FAMS @F4@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I3@
+1 CHIL @I1@
+0 @F2@ FAM
+1 HUSB @I4@
+1 CHIL @I2@
+0 @F3@ FAM
+1 HUSB @I5@
+1 CHIL @I4@
+0 @F4@ FAM
+1 HUSB @I6@
+1 CHIL @I4@
+0 @S1@ SOUR
+1 TITL Planted parish register
+0 TRLR

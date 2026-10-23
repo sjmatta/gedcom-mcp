@@ -15,7 +15,7 @@ CORE_READ_TOOLS = {
     "get_timeline",
     "get_record",
 }
-CORE_WRITE_TOOLS = {"prepare_change", "apply_tree_change", "maintain_tree"}
+CORE_WRITE_TOOLS = {"prepare_change", "apply_tree_change", "maintain_tree", "record_research"}
 PREPARATIONS = {
     "create_person": "prepare_create_person",
     "update_person_name": "prepare_update_person_name",
